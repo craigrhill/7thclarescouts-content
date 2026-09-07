@@ -28,6 +28,12 @@ const roleText = me => [me.secretary && "secretary", me.lead && "section lead"].
 const SECTION_COLOURS = { beavers: ["#DEE5F7", "#22407F"], cubs: ["#E3ECDC", "#3B5230"], scouts: ["#FDE8D3", "#9A4B00"], ventures: ["#F6DCE8", "#7E2049"] };
 const FALLBACK_COLOURS = [["#E8E4DA", "#2F3134"], ["#DCEAF0", "#1B4A63"], ["#FBE9EC", "#7A1F2E"], ["#FFF4D6", "#7A5A00"]];
 function pill(C, key){ const i = C.settings.sections.findIndex(x => x.key === key); const c = SECTION_COLOURS[key] || FALLBACK_COLOURS[(i < 0 ? 0 : i) % FALLBACK_COLOURS.length]; const name = (C.settings.sections[i] || {}).name || key; return `<span class="spill" style="background:${c[0]};color:${c[1]}">${esc(name)}</span>`; }
+// The nine Adventure Skills in the order the public page lists them, with a
+// short form for column headings. Keys match the rota function's SKILLS.
+const SKILLS = [["camping","Camping","Camp"],["backwoods","Backwoods","Back"],["pioneering","Pioneering","Pion"],["hillwalking","Hillwalking","Hill"],["emergencies","Emergencies","Emer"],["air","Air Activities","Air"],["paddling","Paddling","Padd"],["rowing","Rowing","Row"],["sailing","Sailing","Sail"]];
+// How a row is labelled on the public board, where no name is shown.
+const SECTION_NOUN = { beavers: "Beaver", cubs: "Cub", scouts: "Scout", ventures: "Venture" };
+const rowLabel = (k, n) => (SECTION_NOUN[k] || "Member") + " " + n;
 const pills = (C, keys) => C.settings.sections.filter(x => (keys || []).includes(x.key)).map(x => pill(C, x.key)).join("") || `<span class="small muted">none</span>`;
 async function copyText(t, btn){ try { await navigator.clipboard.writeText(t); if (btn) { const o = btn.textContent; btn.textContent = "Copied"; setTimeout(() => btn.textContent = o, 1200); } } catch {} }
 function showCode(name, code){

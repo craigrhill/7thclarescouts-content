@@ -1004,6 +1004,14 @@ function cleanEvent(b, sectionKeys, kitIds) {
   return { event: e };
 }
 var sectionFallback = () => ({ required: 2, slots: {} });
+var SKILLS = ["camping", "backwoods", "pioneering", "hillwalking", "emergencies", "air", "paddling", "rowing", "sailing"];
+var isSkill = (x) => SKILLS.includes(x);
+var badgesFallback = () => ({ next: 1, youth: [], stages: {} });
+var canSeeBoard = (me, canManage, k) => canManage || (me.sections || []).includes(k);
+var canEditBoard = (me, canManage, k) => canSeeBoard(me, canManage, k) && (canManage || !!me.lead);
+var byNumber = (youth) => [...youth].sort((x, y) => x.n - y.n);
+var boardFor = (doc) => ({ next: doc.next, youth: byNumber(doc.youth), stages: doc.stages, updatedAt: doc.updatedAt || null });
+var publicBoard = (k, doc) => ({ section: k, updatedAt: doc.updatedAt || null, rows: byNumber(doc.youth).map((y) => ({ n: y.n, stages: doc.stages[y.id] || {} })) });
 var pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, ...withCode ? { code: p.code || null } : {} });
 var isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
 var isSlotId = (s) => typeof s === "string" && /^[me]:\d{4}-\d{2}-\d{2}(:.{1,140})?$/.test(s);
@@ -1058,6 +1066,12 @@ function createHandler(storeFactory) {
         }
         return json(200, { token: issueToken(sec, person.id), me: pub(person) });
       }
+      if (req.method === "GET" && a === "board") {
+        const k = url.searchParams.get("section") || "";
+        if (!isKey(k)) return fail(400, "Bad section.");
+        const { doc } = await readDoc(store, "badges/" + k, badgesFallback);
+        return json(200, publicBoard(k, doc));
+      }
       const t = readToken(sec, req.headers.get("x-rota-token"));
       if (!t) return fail(401, "Please sign in.");
       const roster = await readDoc(store, "roster", rosterFallback);
@@ -1065,6 +1079,16 @@ function createHandler(storeFactory) {
       if (!me) return fail(401, "Please sign in.");
       const hasSecretary = roster.doc.people.some((p) => p.secretary);
       const canManage = !!me.secretary || !hasSecretary && !!me.lead;
+      if (req.method === "GET" && a === "badges") {
+        const keys = (url.searchParams.get("sections") || "").split(",").map((s) => s.trim()).filter(isKey).filter((k) => canSeeBoard(me, canManage, k));
+        const boards = {}, canEdit = {};
+        for (const k of keys) {
+          const { doc } = await readDoc(store, "badges/" + k, badgesFallback);
+          boards[k] = boardFor(doc);
+          canEdit[k] = canEditBoard(me, canManage, k);
+        }
+        return json(200, { me: pub(me, canManage), boards, canEdit });
+      }
       if (req.method === "GET") {
         const keys = (url.searchParams.get("sections") || "").split(",").map((s) => s.trim()).filter(isKey);
         const sections = {};
@@ -1149,6 +1173,59 @@ function createHandler(storeFactory) {
       }
       const b = await body(req);
       if (!b) return fail(400, "Body must be JSON.");
+      if (a === "badge-add" || a === "badge-rename" || a === "badge-remove" || a === "badge-stage") {
+        const k = b.section;
+        if (!isKey(k)) return fail(400, "Bad section.");
+        if (!canSeeBoard(me, canManage, k)) return fail(403, "That section is not on your roster entry.");
+        if (!canEditBoard(me, canManage, k)) return fail(403, "Only a section lead can change the board.");
+        let problem = null;
+        const doc = await update(store, "badges/" + k, badgesFallback, (d) => {
+          if (a === "badge-add") {
+            const names = String(b.name || "").split(",").map(cleanName).filter(Boolean);
+            if (!names.length) {
+              problem = "A name is needed.";
+              return false;
+            }
+            for (const name of names) d.youth.push({ id: randomBytes(4).toString("hex"), n: d.next++, name, addedAt: (/* @__PURE__ */ new Date()).toISOString() });
+            return d;
+          }
+          const y = d.youth.find((x) => x.id === b.id);
+          if (!y) {
+            problem = "Not on this board.";
+            return false;
+          }
+          if (a === "badge-rename") {
+            const name = cleanName(b.name);
+            if (!name) {
+              problem = "A name is needed.";
+              return false;
+            }
+            y.name = name;
+            return d;
+          }
+          if (a === "badge-remove") {
+            d.youth = d.youth.filter((x) => x.id !== y.id);
+            delete d.stages[y.id];
+            return d;
+          }
+          if (!isSkill(b.skill)) {
+            problem = "Unknown skill.";
+            return false;
+          }
+          const st = Math.round(Number(b.stage));
+          if (!(st >= 0 && st <= 9)) {
+            problem = "Stage must be 0 to 9.";
+            return false;
+          }
+          const row = d.stages[y.id] = d.stages[y.id] || {};
+          if (st === 0) delete row[b.skill];
+          else row[b.skill] = st;
+          if (!Object.keys(row).length) delete d.stages[y.id];
+          return d;
+        });
+        if (problem) return fail(400, problem);
+        return json(200, { board: boardFor(doc) });
+      }
       if (a === "slot") {
         if (!isKey(b.section) || !isSlotId(b.id)) return fail(400, "Bad section or slot.");
         const known = new Set(roster.doc.people.map((p) => p.id));

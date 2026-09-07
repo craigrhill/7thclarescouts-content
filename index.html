@@ -230,6 +230,13 @@ ul.plain{margin:0;padding-left:1.15em;color:var(--stone-600)}ul.plain li{margin:
    their box with aspect-ratio. */
 .kit-figure{display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in;border-radius:10px;overflow:hidden}
 .kit-figure img{width:100%;height:auto;display:block}
+.board-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.board{border-collapse:collapse;width:100%;font-size:.9rem}
+table.board th,table.board td{border-bottom:1px solid var(--stone-100);padding:.35rem .25rem;text-align:center;white-space:nowrap}
+table.board th{font-weight:600;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--stone-600)}
+table.board th.nm,table.board td.nm{text-align:left;position:sticky;left:0;background:#fff;min-width:6.5rem;box-shadow:2px 0 0 var(--stone-100);font-weight:600}
+table.board td.st{color:var(--stone-400)}
+table.board td.st.has{color:var(--sea-700);font-weight:700;background:var(--sea-100)}
 .lightbox{position:fixed;inset:0;background:rgba(20,22,24,.94);display:none;z-index:60;align-items:center;justify-content:center;padding:1rem}
 .lightbox.on{display:flex}
 .lightbox figure{margin:0;max-width:min(100%,900px);max-height:100%;display:flex;flex-direction:column;gap:.6rem}
@@ -613,7 +620,26 @@ function showSection(key){
     ${leaders.length?`<div class="sec-head"><h2>Leaders</h2><a href="#more/team">Whole team</a></div><div class="card">${leaders.map(personHtml).join("")}</div>`:""}
     ${pics.length?`<div class="sec-head"><h2>Photos</h2><a href="#more/gallery/${esc(key)}">All photos</a></div>
     <div class="strip">${pics.slice(0,8).map((p,i) => photoTile(p, i, `sectionPhotos('${esc(key)}')`)).join("")}</div>`:""}
+    <div class="sec-head"><h2>Badge board</h2><a href="#more/badges">About the skills</a></div>
+    <div id="board"><p class="small muted">Loading…</p></div>
     <div class="sec-head"><h2>${esc(x.name)} calendar</h2><a href="#calendar">Full calendar</a></div>${eventListHtml(ev)}`;
+  loadBoard(key);
+}
+/* The public badge board: rows numbered, never named. Read live from the rota
+   function's one unauthenticated endpoint; the service worker keeps the last
+   copy for when there is no signal. A fetch that lands after the user has
+   moved on is dropped rather than written into another section's page. */
+let boardKey = null;
+async function loadBoard(key){
+  boardKey = key;
+  let data = null;
+  try { const r = await fetch("/.netlify/functions/rota?a=board&section=" + encodeURIComponent(key), { cache: "no-store" }); if (r.ok) data = await r.json(); } catch {}
+  const el = $("board"); if (!el || boardKey !== key) return;
+  if (!data) { el.innerHTML = `<p class="small muted">The badge board is not available right now.</p>`; return; }
+  if (!data.rows.length) { el.innerHTML = `<p class="small muted">Nothing recorded yet.</p>`; return; }
+  el.innerHTML = `<div class="card"><div class="board-wrap"><table class="board"><thead><tr><th class="nm"></th>${BOARD_SKILLS.map(([k, short], i) => `<th title="${esc(SKILLS[i][0])}" aria-label="${esc(SKILLS[i][0])}">${short}</th>`).join("")}</tr></thead>
+    <tbody>${data.rows.map(r => `<tr><td class="nm">${esc(rowLabel(key, r.n))}</td>${BOARD_SKILLS.map(([k]) => { const st = r.stages[k] || 0; return `<td class="st ${st ? "has" : ""}">${st || ""}</td>`; }).join("")}</tr>`).join("")}</tbody></table></div>
+    <p class="small muted" style="margin:.7rem 0 0">Rows are numbered rather than named; ask your section leader which number is yours. Each cell is the stage held, from 1 to 9.</p></div>`;
 }
 function personHtml(p){ const ini = (p.name||"?").split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
   return `<div class="person"><div class="avatar">${esc(ini)}</div><div><strong>${ph(p.name)}</strong><div class="role">${esc(p.role)}${p.section?` · ${esc(p.section[0].toUpperCase()+p.section.slice(1))}`:""}</div></div></div>`; }
@@ -695,6 +721,12 @@ function showMoreIndex(){ $("moreDetail").style.display = "none"; $("moreIndex")
   $("moreMenu").innerHTML = `<div class="menu">${MORE.map(([k,t,d,i,href]) => `<a href="${href||`#more/${k}`}">${i}<span class="grow"><strong>${t}</strong><small>${d}</small></span><span class="chev">${ICON.chev}</span></a>`).join("")}</div>`;
   const soc = socialHtml(C.settings);
   $("moreSocial").innerHTML = soc ? `<div class="sec-head"><h2>Follow us</h2></div>${soc}` : ""; }
+// Keys and column headings for the badge board, in the same order as SKILLS
+// below. Keys match the rota function; a board row is labelled by number, not
+// name, using the section's noun.
+const BOARD_SKILLS = [["camping","Camp"],["backwoods","Back"],["pioneering","Pion"],["hillwalking","Hill"],["emergencies","Emer"],["air","Air"],["paddling","Padd"],["rowing","Row"],["sailing","Sail"]];
+const SECTION_NOUN = { beavers: "Beaver", cubs: "Cub", scouts: "Scout", ventures: "Venture" };
+const rowLabel = (k, n) => (SECTION_NOUN[k] || "Member") + " " + n;
 const SKILLS = [
   ["Camping","Pitching, cooking, keeping yourself and your patrol dry and fed: from a first night in a tent to running a lightweight camp in wild country."],
   ["Backwoods","Fire lighting, shelters, cooking without pots, knife and axe safety, and living comfortably with what the woods give you."],
@@ -728,7 +760,8 @@ function badgesHtml(){
     <div class="sec-head"><h2>The nine Adventure Skills</h2></div>
     <div class="card"><div class="menu" style="margin:0">${SKILLS.map(([n,d],i)=>`<div class="person" style="align-items:flex-start"><div class="avatar" style="background:var(--orange-soft);color:var(--orange-dark)">${i+1}</div><div><strong>${n}</strong><div class="role">${d}</div></div></div>`).join("")}</div>
       <p class="small muted" style="margin:1rem 0 0">${ph(b.stages)} Each badge shows its stage number and a coloured border, and you wear only the highest stage you hold in each skill.</p>
-      <div class="btn-row"><a class="btn" href="https://www.irelandscouts.ie/wp-content/uploads/2022/12/ONE-Programme-Adventure-Skills-Handbook.pdf" target="_blank" rel="noopener">Adventure Skills handbook (PDF)</a><a class="btn" href="https://www.scouts.ie" target="_blank" rel="noopener">scouts.ie</a></div></div>
+      <div class="btn-row"><a class="btn" href="https://www.irelandscouts.ie/wp-content/uploads/2022/12/ONE-Programme-Adventure-Skills-Handbook.pdf" target="_blank" rel="noopener">Adventure Skills handbook (PDF)</a><a class="btn" href="https://www.scouts.ie" target="_blank" rel="noopener">scouts.ie</a></div>
+      <p class="small muted" style="margin:.9rem 0 0">Each section's badge board, showing the stages held, is on its own page: ${(C.settings.sections||[]).map(x => `<a href="#sections/${esc(x.key)}">${esc(x.name)}</a>`).join(" · ")}.</p></div>
     <div class="sec-head"><h2>Where badges go</h2></div>
     <div class="card">${diagram}<ol style="margin:1rem 0 0;padding-left:1.3em;color:var(--stone-600);font-size:.95rem">${map.map(m=>`<li style="margin:.25em 0">${m}</li>`).join("")}</ol></div>
     ${figureCard("badges", "Where badges go on the full uniform shirt")}

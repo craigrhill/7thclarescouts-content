@@ -19,7 +19,7 @@ const stop = () => { try { server.kill(); } catch {} };
 process.on("exit", stop);
 for (let i = 0; i < 40; i++) { try { if ((await fetch(H + "rota.css")).ok) break; } catch {} await new Promise((r) => setTimeout(r, 250)); }
 
-let pass = 0, fail = 0;
+let pass = 0, fail = 0, step = "";
 const ok = (name, got, want) => { const g = JSON.stringify(got) === JSON.stringify(want); g ? pass++ : fail++; console.log(`${g ? "PASS" : "FAIL"}  ${name}${g ? "" : `  got ${JSON.stringify(got)} want ${JSON.stringify(want)}`}`); };
 const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });
 const page = async (w, h) => { const p = await (await b.newContext({ viewport: { width: w, height: h } })).newPage(); p.on("dialog", (d) => d.accept()); return p; };
@@ -156,7 +156,43 @@ try {
   await S.locator("#people tr.editor button:has-text('Make secretary instead of me')").click(); await S.waitForTimeout(1200);
   ok("after handing over, the page is read-only for the old secretary", [await S.locator("#addCard").isVisible(), (await S.locator("#intro").innerText()).startsWith("Only the secretary")], [false, true]);
   ok("and the roster shows the new secretary", (await S.locator("#people tr.person", { hasText: "Lead Test" }).innerText()).toLowerCase().includes("secretary"), true);
-} catch (e) { fail++; console.log("FAIL  suite threw:", e.message); }
+
+  // ---- the badge board: Lead Test is now the secretary; Beaver Helper is a helper on beavers ----
+  await go(L2, "badges.html"); await L2.waitForTimeout(600);
+  const sectionCount = await L2.evaluate(async () => (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).settings.sections.length);
+  ok("badge board opens signed in, with a chip per section", await L2.locator("#chips .chip").count(), sectionCount);
+  await pickSec(L2, "Scouts");
+  ok("an empty board says so and offers the add form", [await L2.locator("#board .empty").count(), await L2.locator("#newName").count()], [1, 1]);
+  await L2.fill("#newName", "Aoife Test, Cian Test"); await L2.locator("#tools").getByRole("button", { name: "Add", exact: true }).click(); await L2.waitForTimeout(900);
+  ok("two Scouts added, numbered 1 and 2", await L2.locator("table.board tr.youth td.nm small").allInnerTexts(), ["Scout 1 on the public board", "Scout 2 on the public board"]);
+  await L2.locator("table.board tr.youth").first().locator("td.st button").nth(0).click(); await L2.waitForTimeout(200);
+  ok("tapping a cell opens the stage picker for that Scout and skill", (await L2.locator(".picker").innerText()).includes("Camping") && (await L2.locator(".picker").innerText()).includes("Aoife Test"), true);
+  await L2.locator(".picker").getByRole("button", { name: "4", exact: true }).click(); await L2.waitForTimeout(900);
+  ok("the stage shows in the cell and the picker closes", [await L2.locator("table.board tr.youth").first().locator("td.st button").nth(0).innerText(), await L2.locator(".picker").count()], ["4", 0]);
+  ok("print and CSV are offered", [await L2.getByRole("button", { name: "Print" }).count(), await L2.getByRole("button", { name: "Download CSV" }).count()], [1, 1]);
+  await L2.screenshot({ path: ".e2e/badges-1280.png", fullPage: true });
+  const pub = await L2.evaluate(async () => (await (await fetch("/.netlify/functions/rota?a=board&section=scouts")).json()));
+  ok("the public board has numbers and stages but no names", [pub.rows, JSON.stringify(pub).includes("Aoife")], [[{ n: 1, stages: { camping: 4 } }, { n: 2, stages: {} }], false]);
+  // A helper to look through: the earlier checks removed Beaver Helper, so the secretary adds one now, and puts a Beaver on that board to see.
+  step = "add a Beaver to the board";
+  await pickSec(L2, "Beavers"); await L2.fill("#newName", "Bea Test"); await L2.locator("#tools").getByRole("button", { name: "Add", exact: true }).click(); await L2.waitForTimeout(900);
+  step = "secretary adds Board Helper on the roster";
+  await go(L2, "roster.html"); await L2.waitForTimeout(600);
+  const helperCode = await addOnRoster(L2, "Board Helper", ["beavers"], false);
+  step = "helper signs in to the badge board";
+  const Hh = await page(390, 844); await go(Hh, "badges.html"); await Hh.fill("#code", helperCode); await signInBtn(Hh).click(); await Hh.waitForTimeout(900);
+  step = "helper reads the Beavers board";
+  ok("a helper sees their own section's board with names", [await Hh.locator("#chips .chip").count(), (await Hh.locator("table.board").innerText()).includes("Bea Test")], [1, true]);
+  ok("but read-only: no add form, no editable cells", [await Hh.locator("#newName").count(), await Hh.locator("table.board td.st button").count(), await Hh.locator("table.board td.st .ro").count() > 0], [0, 0, true]);
+  ok("and nothing of another section's board", (await Hh.locator("body").innerText()).includes("Aoife Test"), false);
+  await Hh.screenshot({ path: ".e2e/badges-390.png", fullPage: true });
+  step = "secretary removes a Scout from the board";
+  await go(L2, "badges.html"); await L2.waitForTimeout(600); await pickSec(L2, "Scouts");
+  await L2.locator("table.board tr.youth").first().locator("td.nm button:has-text('Edit')").click(); await L2.waitForTimeout(200);
+  await L2.locator("tr.editor button:has-text('Remove from board')").click(); await L2.waitForTimeout(900);
+  ok("removing keeps the other Scout's number", await L2.locator("table.board tr.youth td.nm small").allInnerTexts(), ["Scout 2 on the public board"]);
+} catch (e) { fail++; console.log(`FAIL  suite threw${step ? " at: " + step : ""}:`, e.message.split("\n")[0]);
+  for (const p of b.contexts().flatMap((c) => c.pages())) { try { await p.screenshot({ path: `.e2e/threw-${b.contexts().flatMap((c) => c.pages()).indexOf(p)}.png` }); } catch {} } }
 await b.close(); stop();
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

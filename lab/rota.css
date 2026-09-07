@@ -90,3 +90,33 @@ table.roster tr.editor td{background:var(--stone-50);border-bottom:1px solid var
 }
 table.roster tr.fresh td{background:#FFF8EA;transition:background 1.5s}
 [hidden]{display:none!important}
+
+/* ---- badge board (lab/badges.html) ---- */
+.board-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:.4rem 0}
+table.board{border-collapse:collapse;width:100%;font-size:.9rem}
+table.board th,table.board td{border-bottom:1px solid var(--stone-100);padding:.3rem .25rem;text-align:center;white-space:nowrap}
+table.board th{font-weight:600;font-size:.74rem;letter-spacing:.04em;text-transform:uppercase;color:var(--stone-600)}
+table.board th.nm,table.board td.nm{text-align:left;position:sticky;left:0;background:#fff;min-width:11rem;box-shadow:2px 0 0 var(--stone-100)}
+table.board td.nm small{display:block;color:var(--stone-600);font-weight:400;font-size:.78rem}
+table.board td.nm .btn{margin-left:.4rem;padding:.15em .6em;font-size:.78rem}
+table.board td.st button{width:2.2rem;height:2.2rem;border:1px solid var(--stone-200);border-radius:8px;background:#fff;font:inherit;font-weight:600;color:var(--stone-400);cursor:pointer}
+table.board td.st button.has{background:var(--sea-100);border-color:transparent;color:var(--sea-700)}
+table.board td.st button.on{outline:2px solid var(--orange)}
+table.board td.st .ro{display:inline-block;min-width:2.2rem;padding:.4rem 0;font-weight:600;color:var(--stone-400)}
+table.board td.st .ro.has{color:var(--sea-700)}
+table.board tr.editor td{background:var(--stone-50);text-align:left;white-space:normal;padding:.6rem .5rem}
+.picker{background:var(--orange-soft);border-radius:12px;padding:.7rem .9rem;margin:.6rem 0}
+.picker .row{margin-top:.4rem}
+.picker button.cur{background:var(--sea-700);color:#fff;border-color:var(--sea-700)}
+.print-head{display:none}
+@media print{
+  @page{size:A4 landscape;margin:12mm}
+  body{background:#fff;font-size:10pt}
+  .appbar,footer,.chips,.tools,.picker,#gate,.btn,.banner,.intro,tr.editor,.public-note,#app>.row,#app>h1{display:none!important}
+  .card{box-shadow:none;border:0;padding:0}
+  .print-head{display:block;border-bottom:2px solid var(--ink);margin-bottom:.5rem;padding-bottom:.3rem}
+  .print-head h1{font-size:16pt;margin:0}
+  table.board td.nm{position:static;box-shadow:none}
+  table.board td.st button{border-color:#bbb;color:#333}
+  table.board td.st button.has{background:#e6eef3;color:#000}
+}

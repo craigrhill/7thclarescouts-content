@@ -58,6 +58,51 @@ ok("secretary adds a section lead who is not a secretary", [r.status, r.j.person
 const cubsLeadCode = r.j.code, cubsLeadId = r.j.person.id;
 r = await call("POST", "?a=person", { token: lead, body: { name: "Beaver Helper", sections: ["beavers"] } }); const beaverId = r.j.person.id;
 r = await call("POST", "?a=person", { token: lead, body: { name: "member one", sections: [] } }); ok("duplicate name is 409", r.status, 409);
+
+{ // ---- badge boards: names stay private, numbers are stable, leads edit their own sections ----
+  r = await call("GET", "?a=board&section=bad key");            ok("public board refuses a bad section key", r.status, 400);
+  r = await call("GET", "?a=board&section=cubs");               ok("public board needs no sign-in and starts empty", [r.status, r.j.section, r.j.rows], [200, "cubs", []]);
+  const bMember = (await call("POST", "?a=login", { body: { code: memberCode } })).j.token;
+  const bCubs = (await call("POST", "?a=login", { body: { code: cubsLeadCode } })).j.token;
+  r = await call("GET", "?a=badges&sections=scouts,cubs,beavers", { token: bMember });
+  ok("a helper sees only the boards of their own sections, read-only", [r.status, Object.keys(r.j.boards), r.j.canEdit.scouts], [200, ["scouts"], false]);
+  r = await call("POST", "?a=badge-add", { token: bMember, body: { section: "scouts", name: "Anyone" } });
+  ok("a helper cannot add to their own section's board", [r.status, r.j.error], [403, "Only a section lead can change the board."]);
+  r = await call("POST", "?a=badge-add", { token: bMember, body: { section: "cubs", name: "Anyone" } });
+  ok("nor touch a section not on their roster entry", r.status, 403);
+  r = await call("POST", "?a=badge-add", { token: bCubs, body: { section: "scouts", name: "Anyone" } });
+  ok("a lead cannot edit a section that is not theirs either", r.status, 403);
+  r = await call("POST", "?a=badge-add", { token: bCubs, body: { section: "cubs", name: " Aoife ,Bríd,, " } });
+  ok("the cubs lead adds two at once, numbered from 1, names tidied", [r.status, r.j.board.youth.map((y) => [y.n, y.name])], [200, [[1, "Aoife"], [2, "Bríd"]]]);
+  const aoife = r.j.board.youth[0].id, brid = r.j.board.youth[1].id;
+  r = await call("POST", "?a=badge-add", { token: bCubs, body: { section: "cubs", name: " , " } });   ok("an empty name is refused", r.status, 400);
+  r = await call("POST", "?a=badge-add", { token: lead, body: { section: "scouts", name: "Scout Kid" } });
+  ok("the secretary can edit any section's board", [r.status, r.j.board.youth.length], [200, 1]);
+  r = await call("POST", "?a=badge-stage", { token: bCubs, body: { section: "cubs", id: aoife, skill: "camping", stage: 3 } });
+  ok("a stage is set", r.j.board.stages[aoife], { camping: 3 });
+  r = await call("POST", "?a=badge-stage", { token: bCubs, body: { section: "cubs", id: aoife, skill: "juggling", stage: 3 } });  ok("an unknown skill is refused", r.status, 400);
+  r = await call("POST", "?a=badge-stage", { token: bCubs, body: { section: "cubs", id: aoife, skill: "camping", stage: 10 } }); ok("stage 10 is refused", r.status, 400);
+  r = await call("POST", "?a=badge-stage", { token: bCubs, body: { section: "cubs", id: "nope", skill: "camping", stage: 1 } }); ok("an unknown scout is refused", r.status, 400);
+  r = await call("POST", "?a=badge-stage", { token: bCubs, body: { section: "cubs", id: aoife, skill: "sailing", stage: "7" } });
+  ok("a second skill joins the row; a numeric string is fine", r.j.board.stages[aoife], { camping: 3, sailing: 7 });
+  r = await call("POST", "?a=badge-stage", { token: bCubs, body: { section: "cubs", id: aoife, skill: "camping", stage: 0 } });
+  ok("stage 0 clears that skill", r.j.board.stages[aoife], { sailing: 7 });
+  r = await call("POST", "?a=badge-stage", { token: bCubs, body: { section: "cubs", id: aoife, skill: "sailing", stage: 0 } });
+  ok("clearing the last skill drops the row", aoife in r.j.board.stages, false);
+  r = await call("POST", "?a=badge-stage", { token: bCubs, body: { section: "cubs", id: brid, skill: "backwoods", stage: 2 } });
+  r = await call("POST", "?a=badge-rename", { token: bCubs, body: { section: "cubs", id: aoife, name: "Aoife Ní B" } });
+  ok("a rename keeps the number", r.j.board.youth.find((y) => y.id === aoife).n, 1);
+  r = await call("POST", "?a=badge-remove", { token: bCubs, body: { section: "cubs", id: aoife } });
+  ok("a removal takes the stages with it", [r.j.board.youth.map((y) => y.n), aoife in r.j.board.stages], [[2], false]);
+  r = await call("POST", "?a=badge-add", { token: bCubs, body: { section: "cubs", name: "Cian" } });
+  ok("a later addition gets a fresh number; 1 is never reused", r.j.board.youth.map((y) => [y.n, y.name]), [[2, "Bríd"], [3, "Cian"]]);
+  r = await call("GET", "?a=board&section=cubs");
+  ok("the public board carries numbers and stages only", r.j.rows, [{ n: 2, stages: { backwoods: 2 } }, { n: 3, stages: {} }]);
+  ok("and no name or id anywhere in it", [/Br/.test(JSON.stringify(r.j)), /"id"/.test(JSON.stringify(r.j))], [false, false]);
+  r = await call("GET", "?a=board&section=beavers");                ok("another section's public board is untouched", r.j.rows, []);
+  r = await call("GET", "?a=badges&sections=cubs", { token: bCubs });
+  ok("the lead's own view keeps the names and may edit", [r.j.boards.cubs.youth.map((y) => y.name), r.j.canEdit.cubs], [["Bríd", "Cian"], true]);
+}
 r = await call("POST", "?a=login", { body: { code: memberCode } }); const member = r.j.token; ok("member can log in", r.status, 200);
 
 const slot = "m:2030-01-03";

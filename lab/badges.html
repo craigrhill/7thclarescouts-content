@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Badge board: 7th Clare Scouts leaders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="rota.css">
+</head>
+<body>
+<header class="appbar"><div class="wrap">
+  <div class="brand">7th Clare Scouts<small>Badge board</small></div>
+  <span class="pill">Leaders only</span>
+</div></header>
+<main class="wrap">
+  <div id="err" class="banner err" hidden></div>
+
+  <section id="gate" hidden>
+    <h1>Sign in</h1>
+    <p class="muted">Enter the code the group secretary gave you. It signs this phone in for twelve months.</p>
+    <div class="card">
+      <div class="row"><input type="text" id="code" placeholder="XXXX-XXXX" autocapitalize="characters" autocomplete="one-time-code" spellcheck="false"><button class="btn primary" onclick="signIn($('code').value, 'gateMsg', load)">Sign in</button></div>
+      <p class="msg" id="gateMsg"></p>
+    </div>
+    <p class="small muted">No code? Ask the group secretary, who keeps the roster.</p>
+  </section>
+
+  <section id="app" hidden>
+    <div class="row" style="justify-content:space-between;margin:.9rem 0 .2rem">
+      <span class="small muted">Signed in as <b id="meName"></b><span id="meRole"></span></span>
+      <span><a class="btn quiet" href="rota.html">Rota</a><a id="rosterLink" class="btn quiet" href="roster.html" hidden>Roster</a><button class="btn quiet" onclick="signOut()">Sign out</button></span>
+    </div>
+
+    <h1>Adventure Skills badge board</h1>
+    <p class="muted intro" id="intro"></p>
+    <div class="chips" id="chips"></div>
+
+    <div id="none" class="card" hidden>
+      <p class="muted" style="margin:0">No sections on your roster entry yet, so there is no board to show. Ask the secretary to add your section on the roster.</p>
+    </div>
+
+    <div id="boardCard" class="card" hidden>
+      <div class="print-head"><h1 id="printTitle"></h1><span class="small muted" id="printSub"></span></div>
+      <div class="tools" id="tools"></div>
+      <div id="picker"></div>
+      <div class="board-wrap" id="board"></div>
+      <p class="small muted public-note" id="publicNote"></p>
+    </div>
+  </section>
+</main>
+<footer class="wrap">Names on this page never leave the leaders' area. The public site shows the same board with numbers instead.</footer>
+
+<script src="rota-lib.js"></script>
+<script>
+const SK = "badges-section";
+let C = null, D = null, pick = null, editing = null;
+function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
+function keys(){ return C.settings.sections.map(x => x.key); }
+// Boards come back only for the sections this person may see; the chips follow that.
+function visibleKeys(){ return keys().filter(k => D.boards[k]); }
+function sec(){ let k = null; try { k = localStorage.getItem(SK); } catch {} const v = visibleKeys(); return v.includes(k) ? k : v[0]; }
+function sectionName(k){ return (C.settings.sections.find(x => x.key === k) || {}).name || k; }
+const skillName = key => (SKILLS.find(s => s[0] === key) || [])[1] || key;
+const stageOf = (board, id, skill) => (board.stages[id] || {})[skill] || 0;
+
+function render(){
+  const me = D.me;
+  $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
+  $("rosterLink").hidden = !me.secretary;
+  const v = visibleKeys();
+  if (!v.length) { $("chips").innerHTML = ""; $("intro").textContent = ""; $("boardCard").hidden = true; $("none").hidden = false; return; }
+  $("none").hidden = true; $("boardCard").hidden = false;
+  const k = sec(), board = D.boards[k], can = !!D.canEdit[k];
+  $("chips").innerHTML = v.map(x => `<button class="chip ${x === k ? "on" : ""}" onclick="pickSection('${esc(x)}')">${esc(sectionName(x))}</button>`).join("");
+  $("intro").textContent = can
+    ? "Tap a cell to set the stage a Scout holds in that skill. Stages run 1 to 9; clear one if it was entered by mistake."
+    : "You can see the board for your section here. Only a section lead can change it.";
+  $("printTitle").textContent = sectionName(k) + ": Adventure Skills badge board";
+  $("printSub").textContent = "7th Clare Scouts, printed " + new Date().toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" }) + ". For leaders; not for display.";
+  $("tools").innerHTML = (can ? `<div class="row add"><input type="text" id="newName" placeholder="Name, or several separated by commas" autocomplete="off"><button class="btn primary" onclick="add()">Add</button></div>` : "")
+    + `<div class="row" style="margin-top:.4rem"><button class="btn" onclick="window.print()">Print</button><button class="btn" onclick="csv()">Download CSV</button><span class="small muted">${board.youth.length} on the board</span></div>`;
+  // The picker, when a cell has been tapped.
+  const p = pick && can && board.youth.find(y => y.id === pick.id) ? pick : (pick = null);
+  $("picker").innerHTML = p ? (() => { const y = board.youth.find(x => x.id === p.id), cur = stageOf(board, p.id, p.skill);
+    return `<div class="picker"><b>${esc(skillName(p.skill))}</b> for <b>${esc(y.name)}</b>: choose the stage
+      <div class="row">${[1,2,3,4,5,6,7,8,9].map(n => `<button class="btn ${n === cur ? "cur" : ""}" onclick="setStage('${esc(p.id)}','${esc(p.skill)}',${n})">${n}</button>`).join("")}
+      <button class="btn quiet" onclick="setStage('${esc(p.id)}','${esc(p.skill)}',0)">Clear</button><button class="btn quiet" onclick="pick=null;render()">Close</button></div></div>`; })() : "";
+  $("board").innerHTML = board.youth.length ? `<table class="board"><thead><tr><th class="nm">Scout</th>${SKILLS.map(s => `<th title="${esc(s[1])}">${esc(s[2])}</th>`).join("")}</tr></thead><tbody>${board.youth.map(y => {
+      const cells = SKILLS.map(([key]) => { const st = stageOf(board, y.id, key), on = p && p.id === y.id && p.skill === key;
+        return `<td class="st">${can ? `<button class="${st ? "has" : ""} ${on ? "on" : ""}" onclick="choose('${esc(y.id)}','${key}')" aria-label="${esc(y.name)}, ${esc(skillName(key))}, stage ${st || "none"}">${st || "·"}</button>` : `<span class="ro ${st ? "has" : ""}">${st || "·"}</span>`}</td>`; }).join("");
+      const row = `<tr class="youth"><td class="nm"><b>${esc(y.name)}</b>${can ? `<button class="btn quiet" onclick="edit('${esc(y.id)}')">Edit</button>` : ""}<small>${esc(rowLabel(k, y.n))} on the public board</small></td>${cells}</tr>`;
+      const ed = editing === y.id && can ? `<tr class="editor"><td colspan="${SKILLS.length + 1}"><div class="row"><input type="text" id="edName" value="${esc(y.name)}"><button class="btn primary" onclick="rename('${esc(y.id)}')">Save name</button><button class="btn danger" onclick="remove('${esc(y.id)}')">Remove from board</button><button class="btn quiet" onclick="editing=null;render()">Cancel</button></div><p class="small muted" style="margin:.4rem 0 0">Removing keeps the number ${esc(String(y.n))} retired, so nobody else becomes ${esc(rowLabel(k, y.n))}.</p></td></tr>` : "";
+      return row + ed; }).join("")}</tbody></table>`
+    : `<div class="empty">Nobody on the ${esc(sectionName(k))} board yet.${can ? " Add the section's Scouts above." : ""}</div>`;
+  $("publicNote").textContent = "Parents and Scouts see this board on the " + sectionName(k) + " page of the app, with each row shown as " + rowLabel(k, "1") + ", " + rowLabel(k, "2") + " and so on instead of a name. Tell each Scout their number; it never changes.";
+}
+async function load(){ showErr(""); D = await api("GET", "?a=badges&sections=" + keys().join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
+async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); } }
+function pickSection(k){ try { localStorage.setItem(SK, k); } catch {} pick = null; editing = null; render(); }
+function put(k, board){ D.boards[k] = board; render(); }
+function choose(id, skill){ pick = (pick && pick.id === id && pick.skill === skill) ? null : { id, skill }; render(); }
+function edit(id){ editing = editing === id ? null : id; pick = null; render(); if (editing) { const el = $("edName"); if (el) { el.focus(); el.select(); } } }
+const setStage = (id, skill, stage) => guarded(async () => { const k = sec(); const r = await api("POST", "?a=badge-stage", { section: k, id, skill, stage }); pick = null; put(k, r.board); });
+async function add(){ const name = ($("newName").value || "").trim(); if (!name) return;
+  await guarded(async () => { const k = sec(); put(k, (await api("POST", "?a=badge-add", { section: k, name })).board); }); }
+const rename = (id) => guarded(async () => { const k = sec(); const r = await api("POST", "?a=badge-rename", { section: k, id, name: $("edName").value }); editing = null; put(k, r.board); });
+const remove = (id) => guarded(async () => { const k = sec(), y = D.boards[k].youth.find(x => x.id === id);
+  if (!confirm(`Remove ${y ? y.name : "this Scout"} from the ${sectionName(k)} board? Their stages go with them.`)) return;
+  const r = await api("POST", "?a=badge-remove", { section: k, id }); editing = null; put(k, r.board); });
+function csv(){
+  const k = sec(), b = D.boards[k];
+  const rows = [["Number", "Name", ...SKILLS.map(s => s[1])], ...b.youth.map(y => [y.n, y.name, ...SKILLS.map(([key]) => stageOf(b, y.id, key) || "")])];
+  const text = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/csv" })); a.download = `badge-board-${k}.csv`; a.click();
+}
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target && e.target.id === "newName") add(); if (e.key === "Enter" && e.target && e.target.id === "edName" && editing) rename(editing); });
+function signOut(msg){ setToken(null); D = null; $("app").hidden = true; $("gate").hidden = false; $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
+onUnauthorized = signOut;
+async function boot(){
+  C = await loadContent();
+  if (token) { try { await load(); return; } catch (e) { if (token) showErr(e.message); } }
+  $("gate").hidden = false;
+}
+boot();
+</script>
+</body>
+</html>

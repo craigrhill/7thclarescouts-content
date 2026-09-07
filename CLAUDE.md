@@ -97,6 +97,7 @@ warning fires correctly for leaders.
                         read by content.json. Delete a file to remove it.
     lab/rota.html       the rota: coverage per section (see below)
     lab/roster.html     the secretary's roster: people, sections, codes
+    lab/badges.html     the Adventure Skills badge board, names and all (see below)
     lab/rota-lib.js     sign-in, API calls and helpers shared by both
     lab/rota.css        styles shared by both
     photos/            images referenced from content, such as the badge
@@ -123,8 +124,11 @@ Shared, private data behind a personal code. Nothing in it is published.
 Store keys: `secret` (HMAC key, generated on first use, never leaves the
 server), `roster` (people with `id`, `name`, `sections`, `lead`, `secretary`,
 `code`, `codeHash`), `section/<key>` (`required` and `slots`, each slot `who` as
-person ids, `off`, optional `need`), `events` (leaders-only calendar events). Every write is guarded by the document's
-etag and retried on conflict, so concurrent edits do not overwrite each other.
+person ids, `off`, optional `need`), `events` (leaders-only calendar events),
+`badges/<key>` (the section's badge board: `next`, `youth` with `id`, `n`,
+`name`, and `stages` keyed by youth id then skill)). Every write is guarded by
+the document's etag and retried on conflict, so concurrent edits do not
+overwrite each other.
 
 Roles are flags on a person, and the function enforces them, not the pages:
 
@@ -152,6 +156,34 @@ with an existing name makes that person secretary and issues a new code.
 A code (`XXXX-XXXX`) signs a phone in for 365 days; removing a person revokes
 their token at once. The API is documented at the top of
 `netlify/src/rota.mjs`.
+
+### The badge board
+
+`lab/badges.html` is the Adventure Skills badge board: each section's young
+people down the side, the nine skills across, the stage held in each cell.
+Names live only in the private `rota` store. A lead edits the boards of the
+sections on their own roster entry (tighter than the rota, where any lead can
+run any section's coverage, because this holds children's names); the
+secretary edits all; anyone signed in can look at their own sections' boards.
+Leads can print it (A4 landscape, names included, marked "for leaders") and
+download a CSV.
+
+The public app shows the same board on each section page, read from the
+rota function's one unauthenticated endpoint, `?a=board&section=<key>`,
+which strips names and ids and returns `rows: [{n, stages}]`. Each row is
+labelled by the section's noun and a number, "Cub 7", so a Scout can be told
+their number and find their row without being named. Craig chose this over
+first names on purpose: in a village this size a first name beside the
+section's age band, venue and meeting time identifies a child. Numbers are
+assigned at creation and never changed or reused, so a removal retires a
+number rather than shifting everyone else's. Skills are the fixed nine, in
+the order the public Adventure Skills page lists them; keys match between
+`rota.mjs`, `rota-lib.js` and `index.html`.
+
+The service worker never caches the rota function except that public board
+read, which is network first with the last copy as fallback. Before this the
+same-origin catch-all would have cached leaders' GETs cache-first, so keep
+that exclusion if the worker is reworked.
 
 Local preview: `npm run serve` runs the real rota handler against an
 in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.

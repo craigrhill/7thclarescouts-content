@@ -961,5 +961,6 @@ var content_default = async (req) => {
   return json(405, { error: "Method not allowed." });
 };
 export {
-  content_default as default
+  content_default as default,
+  toICS
 };
