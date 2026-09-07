@@ -58,6 +58,15 @@ input[type=text]{flex:1;min-width:10rem;font:inherit;padding:.5em .7em;border:1p
 .need input{width:3.4rem;padding:.25em .4em}
 .custom{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--orange-dark);background:var(--orange-soft);padding:.15em .5em;border-radius:999px}
 .slot-foot{display:flex;flex-wrap:wrap;align-items:center}
+.person{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .8rem;padding:.6rem 0;border-top:1px solid var(--stone-100)}
+.person:first-child{border-top:0}
+.person .nm{font-weight:600;min-width:9rem}
+.secs{display:flex;flex-wrap:wrap;gap:.35rem}
+.secs label{display:inline-flex;align-items:center;gap:.3rem;font-size:.85rem;border:1px solid var(--stone-200);border-radius:999px;padding:.2em .65em;background:#fff;cursor:pointer}
+.secs input{accent-color:var(--sea-700);margin:0}
+.x{margin-left:auto;background:none;border:0;color:var(--stone-400);cursor:pointer;font-size:1.05rem;padding:.2em .4em}
+.who label.ghost{opacity:.6}
+.add{display:grid;gap:.55rem;margin-top:.8rem}
 textarea{width:100%;min-height:7rem;font:.82rem/1.4 ui-monospace,Menlo,monospace;padding:.6rem;border:1px solid var(--stone-200);border-radius:10px}
 .muted{color:var(--stone-600)}.small{font-size:.88rem}
 .empty{color:var(--stone-400);font-style:italic;padding:.6rem 0}
@@ -70,7 +79,7 @@ footer{padding:1.5rem 0 3rem;font-size:.85rem;color:var(--stone-600)}
   <span class="pill">Experiment</span>
 </div></header>
 <main class="wrap">
-  <div class="banner">This is a sandbox, not part of the app. Nothing you tick here is saved anywhere except this phone, and nobody else can see it. To show someone your rota, use Copy at the bottom and send them the text.</div>
+  <div class="banner">This is a sandbox, not part of the app. The Scouters you add and the boxes you tick are saved on this phone only and are never published. To show someone your rota, use Copy at the bottom and send them the text.</div>
 
   <h1>Who is covering what</h1>
   <p class="muted">Pick a section. Meetings for the next eight weeks are listed with that section's events. Tick the adults who will be there. Anything below the number needed shows as a gap, and a camp or an event can need more than a normal night.</p>
@@ -92,9 +101,14 @@ footer{padding:1.5rem 0 3rem;font-size:.85rem;color:var(--stone-600)}
   </div>
 
   <div class="card">
-    <h2>Volunteers</h2>
-    <p class="small muted">Section leaders and group leaders from the Team page, plus anyone you add here.</p>
-    <div class="row"><input type="text" id="newName" placeholder="Add a name"><button class="btn" onclick="addName()">Add</button></div>
+    <h2>Scouters</h2>
+    <p class="small muted">Private to this phone. Nobody on this list is published anywhere. Tick the sections each person can cover.</p>
+    <div id="people"></div>
+    <div class="add">
+      <input type="text" id="newName" placeholder="Name" autocomplete="off">
+      <div class="secs" id="newSecs"></div>
+      <div><button class="btn" onclick="addScouter()">Add Scouter</button></div>
+    </div>
   </div>
 
   <div class="card">
@@ -108,24 +122,37 @@ footer{padding:1.5rem 0 3rem;font-size:.85rem;color:var(--stone-600)}
 <footer class="wrap">An experiment by the leaders of 7th Clare Scouts. Nothing here is published or visible to parents.</footer>
 
 <script>
-const KEY = "lab-rota-v1";
+const KEY = "lab-rota-v2", OLD_KEY = "lab-rota-v1";
 const DAYS = { sunday:0, monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6 };
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let C = null, S = load();
 
-function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } }
+// State shape, the same as a private roster would have on a server later:
+//   { section, people: [{ name, sections: [key] }], sections: { key: { required, slots: { id: { who, off, need } } } } }
+function load(){
+  try { const v2 = JSON.parse(localStorage.getItem(KEY)); if (v2 && typeof v2 === "object") return v2; } catch {}
+  // One-time move from the first version: names added under a section become Scouters for that section. Ticks are kept.
+  try { const v1 = JSON.parse(localStorage.getItem(OLD_KEY)); if (v1 && typeof v1 === "object") {
+    const out = { section: v1.section, people: [], sections: {} };
+    for (const [k, d] of Object.entries(v1.sections || {})) { out.sections[k] = { required: d.required || 2, slots: d.slots || {} }; (d.extra || []).forEach(n => addPerson(out, n, [k])); }
+    try { localStorage.setItem(KEY, JSON.stringify(out)); } catch {}   // persist once, so v1 is read exactly once
+    return out; } } catch {}
+  return {};
+}
+function addPerson(state, name, secs){
+  const list = state.people = state.people || [];
+  const p = list.find(x => x.name.toLowerCase() === name.toLowerCase());
+  if (p) p.sections = [...new Set([...p.sections, ...secs])]; else list.push({ name, sections: [...new Set(secs)] });
+}
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} }
 function sec(){ return S.section || (C.settings.sections[0] || {}).key; }
-function st(){ S.sections = S.sections || {}; const k = sec(); S.sections[k] = S.sections[k] || { required: 2, extra: [], slots: {} }; return S.sections[k]; }
+function st(){ S.sections = S.sections || {}; const k = sec(); S.sections[k] = S.sections[k] || { required: 2, slots: {} }; return S.sections[k]; }
+function people(){ return S.people || []; }
+function available(){ const k = sec(); return people().filter(p => (p.sections || []).includes(k)).map(p => p.name); }
 function iso(d){ return d.toISOString().slice(0, 10); }
 function fmt(s){ return new Date(s + "T12:00:00").toLocaleDateString("en-IE", { weekday: "short", day: "numeric", month: "short" }); }
 
-function people(){
-  const k = sec();
-  const team = (C.settings.team || []).filter(p => !p.section || p.section === k).map(p => p.name);
-  return [...new Set([...team, ...st().extra])];
-}
 function upcoming(){
   const k = sec(), section = C.settings.sections.find(x => x.key === k) || {};
   const today = new Date(); today.setHours(12, 0, 0, 0);
@@ -145,35 +172,54 @@ function entry(id){ const s = st(); s.slots[id] = s.slots[id] || { who: [], off:
 function need(id){ const n = entry(id).need; return Number.isFinite(n) && n > 0 ? n : st().required; }
 function setNeed(id, v){ const n = Math.max(1, Math.min(9, Number(v) || 1)); const e = entry(id); if (n === st().required) delete e.need; else e.need = n; save(); render(); }
 
+function secChips(prefix, checked, onchange){
+  return C.settings.sections.map(x => `<label><input type="checkbox" ${checked.includes(x.key) ? "checked" : ""} data-key="${esc(x.key)}" ${onchange ? `onchange="${onchange}('${prefix}','${esc(x.key)}',this.checked)"` : ""}>${esc(x.name)}</label>`).join("");
+}
 function render(){
-  const s = st();
-  $("chips").innerHTML = C.settings.sections.map(x => `<button class="chip ${x.key === sec() ? "on" : ""}" onclick="pick('${esc(x.key)}')">${esc(x.name)}</button>`).join("");
+  const s = st(), k = sec();
+  $("chips").innerHTML = C.settings.sections.map(x => `<button class="chip ${x.key === k ? "on" : ""}" onclick="pick('${esc(x.key)}')">${esc(x.name)}</button>`).join("");
   $("req").value = s.required;
-  const slots = upcoming(), names = people();
+  const slots = upcoming(), names = available();
   const live = slots.filter(x => !entry(x.id).off);
   const gaps = live.filter(x => entry(x.id).who.length < need(x.id));
   $("gaps").innerHTML = (live.length ? `<div class="gap ok"><span>${live.length - gaps.length} of ${live.length} covered</span><span class="count">default ${s.required}</span></div>` : "")
     + (gaps.map(x => `<div class="gap"><span>${esc(fmt(x.date))}, ${esc(x.title)}</span><span class="count">${entry(x.id).who.length} of ${need(x.id)}</span></div>`).join("") || (live.length ? "" : `<div class="empty">No meeting day set for this section.</div>`));
   $("slots").innerHTML = slots.map(x => {
-    const e = entry(x.id), n = e.who.length, k = need(x.id), custom = Number.isFinite(e.need) && e.need > 0;
-    const status = e.off ? `<span class="status off">No meeting</span>` : n >= k ? `<span class="status ok">Covered</span>` : `<span class="status gap">${n} of ${k}</span>`;
+    const e = entry(x.id), n = e.who.length, kk = need(x.id), custom = Number.isFinite(e.need) && e.need > 0;
+    const status = e.off ? `<span class="status off">No meeting</span>` : n >= kk ? `<span class="status ok">Covered</span>` : `<span class="status gap">${n} of ${kk}</span>`;
+    // Anyone ticked who is no longer on the list for this section still shows, so they can be unticked.
+    const ghosts = e.who.filter(w => !names.includes(w));
+    const boxes = [...names.map(p => ({ p, ghost: false })), ...ghosts.map(p => ({ p, ghost: true }))];
     return `<div class="slot">
       <div class="slot-head"><div><span class="when">${esc(fmt(x.date))}</span> <span class="sub">${esc(x.title)}${x.sub ? ", " + esc(x.sub) : ""}</span></div>${status}</div>
-      ${e.off ? "" : `<div class="who">${names.map(p => `<label><input type="checkbox" ${e.who.includes(p) ? "checked" : ""} onchange="toggle('${esc(x.id)}','${esc(p)}',this.checked)">${esc(p)}</label>`).join("") || `<span class="empty">Add a volunteer below.</span>`}</div>`}
+      ${e.off ? "" : `<div class="who">${boxes.map(({ p, ghost }) => `<label class="${ghost ? "ghost" : ""}" ${ghost ? 'title="Not on your Scouter list for this section"' : ""}><input type="checkbox" ${e.who.includes(p) ? "checked" : ""} onchange="toggle('${esc(x.id)}','${esc(p)}',this.checked)">${esc(p)}</label>`).join("") || `<span class="empty">No Scouters listed for ${esc(sectionName(k))} yet. Add them below.</span>`}</div>`}
       <div class="slot-foot">
-        ${e.off ? "" : `<label class="need">Adults needed <input type="number" min="1" max="9" value="${k}" onchange="setNeed('${esc(x.id)}',this.value)">${custom ? `<span class="custom">changed</span>` : ""}</label>`}
+        ${e.off ? "" : `<label class="need">Adults needed <input type="number" min="1" max="9" value="${kk}" onchange="setNeed('${esc(x.id)}',this.value)">${custom ? `<span class="custom">changed</span>` : ""}</label>`}
         ${x.kind === "meeting" ? `<label class="off-toggle" style="margin-top:.55rem"><input type="checkbox" ${e.off ? "checked" : ""} onchange="setOff('${esc(x.id)}',this.checked)"> No meeting this week</label>` : ""}
       </div>
     </div>`;
   }).join("") || `<div class="empty">Nothing coming up.</div>`;
+  const leads = (C.settings.team || []).filter(p => p.section && p.name && !/PLACEHOLDER/i.test(p.name));
+  $("people").innerHTML = people().length
+    ? people().map(p => `<div class="person"><span class="nm">${esc(p.name)}</span><span class="secs">${secChips(esc(p.name), p.sections || [], "setPersonSection")}</span><button class="x" title="Remove" onclick="removePerson('${esc(p.name)}')">&#x2715;</button></div>`).join("")
+    : `<div class="empty">No Scouters yet.${leads.length ? ` <button class="btn" style="margin-left:.5rem" onclick="seedFromLeads()">Start from the section leads</button>` : ""}</div>`;
 }
-function pick(k){ S.section = k; save(); render(); }
+function sectionName(k){ return (C.settings.sections.find(x => x.key === k) || {}).name || k; }
+function renderNewSecs(){ $("newSecs").innerHTML = secChips("new", [sec()], null); }
+function pick(k){ S.section = k; save(); renderNewSecs(); render(); }
 function toggle(id, name, on){ const e = entry(id); e.who = on ? [...new Set([...e.who, name])] : e.who.filter(x => x !== name); save(); render(); }
 function setOff(id, off){ entry(id).off = off; save(); render(); }
-function addName(){ const v = $("newName").value.trim(); if (!v) return; st().extra = [...new Set([...st().extra, v])]; $("newName").value = ""; save(); render(); }
-function resetSection(){ if (!confirm("Clear every tick and added name for this section on this phone?")) return; delete S.sections[sec()]; save(); render(); }
-function exportRota(){ const t = JSON.stringify({ section: sec(), data: st() }); $("io").value = t; $("io").select(); try { navigator.clipboard.writeText(t); $("ioMsg").textContent = "Copied. Paste it into a message."; } catch { $("ioMsg").textContent = "Select the text above and copy it."; } }
-function importRota(){ try { const j = JSON.parse($("io").value); if (!j || !j.section || !j.data) throw 0; S.sections = S.sections || {}; S.sections[j.section] = j.data; S.section = j.section; save(); render(); $("ioMsg").textContent = "Loaded " + j.section + "."; } catch { $("ioMsg").textContent = "That is not a rota. Paste exactly what Copy produced."; } }
+function addScouter(){
+  const v = $("newName").value.trim(); if (!v) return;
+  const secs = [...$("newSecs").querySelectorAll("input:checked")].map(i => i.dataset.key);
+  addPerson(S, v, secs.length ? secs : [sec()]); $("newName").value = ""; save(); render();
+}
+function setPersonSection(name, key, on){ const p = people().find(x => x.name === name); if (!p) return; p.sections = on ? [...new Set([...(p.sections || []), key])] : (p.sections || []).filter(x => x !== key); save(); render(); }
+function removePerson(name){ if (!confirm("Remove " + name + " from your Scouter list? Their ticks stay until you untick them.")) return; S.people = people().filter(x => x.name !== name); save(); render(); }
+function seedFromLeads(){ (C.settings.team || []).filter(p => p.section && p.name && !/PLACEHOLDER/i.test(p.name)).forEach(p => addPerson(S, p.name, [p.section])); save(); render(); }
+function resetSection(){ if (!confirm("Clear every tick and number for this section on this phone? Your Scouter list is kept.")) return; delete S.sections[sec()]; save(); render(); }
+function exportRota(){ const t = JSON.stringify({ section: sec(), people: people(), data: st() }); $("io").value = t; $("io").select(); try { navigator.clipboard.writeText(t); $("ioMsg").textContent = "Copied. Paste it into a message."; } catch { $("ioMsg").textContent = "Select the text above and copy it."; } }
+function importRota(){ try { const j = JSON.parse($("io").value); if (!j || !j.section || !j.data) throw 0; (j.people || []).forEach(p => addPerson(S, p.name, p.sections || [])); S.sections = S.sections || {}; S.sections[j.section] = j.data; S.section = j.section; save(); renderNewSecs(); render(); $("ioMsg").textContent = "Loaded " + j.section + "."; } catch { $("ioMsg").textContent = "That is not a rota. Paste exactly what Copy produced."; } }
 $("req").addEventListener("change", () => { st().required = Math.max(1, Number($("req").value) || 1); save(); render(); });
 
 async function boot(){
@@ -183,7 +229,7 @@ async function boot(){
   } catch {
     C = { settings: { sections: [{ key: "scouts", name: "Scouts", day: "Thursday", time: "6:00 to 7:30 pm" }], team: [] }, events: [] };
   }
-  render();
+  renderNewSecs(); render();
 }
 boot();
 </script>
