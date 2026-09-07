@@ -183,7 +183,7 @@ ul.plain{margin:0;padding-left:1.15em;color:var(--stone-600)}ul.plain li{margin:
 @media print{
   @page{size:A4;margin:10mm}
   body{background:#fff;font-size:9.5pt;line-height:1.3}
-  .appbar,.tabbar,.kit-toolbar,.bar,.back,.toast,.card.tips,.card.docs,.view:not(#v-kit),.iconbtn,.kit-legend,.offline{display:none!important}
+  body[data-print="kit"] :is(.appbar,.tabbar,.kit-toolbar,.bar,.back,.toast,.card.tips,.card.docs,.view:not(#v-kit),.iconbtn,.kit-legend,.offline){display:none!important}
   main{padding:0}.wrap{width:100%}
   .card{box-shadow:none;border:0;padding:0;margin:0 0 .45rem;break-inside:avoid}
   .card.items{break-inside:auto}
@@ -219,6 +219,53 @@ ul.plain{margin:0;padding-left:1.15em;color:var(--stone-600)}ul.plain li{margin:
 .necker-card{display:grid;grid-template-columns:150px 1fr;gap:1rem;align-items:center;background:linear-gradient(135deg,#fff,var(--stone-50))}
 .necker svg{width:100%;height:auto;display:block}
 @media (max-width:480px){.necker-card{grid-template-columns:1fr}.necker{max-width:220px;margin:0 auto}}
+/* Calendar tab: view toggle, month grid, and the printed sheet */
+.cal-tools{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:0 0 .6rem}
+.seg{display:inline-flex;border:1px solid var(--stone-200);border-radius:999px;overflow:hidden;background:#fff}
+.seg button{font:inherit;font-size:.85rem;font-weight:600;border:0;background:none;color:var(--stone-600);padding:.42em 1.05em;cursor:pointer}
+.seg button.on{background:var(--sea-700);color:#fff}
+.cal-tools .grow{flex:1}
+.cal-acts{display:flex;gap:.5rem}
+.cal-nav{display:flex;align-items:center;gap:.5rem;margin:.1rem 0 .7rem}
+.cal-nav h3{margin:0;font-size:1.05rem;flex:1;text-align:center;font-family:var(--serif)}
+.navbtn{font:inherit;border:1px solid var(--stone-200);background:#fff;border-radius:10px;min-width:34px;height:34px;cursor:pointer;color:var(--sea-700);font-size:1.05rem;line-height:1;padding:0 .5em}
+.grid7{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--stone-200);border:1px solid var(--stone-200);border-radius:14px;overflow:hidden;margin-bottom:1.1rem}
+.grid7 .dow{background:var(--stone-50);text-align:center;font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--stone-600);padding:.4rem 0}
+.grid7 .day{background:#fff;min-height:76px;padding:.25rem .3rem}
+.grid7 .day.out{background:var(--stone-50)}
+.grid7 .day .n{display:inline-block;font-size:.78rem;font-weight:600;color:var(--stone-600)}
+.grid7 .day.out .n{color:var(--stone-400)}
+.grid7 .day.today .n{background:var(--sea-700);color:#fff;border-radius:999px;padding:.05em .45em}
+.dchip{display:block;width:100%;text-align:left;font:inherit;font-size:.63rem;font-weight:600;border:0;border-radius:5px;padding:.1em .3em;margin-top:.15rem;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dmore{font-size:.6rem;color:var(--stone-400);padding-left:.3em}
+@media (max-width:520px){
+  .grid7 .day{min-height:54px}
+  /* No room for names on a phone, so each event becomes a coloured bar that
+     still opens the event when tapped. */
+  .dchip{font-size:0;height:6px;padding:0;border-radius:999px;margin-top:.22rem}
+  .dmore{display:none}
+}
+.subs code{display:block;font:600 .82rem/1.4 ui-monospace,Menlo,Consolas,monospace;background:var(--stone-50);border:1px solid var(--stone-200);border-radius:10px;padding:.6rem .7rem;margin:.4rem 0 .7rem;word-break:break-all}
+.print-head{display:none}
+@media print{
+  @page{size:A4 portrait;margin:14mm}
+  body[data-print="calendar"] :is(.appbar,.tabbar,.cal-tools,.cal-nav,.chips,.sheet-bg,.toast,#installCard,#offline,.view:not(#v-calendar),#calBody .btn){display:none!important}
+  html,body{background:#fff}
+  main{padding:0}
+  .wrap{width:100%}
+  .print-head{display:block!important;border-bottom:2px solid var(--ink);padding-bottom:.35rem;margin-bottom:.7rem}
+  .print-head h2{margin:0;font-size:15pt}
+  .print-head p{margin:.15rem 0 0;font-size:9pt;color:#555}
+  .page-head{display:none}
+  .month{margin:.7rem 0 .3rem;color:#000}
+  .event{box-shadow:none;border:0;border-bottom:1px solid #bbb;border-radius:0;padding:.35rem 0;margin:0;break-inside:avoid}
+  .event .chev{display:none}
+  .grid7{break-inside:avoid;border-color:#999}
+  .grid7 .day{min-height:64px}
+  .dchip{font-size:.6rem!important;height:auto!important;padding:.1em .3em!important;border-radius:4px!important}
+  .dmore{display:inline!important}
+}
+
 .hero-card{background:var(--sea-700);color:#fff;border:0}
 .hero-card h2,.hero-card p{color:#fff}.hero-card p{opacity:.9}
 </style>
@@ -326,6 +373,7 @@ function route(){
   if (tab === "fundraising") { t = "more"; sub = "fundraising"; }
   if (tab === "more" && sub === "calendar") { t = "calendar"; sub = null; }
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + t));
+  document.body.dataset.print = t;   // decides which print stylesheet applies
   document.querySelectorAll("[data-tab]").forEach(a => a.classList.toggle("on", a.dataset.tab === t));
   closeSheet();
   if (t === "home") renderHome();
@@ -357,12 +405,75 @@ function eventListHtml(list){
   list.forEach(e => { const d = D(e.date), m = `${MONTHS_L[d.getMonth()]} ${d.getFullYear()}`; if (m !== lastM) { out += `<div class="month">${m}</div>`; lastM = m; } out += eventCard(e); });
   return out;
 }
+/* ---------- calendar: table and month views ---------- */
+// The table is the default: most people want the next few things coming up,
+// not a month with two events in it. The month grid is a view on top, and the
+// table stays below it so one screen answers both questions.
+let calView = "table", calCursor = null;
+try { if (localStorage.getItem("cal-view") === "calendar") calView = "calendar"; } catch {}
+function setCalView(v){ calView = v; try { localStorage.setItem("cal-view", v); } catch {} renderCalendar(); }
+function calMonth(){ return calCursor || (calCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1)); }
+function shiftMonth(n){ const d = calMonth(); calCursor = new Date(d.getFullYear(), d.getMonth() + n, 1); renderCalendar(); }
+function thisMonth(){ calCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1); renderCalendar(); }
+const isoOf = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+
+function monthGridHtml(list){
+  const cur = calMonth(), y = cur.getFullYear(), m = cur.getMonth(), todayIso = isoOf(new Date());
+  // Every day an event covers, so a camp spans its whole weekend.
+  const byDay = {};
+  list.forEach(e => {
+    const end = D(e.endDate || e.date);
+    for (let x = D(e.date); x <= end; x.setDate(x.getDate() + 1)) (byDay[isoOf(x)] = byDay[isoOf(x)] || []).push(e);
+  });
+  const first = new Date(y, m, 1);
+  const start = new Date(y, m, 1 - ((first.getDay() + 6) % 7));   // weeks start Monday
+  let cells = "";
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i), k = isoOf(d);
+    const on = byDay[k] || [], out = d.getMonth() !== m;
+    const chips = on.slice(0, 3).map(e =>
+      `<button class="dchip tag ${esc(e.section||"group")}" onclick="location.hash='events/${e._i}'" title="${esc(e.title)}">${esc(e.title)}</button>`).join("");
+    cells += `<div class="day ${out?"out":""} ${k===todayIso?"today":""}"><span class="n">${d.getDate()}</span>${chips}${on.length>3?`<div class="dmore">+${on.length-3} more</div>`:""}</div>`;
+  }
+  return `<div class="cal-nav">
+      <button class="navbtn" onclick="shiftMonth(-1)" aria-label="Previous month">&#8249;</button>
+      <h3>${MONTHS_L[m]} ${y}</h3>
+      <button class="navbtn" onclick="shiftMonth(1)" aria-label="Next month">&#8250;</button>
+      <button class="navbtn" onclick="thisMonth()" style="width:auto">Today</button>
+    </div>
+    <div class="grid7">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d=>`<div class="dow">${d}</div>`).join("")}${cells}</div>`;
+}
+
+function subscribeSheet(){
+  const sec = eventFilter === "all" || eventFilter === "county" ? "" : eventFilter;
+  const label = sec ? sectionName(sec) : "all sections";
+  const url = location.origin + "/.netlify/functions/content?ics=1" + (sec ? "&section=" + sec : "");
+  openSheet(`<div class="handle"></div><h2 style="margin-top:.5rem">Add to your calendar</h2>
+    <p class="small muted">Subscribing keeps itself up to date, so events added later turn up on their own. This link is for <b>${esc(label)}</b>; change the filter behind this box for a different one.</p>
+    <div class="subs"><code id="subUrl">${esc(url)}</code></div>
+    <div class="btn-row"><button class="btn primary" onclick="copySub()">Copy link</button><a class="btn" href="${esc(url)}" download="7th-clare-${esc(sec||"all")}.ics">Download once</a><button class="btn" onclick="closeSheet()">Done</button></div>
+    <p class="small muted" style="margin-top:.7rem">On iPhone: Calendar app, then Calendars, Add Calendar, Add Subscription Calendar, and paste. On Android: Google Calendar on a computer, Other calendars, From URL.</p>`);
+}
+async function copySub(){ const t = $("subUrl").textContent; try { await navigator.clipboard.writeText(t); toast("Link copied"); } catch { prompt("Copy this link:", t); } }
+
 function renderCalendar(){
   const secs = [["all","All"],["group","Group"],["beavers","Beavers"],["cubs","Cubs"],["scouts","Scouts"],["ventures","Ventures"]];
-  let list = eventsSorted().filter(matches); if (!showPast) list = list.filter(e => !isPast(e));
-  $("calBody").innerHTML = `<div class="chips">${secs.map(([k,l]) => `<button class="chip ${eventFilter===k?"on":""}" onclick="eventFilter='${k}';renderCalendar()">${l}</button>`).join("")}</div>
-    ${eventListHtml(list)}<p style="text-align:center;margin-top:1rem"><button class="btn" onclick="showPast=!showPast;renderCalendar()">${showPast?"Hide past events":"Show past events"}</button></p>`;
+  const all = eventsSorted().filter(matches);
+  const list = showPast ? all : all.filter(e => !isPast(e));
+  const label = eventFilter === "all" ? "All sections" : eventFilter === "county" ? "County events" : sectionName(eventFilter);
+  $("calBody").innerHTML = `
+    <div class="print-head"><h2>7th Clare Scouts: calendar</h2><p>${esc(label)} · printed ${esc(fmt(isoOf(new Date())))}</p></div>
+    <div class="cal-tools">
+      <span class="seg"><button class="${calView==="calendar"?"on":""}" onclick="setCalView('calendar')">Calendar</button><button class="${calView==="table"?"on":""}" onclick="setCalView('table')">Table</button></span>
+      <span class="grow"></span>
+      <span class="cal-acts"><button class="btn" onclick="subscribeSheet()">Subscribe</button><button class="btn" onclick="window.print()">Print</button></span>
+    </div>
+    <div class="chips">${secs.map(([k,l]) => `<button class="chip ${eventFilter===k?"on":""}" onclick="eventFilter='${k}';renderCalendar()">${l}</button>`).join("")}</div>
+    ${calView === "calendar" ? monthGridHtml(all) : ""}
+    ${eventListHtml(list)}
+    <p style="text-align:center;margin-top:1rem"><button class="btn" onclick="showPast=!showPast;renderCalendar()">${showPast?"Hide past events":"Show past events"}</button></p>`;
 }
+
 function sectionEvents(key){ return eventsSorted().filter(e => !isPast(e) && ((e.section||"group") === key || (e.section||"group") === "group")); }
 function openEvent(i){
   const e = (C.events||[])[+i]; if (!e) return;

@@ -155,6 +155,10 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
 
 ## Gotchas
 
+* **Two print stylesheets share one page.** `index.html` prints kit lists and
+  the calendar, and each block hides every view but its own. `route()` sets
+  `body[data-print]` to the showing tab and each block is scoped to it;
+  without that, both blocks apply and printing gives a blank page.
 * **The shell cache is cache-first.** `sw.js` does `return cached || net`, so a
   broken `index.html` that gets cached is served once more before a fix lands.
   Bumping `VERSION` purges old caches on activate.
