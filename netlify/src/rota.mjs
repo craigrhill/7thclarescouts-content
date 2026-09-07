@@ -35,7 +35,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 import { getStore } from "@netlify/blobs";
 
 const STORE = "rota";
-const TOKEN_DAYS = 90;
+const TOKEN_DAYS = 365; // a code signs a phone in for a year
 // The admin password check is the same as in content.mjs, duplicated on purpose
 // so each built function stays self-contained. Change both together.
 const BUILT_IN_HASH = "e5aea01f131ba1b26c0c87bb21822cc93e73039466bf15f6cae3a1b77ac1235d";

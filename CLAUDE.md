@@ -121,7 +121,7 @@ While no secretary exists (a roster from before the role did), leads hold the
 secretary's powers so nobody is locked out. The first secretary is created
 with the admin password on `roster.html` (`?a=bootstrap`); running it again
 with an existing name makes that person secretary and issues a new code.
-A code (`XXXX-XXXX`) signs a phone in for 90 days; removing a person revokes
+A code (`XXXX-XXXX`) signs a phone in for 365 days; removing a person revokes
 their token at once. The API is documented at the top of
 `netlify/src/rota.mjs`.
 

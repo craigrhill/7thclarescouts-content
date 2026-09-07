@@ -61,7 +61,7 @@ Leaders' area (volunteer rota)
   this up?", enter your name and the admin password. That creates the
   secretary and shows a code. The secretary adds Scouters, ticks which
   sections each can cover, marks section leads, and hands out codes. A code
-  signs a phone in for three months. "New code" cancels the old one; removing
+  signs a phone in for twelve months. "New code" cancels the old one; removing
   a person signs them out at once.
 - /lab/rota.html is for everyone with a code. Section leads set the adults
   needed, tick anyone in their sections and mark weeks off; everyone else

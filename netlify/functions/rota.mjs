@@ -810,7 +810,7 @@ var getStore = (input, options) => {
 
 // netlify/src/rota.mjs
 var STORE = "rota";
-var TOKEN_DAYS = 90;
+var TOKEN_DAYS = 365;
 var BUILT_IN_HASH = "e5aea01f131ba1b26c0c87bb21822cc93e73039466bf15f6cae3a1b77ac1235d";
 var headers = {
   "Content-Type": "application/json; charset=utf-8",
