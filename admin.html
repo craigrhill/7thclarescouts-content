@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Leaders · 7th Clare Scouts</title>
+<title>Admin · 7th Clare Scouts</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--stone-50:#F4F1EA;--stone-100:#E8E4DA;--stone-200:#D3CFC4;--stone-400:#9A968C;--stone-600:#5E5C55;--ink:#1E2124;--sea-700:#1B4A63;--sea-500:#2E6F8E;--sea-100:#DCEAF0;--cranesbill:#B0306A;--gorse:#E3A92B;--moss:#5C7A4A;--gentian:#2F55A8}
@@ -40,14 +40,14 @@ textarea{min-height:90px;resize:vertical}
 </style>
 </head>
 <body>
-<div class="top"><div class="wrap"><h1 style="margin:0;font-size:1.3rem">7th Clare Scouts · Leaders</h1><a href="index.html">← Open app</a></div></div>
+<div class="top"><div class="wrap"><h1 style="margin:0;font-size:1.3rem">7th Clare Scouts · Admin</h1><span><a href="#" id="signOut" onclick="signOut();return false" style="display:none;margin-right:1rem">Sign out</a><a href="index.html">← Open app</a></span></div></div>
 <div class="wrap"><p class="hint" id="srcNote" style="margin:.6rem 0 0"></p></div>
 <main>
 <div class="wrap">
 
 <div id="login" class="card">
-  <h2>Leader sign in</h2>
-  <p class="hint">Enter the shared leader password to edit the site.</p>
+  <h2>Admin sign in</h2>
+  <p class="hint">Enter the admin password to edit the site. This device stays signed in until you sign out.</p>
   <label>Password</label>
   <input type="password" id="pw" autocomplete="current-password">
   <p style="margin-top:1rem"><button class="btn" onclick="login()">Sign in</button></p>
@@ -175,23 +175,64 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const $ = id => document.getElementById(id);
 const clone = o => JSON.parse(JSON.stringify(o));
 
-async function login(){
-  PW = $("pw").value;
-  $("loginMsg").textContent = "Checking…";
+/* Signing in is remembered on this device: the password goes into
+   localStorage and is replayed on the next visit, so a leader types it once.
+   It is the password itself rather than a token because the content function
+   authenticates every write with the x-admin-password header. A wrong or
+   changed password clears the stored copy and drops back to the gate, and
+   "Sign out" wipes it on demand. */
+const PW_KEY = "admin-pw";
+function rememberPw(pw){ try { localStorage.setItem(PW_KEY, pw); } catch {} }
+function forgetPw(){ try { localStorage.removeItem(PW_KEY); } catch {} }
+function storedPw(){ try { return localStorage.getItem(PW_KEY) || ""; } catch { return ""; } }
+
+async function login(pw, silent){
+  PW = typeof pw === "string" ? pw : $("pw").value;
+  if (!silent) { $("loginMsg").textContent = "Checking…"; $("loginMsg").className = "msg"; }
   try {
     const r = await fetch(API + "?check=1", {method:"POST", headers:{"x-admin-password":PW}});
-    if (!r.ok) { $("loginMsg").textContent = (await r.json()).error || "Wrong password."; $("loginMsg").className="msg err"; return; }
+    if (!r.ok) {
+      forgetPw();
+      if (!silent) { $("loginMsg").textContent = (await r.json().catch(()=>({}))).error || "Wrong password."; $("loginMsg").className="msg err"; }
+      return false;
+    }
     const g = await fetch(API, {cache:"no-store"});
     const data = await g.json();
     C = (data && data.settings) ? data : clone(window.DEFAULT_CONTENT);
     LOADED_AT = C.updatedAt || null; delete C.source;
     C.kits = mergeBuiltInKits(C.kits, C.knownKitIds);
+    rememberPw(PW);
     $("login").style.display = "none"; $("editor").style.display = "block";
+    $("signOut").style.display = "inline";
+    $("loginMsg").textContent = ""; $("pw").value = "";
     if (data && data.source) $("srcNote").textContent = data.source === "github" ? "Content is stored in GitHub (Claude can read and edit it directly)." : "Content is stored in Netlify Blobs.";
     renderAll();
-  } catch (e) { $("loginMsg").textContent = "Couldn't reach the server. Is the site deployed on Netlify?"; $("loginMsg").className="msg err"; }
+    return true;
+  } catch (e) {
+    if (!silent) { $("loginMsg").textContent = "Couldn't reach the server. Is the site deployed on Netlify?"; $("loginMsg").className="msg err"; }
+    return false;
+  }
 }
+
+function signOut(){
+  forgetPw(); PW = ""; C = null; LOADED_AT = null;
+  $("editor").style.display = "none"; $("login").style.display = "block";
+  $("signOut").style.display = "none";
+  $("pw").value = ""; $("loginMsg").textContent = ""; $("loginMsg").className = "msg";
+  $("pw").focus();
+}
+
 $("pw").addEventListener("keydown", e => { if (e.key === "Enter") login(); });
+
+/* Offline, or the function briefly down, must not look like a wrong password:
+   only a rejected check clears the stored one, and the gate stays put. */
+(async () => {
+  const pw = storedPw();
+  if (!pw) return;
+  $("loginMsg").textContent = "Signing you back in…";
+  const ok = await login(pw, true);
+  if (!ok) $("loginMsg").textContent = storedPw() ? "Couldn't reach the server. Try again." : "";
+})();
 
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
   document.querySelectorAll(".tabs button").forEach(x => x.classList.remove("on"));
@@ -392,7 +433,17 @@ async function save(){
     }
     // Record every built-in list offered so far, so deleting one sticks.
     C.knownKitIds = [...new Set([...(window.DEFAULT_KITS || []).map(k => k.id), ...(C.kits || []).map(k => k.id)])];
-    const r = await fetch(API, {method:"POST", headers:{"Content-Type":"application/json","x-admin-password":PW}, body: JSON.stringify(C)});
+    let r = await fetch(API, {method:"POST", headers:{"Content-Type":"application/json","x-admin-password":PW}, body: JSON.stringify(C)});
+    // The remembered password can go stale if it is changed on Netlify. Ask
+    // for it once rather than signing out, which would lose unsaved edits.
+    if (r.status === 401) {
+      forgetPw();
+      const pw = prompt("The saved admin password is no longer accepted. Enter the current one to save your changes:");
+      if (!pw) { $("saveMsg").textContent = "Not saved."; $("saveMsg").className = "msg err"; return; }
+      PW = pw;
+      r = await fetch(API, {method:"POST", headers:{"Content-Type":"application/json","x-admin-password":PW}, body: JSON.stringify(C)});
+      if (r.ok) rememberPw(PW);
+    }
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || r.status);
     LOADED_AT = j.updatedAt; $("saveMsg").textContent = "Published. The site updates immediately."; $("saveMsg").className = "msg ok";

@@ -70,7 +70,8 @@ warning fires correctly for leaders.
                         untouched. Its "County" button is the leads' inbox.
     index.html          app shell, hash routing (#home #calendar #kit/<id>
                         #sections/<key> #more/<sub> #events/<i>)
-    admin.html          leader editor, noindexed via netlify.toml
+    admin.html          the admin editor, noindexed via netlify.toml. Signing in is
+                        remembered on the device (see the gotcha below)
     defaults.js         window.DEFAULT_CONTENT, used until leaders save
     kit-defaults.js     window.DEFAULT_KITS
     updates.json        patch shipped with a release, applied from admin
@@ -187,6 +188,17 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
   `index.html` and `admin.html`. The admin password check (`BUILT_IN_HASH`
   and `safeEqual`) lives in both `netlify/src/content.mjs` and
   `netlify/src/rota.mjs`, so each built function stays self-contained.
+* **Admin stays signed in, by storing the password.** `admin.html` keeps the
+  admin password in `localStorage` under `admin-pw` and replays it on the next
+  visit, so a leader types it once. It is the password rather than a token
+  because the content function authenticates every write with the
+  `x-admin-password` header; there is no token endpoint on that function, only
+  on the rota one. The consequence is that anyone holding an unlocked phone that
+  has signed in can read the shared password, so "Sign out" in the header is the
+  way to hand a device on. Only a 401 clears the stored copy: being offline
+  leaves it alone and says so, or a leader with no signal would be logged out.
+  A save that hits 401 asks for the password inline rather than signing out,
+  which would throw away unsaved edits.
 * **`knownKitIds` is a ledger, not a setting.** It records every built-in kit
   list admin has already offered, so a list a leader deleted on purpose is not
   auto-added back on the next load. Admin writes it on every save. Do not hand
