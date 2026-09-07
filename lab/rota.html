@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Volunteer rota (experiment): 7th Clare Scouts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Palette copied from index.html so this looks like it belongs. It is not
+   linked from the app, not cached by sw.js, and reads content only. */
+:root{
+  --stone-50:#F4F1EA;--stone-100:#E8E4DA;--stone-200:#D3CFC4;--stone-400:#9A968C;--stone-600:#5E5C55;--stone-800:#2F3134;--ink:#1E2124;
+  --sea-700:#1B4A63;--sea-500:#2E6F8E;--sea-300:#8FB7C9;--sea-100:#DCEAF0;
+  --orange:#F07800;--orange-dark:#C96300;--orange-soft:#FDE8D3;--cranesbill:#B0306A;--gorse:#E3A92B;--moss:#5C7A4A;
+  --radius:16px;--shadow:0 8px 24px rgba(30,33,36,.08),0 1px 2px rgba(30,33,36,.06);
+  --serif:"Fraunces",Georgia,serif;--sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--stone-50);line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--serif);font-weight:700;line-height:1.15;margin:0 0 .4em;letter-spacing:-.01em}
+h1{font-size:1.7rem}h2{font-size:1.25rem}h3{font-size:1.02rem}
+p{margin:0 0 .9em}
+.wrap{width:min(920px,100% - 2rem);margin:0 auto}
+.appbar{background:var(--sea-700);color:#fff;padding:.9rem 0 .8rem}
+.appbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.brand{font-family:var(--serif);font-weight:700;font-size:1.1rem}
+.brand small{display:block;font-family:var(--sans);font-weight:500;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;opacity:.8}
+.pill{font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;background:var(--gorse);color:var(--ink);padding:.3em .7em;border-radius:999px}
+.banner{background:var(--orange-soft);border-left:4px solid var(--orange);padding:.8rem 1rem;border-radius:12px;margin:1rem 0;font-size:.92rem}
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:1rem 1.1rem;margin-bottom:.9rem;border:1px solid rgba(0,0,0,.03)}
+.chips{display:flex;gap:.5rem;flex-wrap:wrap;margin:.8rem 0 1rem}
+.chip{border:1px solid var(--stone-200);background:#fff;border-radius:999px;padding:.4em 1em;font-weight:500;cursor:pointer}
+.chip.on{background:var(--sea-700);color:#fff;border-color:var(--sea-700)}
+.row{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
+.row label{font-weight:500}
+input[type=number]{width:4.5rem;font:inherit;padding:.35em .5em;border:1px solid var(--stone-200);border-radius:8px}
+input[type=text]{flex:1;min-width:10rem;font:inherit;padding:.5em .7em;border:1px solid var(--stone-200);border-radius:10px}
+.btn{font:inherit;font-weight:600;border:0;border-radius:999px;padding:.55em 1.1em;background:var(--sea-100);color:var(--sea-700);cursor:pointer}
+.btn.primary{background:var(--sea-700);color:#fff}
+.gaps{display:grid;gap:.4rem}
+.gap{display:flex;justify-content:space-between;gap:.6rem;padding:.5rem .7rem;border-radius:10px;background:#FBE9EC;color:#7A1F2E;font-weight:500}
+.gap.ok{background:#E9F1E4;color:#33532A}
+.count{font-variant-numeric:tabular-nums;white-space:nowrap}
+.slot{border-top:1px solid var(--stone-100);padding:.8rem 0}
+.slot:first-of-type{border-top:0}
+.slot-head{display:flex;justify-content:space-between;align-items:baseline;gap:.6rem}
+.slot-head .when{font-weight:600}
+.slot-head .sub{color:var(--stone-600);font-size:.88rem}
+.status{font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.2em .6em;border-radius:999px;white-space:nowrap}
+.status.gap{background:#FBE9EC;color:#7A1F2E}.status.ok{background:#E9F1E4;color:#33532A}.status.off{background:var(--stone-100);color:var(--stone-600)}
+.who{display:flex;flex-wrap:wrap;gap:.45rem .9rem;margin-top:.5rem}
+.who label{display:inline-flex;align-items:center;gap:.35rem;font-size:.95rem}
+.who input{width:18px;height:18px;accent-color:var(--sea-700)}
+.off-toggle{font-size:.85rem;color:var(--stone-600);margin-top:.5rem}
+textarea{width:100%;min-height:7rem;font:.82rem/1.4 ui-monospace,Menlo,monospace;padding:.6rem;border:1px solid var(--stone-200);border-radius:10px}
+.muted{color:var(--stone-600)}.small{font-size:.88rem}
+.empty{color:var(--stone-400);font-style:italic;padding:.6rem 0}
+footer{padding:1.5rem 0 3rem;font-size:.85rem;color:var(--stone-600)}
+</style>
+</head>
+<body>
+<header class="appbar"><div class="wrap">
+  <div class="brand">7th Clare Scouts<small>Volunteer rota</small></div>
+  <span class="pill">Experiment</span>
+</div></header>
+<main class="wrap">
+  <div class="banner">This is a sandbox, not part of the app. Nothing you tick here is saved anywhere except this phone, and nobody else can see it. To show someone your rota, use Copy at the bottom and send them the text.</div>
+
+  <h1>Who is covering what</h1>
+  <p class="muted">Pick a section. Meetings for the next eight weeks are listed with that section's events. Tick the adults who will be there. Anything below the required number shows as a gap.</p>
+  <div class="chips" id="chips"></div>
+
+  <div class="card">
+    <div class="row"><label for="req">Adults needed at each meeting</label><input type="number" id="req" min="1" max="9"></div>
+  </div>
+
+  <div class="card">
+    <h2>Gaps</h2>
+    <div class="gaps" id="gaps"></div>
+  </div>
+
+  <div class="card">
+    <h2>Upcoming</h2>
+    <div id="slots"></div>
+  </div>
+
+  <div class="card">
+    <h2>Volunteers</h2>
+    <p class="small muted">Section leaders and group leaders from the Team page, plus anyone you add here.</p>
+    <div class="row"><input type="text" id="newName" placeholder="Add a name"><button class="btn" onclick="addName()">Add</button></div>
+  </div>
+
+  <div class="card">
+    <h2>Share this rota</h2>
+    <p class="small muted">Copy puts the rota in the box as text. Send it to someone, and they paste it here and press Load. That is the whole sharing mechanism for now.</p>
+    <textarea id="io" spellcheck="false"></textarea>
+    <div class="row" style="margin-top:.6rem"><button class="btn primary" onclick="exportRota()">Copy</button><button class="btn" onclick="importRota()">Load</button><button class="btn" onclick="resetSection()">Clear this section</button></div>
+    <p class="small muted" id="ioMsg" style="margin:.6rem 0 0"></p>
+  </div>
+</main>
+<footer class="wrap">An experiment by the leaders of 7th Clare Scouts. Nothing here is published or visible to parents.</footer>
+
+<script>
+const KEY = "lab-rota-v1";
+const DAYS = { sunday:0, monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6 };
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let C = null, S = load();
+
+function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} }
+function sec(){ return S.section || (C.settings.sections[0] || {}).key; }
+function st(){ S.sections = S.sections || {}; const k = sec(); S.sections[k] = S.sections[k] || { required: 2, extra: [], slots: {} }; return S.sections[k]; }
+function iso(d){ return d.toISOString().slice(0, 10); }
+function fmt(s){ return new Date(s + "T12:00:00").toLocaleDateString("en-IE", { weekday: "short", day: "numeric", month: "short" }); }
+
+function people(){
+  const k = sec();
+  const team = (C.settings.team || []).filter(p => !p.section || p.section === k).map(p => p.name);
+  return [...new Set([...team, ...st().extra])];
+}
+function upcoming(){
+  const k = sec(), section = C.settings.sections.find(x => x.key === k) || {};
+  const today = new Date(); today.setHours(12, 0, 0, 0);
+  const out = [], wd = DAYS[(section.day || "").toLowerCase()];
+  if (wd !== undefined) {
+    const d = new Date(today); while (d.getDay() !== wd) d.setDate(d.getDate() + 1);
+    for (let i = 0; i < 8; i++) {
+      out.push({ id: "m:" + iso(d), date: iso(d), title: (section.name || "") + " meeting", sub: [section.time, section.venue].filter(Boolean).join(", "), kind: "meeting" });
+      d.setDate(d.getDate() + 7);
+    }
+  }
+  (C.events || []).filter(e => e.date >= iso(today) && (e.section === k || !e.section || e.section === "all"))
+    .forEach(e => out.push({ id: "e:" + e.date + ":" + e.title, date: e.date, title: e.title, sub: [e.location, e.endDate ? "to " + fmt(e.endDate) : ""].filter(Boolean).join(", "), kind: "event" }));
+  return out.sort((a, b) => a.date.localeCompare(b.date));
+}
+function entry(id){ const s = st(); s.slots[id] = s.slots[id] || { who: [], off: false }; return s.slots[id]; }
+
+function render(){
+  const s = st();
+  $("chips").innerHTML = C.settings.sections.map(x => `<button class="chip ${x.key === sec() ? "on" : ""}" onclick="pick('${esc(x.key)}')">${esc(x.name)}</button>`).join("");
+  $("req").value = s.required;
+  const slots = upcoming(), names = people();
+  const live = slots.filter(x => !entry(x.id).off);
+  const gaps = live.filter(x => entry(x.id).who.length < s.required);
+  $("gaps").innerHTML = (live.length ? `<div class="gap ok"><span>${live.length - gaps.length} of ${live.length} covered</span><span class="count">${s.required} needed each</span></div>` : "")
+    + (gaps.map(x => `<div class="gap"><span>${esc(fmt(x.date))}, ${esc(x.title)}</span><span class="count">${entry(x.id).who.length} of ${s.required}</span></div>`).join("") || (live.length ? "" : `<div class="empty">No meeting day set for this section.</div>`));
+  $("slots").innerHTML = slots.map(x => {
+    const e = entry(x.id), n = e.who.length;
+    const status = e.off ? `<span class="status off">No meeting</span>` : n >= s.required ? `<span class="status ok">Covered</span>` : `<span class="status gap">${n} of ${s.required}</span>`;
+    return `<div class="slot">
+      <div class="slot-head"><div><span class="when">${esc(fmt(x.date))}</span> <span class="sub">${esc(x.title)}${x.sub ? ", " + esc(x.sub) : ""}</span></div>${status}</div>
+      ${e.off ? "" : `<div class="who">${names.map(p => `<label><input type="checkbox" ${e.who.includes(p) ? "checked" : ""} onchange="toggle('${esc(x.id)}','${esc(p)}',this.checked)">${esc(p)}</label>`).join("") || `<span class="empty">Add a volunteer below.</span>`}</div>`}
+      ${x.kind === "meeting" ? `<label class="off-toggle"><input type="checkbox" ${e.off ? "checked" : ""} onchange="setOff('${esc(x.id)}',this.checked)"> No meeting this week</label>` : ""}
+    </div>`;
+  }).join("") || `<div class="empty">Nothing coming up.</div>`;
+}
+function pick(k){ S.section = k; save(); render(); }
+function toggle(id, name, on){ const e = entry(id); e.who = on ? [...new Set([...e.who, name])] : e.who.filter(x => x !== name); save(); render(); }
+function setOff(id, off){ entry(id).off = off; save(); render(); }
+function addName(){ const v = $("newName").value.trim(); if (!v) return; st().extra = [...new Set([...st().extra, v])]; $("newName").value = ""; save(); render(); }
+function resetSection(){ if (!confirm("Clear every tick and added name for this section on this phone?")) return; delete S.sections[sec()]; save(); render(); }
+function exportRota(){ const t = JSON.stringify({ section: sec(), data: st() }); $("io").value = t; $("io").select(); try { navigator.clipboard.writeText(t); $("ioMsg").textContent = "Copied. Paste it into a message."; } catch { $("ioMsg").textContent = "Select the text above and copy it."; } }
+function importRota(){ try { const j = JSON.parse($("io").value); if (!j || !j.section || !j.data) throw 0; S.sections = S.sections || {}; S.sections[j.section] = j.data; S.section = j.section; save(); render(); $("ioMsg").textContent = "Loaded " + j.section + "."; } catch { $("ioMsg").textContent = "That is not a rota. Paste exactly what Copy produced."; } }
+$("req").addEventListener("change", () => { st().required = Math.max(1, Number($("req").value) || 1); save(); render(); });
+
+async function boot(){
+  try {
+    const r = await fetch("/.netlify/functions/content", { cache: "no-store" });
+    const c = await r.json(); if (!c || !c.settings) throw 0; C = c;
+  } catch {
+    C = { settings: { sections: [{ key: "scouts", name: "Scouts", day: "Thursday", time: "6:00 to 7:30 pm" }], team: [] }, events: [] };
+  }
+  render();
+}
+boot();
+</script>
+</body>
+</html>

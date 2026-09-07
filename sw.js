@@ -1,5 +1,5 @@
 // 7th Clare Scouts service worker: offline shell + last-known content
-const VERSION = "v0_22";
+const VERSION = "v0_23";
 const SHELL = ["./", "./index.html", "./defaults.js", "./kit-defaults.js", "./logo.png", "./icon-192.png", "./icon-512.png", "./manifest.webmanifest", "./docs/Sionnach_Tips.pdf"];
 const SHELL_CACHE = "shell-" + VERSION, DATA_CACHE = "data-" + VERSION, FONT_CACHE = "fonts";
 
@@ -23,6 +23,9 @@ self.addEventListener("fetch", e => {
     e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => { const copy = res.clone(); caches.open(FONT_CACHE).then(c => c.put(e.request, copy)); return res; }).catch(() => r)));
     return;
   }
+  // lab/ is for experiments and is deliberately not part of the app: never
+  // cached, so a push shows up on the very next load rather than one late.
+  if (url.origin === location.origin && url.pathname.startsWith("/lab/")) return;
   // Same-origin shell: stale-while-revalidate
   if (url.origin === location.origin) {
     e.respondWith(caches.match(e.request).then(cached => {

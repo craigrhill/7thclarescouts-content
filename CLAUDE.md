@@ -75,6 +75,9 @@ warning fires correctly for leaders.
     tools/serve.mjs                 local preview, stands in for the
                                     content function so the app loads
                                     content.json instead of defaults.js
+    lab/                experiments. Public on the site but not linked from
+                        the app, not cached by sw.js, noindexed, and never
+                        read by content.json. Delete a file to remove it.
     docs/Sionnach_Tips.pdf
 
 Tabs: Home, Calendar, Kit, Sections, More. Home is personalised per phone via
