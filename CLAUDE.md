@@ -138,11 +138,22 @@ against the existing rota, and it is meant to move to its own repo and its
 own Netlify site. `foroige/README.md` says how to lift it out.
 
 It is the leaders' rota above, copied and then changed for one rule: every
-club night and event needs three leaders and one of them must hold the
-building specific training from the ETB. So a person carries a `trained`
-flag, a club carries `required` and `requiredTrained`, and a single night can
-override either. A night with the numbers but nobody trained reads as a
-warning, not as covered.
+club night and event needs three leaders, and on a club night one of them
+must hold the building specific training from the ETB. Events are away from
+the building and do not need one.
+
+So a person carries a `trained` flag, and a club carries three numbers:
+`required`, `requiredTrained` for club nights and `requiredTrainedEvents`
+for events. A single night or event can override any of them. Which default
+applies is read off the slot id, `m:` for a club night and `e:` for an
+event, in `defaultTrained()`; that is also why an override is only collapsed
+against its own kind's default. A club night with the numbers but nobody
+trained reads as a warning, not as covered.
+
+Club nights come from a section's `dates` (a list, for when the dates are
+confirmed one at a time) or its `day` (a weekday, which fills eight weeks)
+or both. Events are the separate `events` array. The split is not cosmetic:
+it is what decides whether the training rule applies.
 
     foroige/rota.html        coverage, everyone
     foroige/roster.html      the coordinator's page, including bulk add

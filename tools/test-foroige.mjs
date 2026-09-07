@@ -36,7 +36,8 @@ r = await call("POST", "?a=login", { body: { code: coordCode.toLowerCase().repla
 ok("login tolerates case and separators", [r.status, r.j.me.secretary], [200, true]);
 const coord = r.j.token, coordId = r.j.me.id;
 r = await call("GET", "?sections=club", { token: coord });
-ok("a club defaults to 3 leaders, 1 of them trained", [r.status, r.j.sections.club.required, r.j.sections.club.requiredTrained], [200, 3, 1]);
+ok("a club defaults to 3 leaders, 1 trained on a club night, none at an event",
+  [r.status, r.j.sections.club.required, r.j.sections.club.requiredTrained, r.j.sections.club.requiredTrainedEvents], [200, 3, 1, 0]);
 r = await call("GET", "?sections=club", { token: coord.slice(0, -2) + "zz" }); ok("tampered token is 401", r.status, 401);
 
 // People, and the training flag.
@@ -129,6 +130,27 @@ store.set = async (k, v, o) => { if (!failed && o && o.onlyIfMatch) { failed++; 
 r = await call("POST", "?a=slot", { token: coord, body: { section: "club", id: night, remove: [coordId] } });
 ok("a conflicting write is retried and lands", [failed, r.status, r.j.section.slots[night].who.includes(coordId)], [1, 200, false]);
 store.set = realSet;
+
+// The training rule is about the building, so it follows the kind of night.
+r = await call("POST", "?a=required", { token: coord, body: { section: "club", required: 3, requiredTrained: 1, requiredTrainedEvents: 0 } });
+ok("the three numbers are set together", [r.j.section.required, r.j.section.requiredTrained, r.j.section.requiredTrainedEvents], [3, 1, 0]);
+const trip = "e:2030-03-01:Day trip";
+r = await call("POST", "?a=slot", { token: coord, body: { section: "club", id: trip, needTrained: 0 } });
+ok("an event set to nobody trained stores no override, since that is its default", "needTrained" in (r.j.section.slots[trip] || {}), false);
+r = await call("POST", "?a=slot", { token: coord, body: { section: "club", id: trip, needTrained: 1 } });
+ok("an event that does need a trained leader stores the override", r.j.section.slots[trip].needTrained, 1);
+const night2 = "m:2030-03-06";
+r = await call("POST", "?a=slot", { token: coord, body: { section: "club", id: night2, needTrained: 1 } });
+ok("a club night set to one trained stores no override, since that is its default", "needTrained" in (r.j.section.slots[night2] || {}), false);
+r = await call("POST", "?a=slot", { token: coord, body: { section: "club", id: night2, needTrained: 0 } });
+ok("a club night let off the rule stores the override", r.j.section.slots[night2].needTrained, 0);
+r = await call("POST", "?a=required", { token: coord, body: { section: "club", requiredTrainedEvents: 1 } });
+ok("raising the events default collapses the event override that now matches it", "needTrained" in r.j.section.slots[trip], false);
+ok("and leaves the club night override alone, it belongs to the other kind", r.j.section.slots[night2].needTrained, 0);
+r = await call("POST", "?a=required", { token: coord, body: { section: "club", requiredTrainedEvents: 4 } });
+ok("more trained at an event than leaders is refused", [r.status, r.j.error], [400, "You cannot need more trained leaders than leaders."]);
+r = await call("POST", "?a=required", { token: coord, body: { section: "club", requiredTrainedEvents: 0 } });
+ok("and back to nobody trained at an event", r.j.section.requiredTrainedEvents, 0);
 
 // Codes, roles and removal.
 r = await call("POST", "?a=recode", { token: coord, body: { id: helperId } }); const newCode = r.j.code;

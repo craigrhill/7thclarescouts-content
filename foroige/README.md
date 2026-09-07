@@ -5,9 +5,14 @@ Nothing on these pages is public and nothing is stored in this repo: the
 roster, the ticks and the codes all live in a private Netlify Blobs store.
 
 The rule it exists to enforce: **every club night and event needs three
-leaders, and one of them must hold the building specific training from the
-ETB.** A night with three untrained leaders on it is not counted as covered.
-Both numbers are settings, so they can change without touching code.
+leaders, and on a club night one of them must hold the building specific
+training from the ETB.** A club night with three untrained leaders on it is
+not counted as covered. Events are away from the building, so they need the
+three leaders and nobody in particular.
+
+All three numbers are settings, and any of them can be changed on a single
+club night or event: a night that needs four, or an event that does need
+somebody approved after all.
 
 ## The two pages
 
@@ -41,16 +46,29 @@ off every night with it. "New code" cancels the old one.
        { "club": { "name": "Ballyvaughan Foroige Club" },
          "training": { "label": "Building training", "short": "Building" },
          "settings": { "sections": [
-           { "key": "club", "name": "Club night", "day": "Wednesday",
-             "time": "7:30 to 9:00 pm", "venue": "The Hall" } ] },
+           { "key": "club", "name": "Club night",
+             "time": "7:30 to 9:00 pm", "venue": "The Hall",
+             "dates": ["2026-10-07", "2026-10-14"] } ] },
          "events": [
            { "date": "2026-10-30", "title": "Halloween disco",
              "location": "The Hall" } ] }
 
    `label` is the full name of the training and `short` is what fits on a
-   badge. `key` must match `^[a-z0-9-]{1,32}$`. Events with no `section` show
-   for every club, which is what a single club wants. Add an `endDate` for
-   anything running more than a day.
+   badge. `key` must match `^[a-z0-9-]{1,32}$`. Add an `endDate` to anything
+   running more than a day.
+
+   **Club nights come from `dates`, or from `day`, or from both.** `dates` is
+   a list of confirmed dates, which is what to use while BOETC is still
+   setting them: paste them in as they are confirmed and they appear on the
+   rota. `day` is a weekday name instead, and fills the next eight weeks by
+   itself. Past dates drop off on their own.
+
+   **Club nights and events are not the same thing here.** Anything in
+   `dates` is a club night, in the building, and carries the training
+   requirement. Anything in `events` is an event and does not. That is the
+   only difference between them, so put a night in the building in `dates`
+   even if it is a one-off. Events with no `section` show for every club,
+   which is what a single club wants.
 
    More than one club or age group: add more entries to `sections`, each with
    its own `key`. The rota grows a row of chips to switch between them and
@@ -100,9 +118,9 @@ only as long as the process, with `local` as the admin password. The built
 file under `netlify/functions/` is generated: never edit it, edit
 `netlify/src/foroige.mjs`, rebuild, and commit the two together.
 
-`tools/test-foroige.mjs` is the fast check on the function, 65 cases
-covering the codes, the roles, the training rule and the conditional writes.
-Run it after any change to the function.
+`tools/test-foroige.mjs` is the fast check on the function, 74 cases
+covering the codes, the roles, the training rule for both kinds of night,
+and the conditional writes. Run it after any change to the function.
 
 ## Moving it to its own repo
 

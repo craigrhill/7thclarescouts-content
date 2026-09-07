@@ -813,6 +813,7 @@ var STORE = "foroige";
 var TOKEN_DAYS = 365;
 var DEFAULT_REQUIRED = 3;
 var DEFAULT_REQUIRED_TRAINED = 1;
+var DEFAULT_REQUIRED_TRAINED_EVENTS = 0;
 var MAX_BULK = 100;
 var headers = {
   "Content-Type": "application/json; charset=utf-8",
@@ -890,7 +891,9 @@ function readToken(sec, token) {
   }
 }
 var rosterFallback = () => ({ people: [] });
-var sectionFallback = () => ({ required: DEFAULT_REQUIRED, requiredTrained: DEFAULT_REQUIRED_TRAINED, slots: {} });
+var sectionFallback = () => ({ required: DEFAULT_REQUIRED, requiredTrained: DEFAULT_REQUIRED_TRAINED, requiredTrainedEvents: DEFAULT_REQUIRED_TRAINED_EVENTS, slots: {} });
+var isEventSlot = (id) => String(id).startsWith("e:");
+var defaultTrained = (d, slotId) => isEventSlot(slotId) ? d.requiredTrainedEvents ?? DEFAULT_REQUIRED_TRAINED_EVENTS : d.requiredTrained ?? DEFAULT_REQUIRED_TRAINED;
 var pub = (p) => ({ id: p.id, name: p.name, sections: p.sections || [], trained: !!p.trained, lead: !!p.lead, secretary: !!p.secretary });
 var isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
 var isSlotId = (s) => typeof s === "string" && /^[me]:\d{4}-\d{2}-\d{2}(:.{1,140})?$/.test(s);
@@ -975,7 +978,13 @@ function createHandler(storeFactory) {
         const sections = {};
         for (const k of keys) {
           const { doc } = await readDoc(store, "section/" + k, sectionFallback);
-          sections[k] = { required: doc.required, requiredTrained: doc.requiredTrained ?? DEFAULT_REQUIRED_TRAINED, slots: doc.slots, updatedAt: doc.updatedAt || null };
+          sections[k] = {
+            required: doc.required,
+            requiredTrained: doc.requiredTrained ?? DEFAULT_REQUIRED_TRAINED,
+            requiredTrainedEvents: doc.requiredTrainedEvents ?? DEFAULT_REQUIRED_TRAINED_EVENTS,
+            slots: doc.slots,
+            updatedAt: doc.updatedAt || null
+          };
         }
         const mine = new Set(me.sections || []);
         const visible = me.lead || canManage ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
@@ -1004,10 +1013,10 @@ function createHandler(storeFactory) {
           }
           if ("needTrained" in b) {
             const n = num(b.needTrained);
-            if (n >= 0 && n <= 9 && n !== (d.requiredTrained ?? DEFAULT_REQUIRED_TRAINED)) s.needTrained = n;
+            if (n >= 0 && n <= 9 && n !== defaultTrained(d, b.id)) s.needTrained = n;
             else delete s.needTrained;
           }
-          const need = s.need ?? d.required, defT = d.requiredTrained ?? DEFAULT_REQUIRED_TRAINED;
+          const need = s.need ?? d.required, defT = defaultTrained(d, b.id);
           if ((s.needTrained ?? defT) > need) {
             if (need === defT) delete s.needTrained;
             else s.needTrained = need;
@@ -1019,20 +1028,27 @@ function createHandler(storeFactory) {
       if (a === "required") {
         if (!me.lead) return fail(403, "Only the club leader can change that.");
         if (!isKey(b.section)) return fail(400, "Bad club.");
-        const wantN = "required" in b ? num(b.required) : null, wantT = "requiredTrained" in b ? num(b.requiredTrained) : null;
+        const wantN = "required" in b ? num(b.required) : null;
+        const wantT = "requiredTrained" in b ? num(b.requiredTrained) : null;
+        const wantE = "requiredTrainedEvents" in b ? num(b.requiredTrainedEvents) : null;
         if (wantN !== null && !(wantN >= 1 && wantN <= 9)) return fail(400, "Leaders needed must be 1 to 9.");
-        if (wantT !== null && !(wantT >= 0 && wantT <= 9)) return fail(400, "Trained leaders needed must be 0 to 9.");
+        for (const v of [wantT, wantE]) if (v !== null && !(v >= 0 && v <= 9)) return fail(400, "Trained leaders needed must be 0 to 9.");
         const cur = await readDoc(store, "section/" + b.section, sectionFallback);
-        const finalN = wantN ?? cur.doc.required, finalT = wantT ?? (cur.doc.requiredTrained ?? DEFAULT_REQUIRED_TRAINED);
-        if (finalT > finalN) return fail(400, "You cannot need more trained leaders than leaders.");
+        const finalN = wantN ?? cur.doc.required;
+        const finalT = wantT ?? (cur.doc.requiredTrained ?? DEFAULT_REQUIRED_TRAINED);
+        const finalE = wantE ?? (cur.doc.requiredTrainedEvents ?? DEFAULT_REQUIRED_TRAINED_EVENTS);
+        if (finalT > finalN || finalE > finalN) return fail(400, "You cannot need more trained leaders than leaders.");
         const doc = await update(store, "section/" + b.section, sectionFallback, (d) => {
-          const required = wantN ?? d.required, requiredTrained = wantT ?? (d.requiredTrained ?? DEFAULT_REQUIRED_TRAINED);
-          if (requiredTrained > required) return false;
+          const required = wantN ?? d.required;
+          const requiredTrained = wantT ?? (d.requiredTrained ?? DEFAULT_REQUIRED_TRAINED);
+          const requiredTrainedEvents = wantE ?? (d.requiredTrainedEvents ?? DEFAULT_REQUIRED_TRAINED_EVENTS);
+          if (requiredTrained > required || requiredTrainedEvents > required) return false;
           d.required = required;
           d.requiredTrained = requiredTrained;
-          for (const s of Object.values(d.slots)) {
+          d.requiredTrainedEvents = requiredTrainedEvents;
+          for (const [id, s] of Object.entries(d.slots)) {
             if (s.need === required) delete s.need;
-            if (s.needTrained === requiredTrained) delete s.needTrained;
+            if (s.needTrained === defaultTrained(d, id)) delete s.needTrained;
           }
           return d;
         });

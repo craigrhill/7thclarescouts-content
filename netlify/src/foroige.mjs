@@ -6,10 +6,11 @@
 // signed in for TOKEN_DAYS.
 //
 // The rule this exists to enforce: every club night and every event needs a
-// set number of leaders on it (3 by default) and at least one of them must
-// hold the training (1 by default). Both numbers are per club and can be
-// overridden on a single night. The page shows the shortfall; the numbers
-// live here.
+// set number of leaders on it (3 by default). On a club night one of them
+// must hold the building training (1 by default); at an event, nobody has to
+// (0 by default), because the training is about the building. All three
+// numbers are per club and any of them can be overridden on a single night
+// or event. The page shows the shortfall; the numbers live here.
 //
 // Three roles, held as flags on a person. The field names match the sibling
 // Scouts rota so the two stay diffable; the words shown to people differ:
@@ -24,7 +25,7 @@
 // Keys in the store:
 //   secret          HMAC key, generated on first use, never leaves the server
 //   roster          { people: [{ id, name, sections, trained, lead, secretary, codeHash }] }
-//   section/<key>   { required, requiredTrained,
+//   section/<key>   { required, requiredTrained, requiredTrainedEvents,
 //                     slots: { <slotId>: { who: [personId], off, need, needTrained } } }
 //
 // Slot ids are made by the page: "m:YYYY-MM-DD" for a club night,
@@ -40,7 +41,8 @@
 //   POST   ?a=bootstrap  x-admin-password  {name,sections}  { person, code }  first coordinator
 //   POST   ?a=login                        {code}   { token, me }
 //   POST   ?a=slot     {section,id,add?,remove?,off?,need?,needTrained?}  { section }
-//   POST   ?a=required {section,required?,requiredTrained?}   { section }   club leader
+//   POST   ?a=required {section,required?,requiredTrained?,requiredTrainedEvents?}
+//                                                            { section }   club leader
 //   POST   ?a=person   {name,sections,trained,lead,secretary}  { person, code }   coordinator
 //   POST   ?a=people   {people:[{name,sections,trained,lead}]} { added, skipped }  coordinator
 //   POST   ?a=person-update {id,name?,sections?,trained?,lead?,secretary?}  { person }
@@ -53,6 +55,7 @@ const STORE = "foroige";
 const TOKEN_DAYS = 365; // a code signs a phone in for a year
 const DEFAULT_REQUIRED = 3;        // leaders on every club night and event
 const DEFAULT_REQUIRED_TRAINED = 1; // of whom this many must hold the training
+const DEFAULT_REQUIRED_TRAINED_EVENTS = 0; // but not at an event, away from the building
 const MAX_BULK = 100;              // names accepted in one paste
 const headers = {
   "Content-Type": "application/json; charset=utf-8",
@@ -130,7 +133,14 @@ function readToken(sec, token) {
 
 // ---- shapes and validation ----
 const rosterFallback = () => ({ people: [] });
-const sectionFallback = () => ({ required: DEFAULT_REQUIRED, requiredTrained: DEFAULT_REQUIRED_TRAINED, slots: {} });
+const sectionFallback = () => ({ required: DEFAULT_REQUIRED, requiredTrained: DEFAULT_REQUIRED_TRAINED, requiredTrainedEvents: DEFAULT_REQUIRED_TRAINED_EVENTS, slots: {} });
+// Slot ids say which kind a night is: "m:" a club night in the building,
+// "e:" an event. They carry different training defaults, so every read of the
+// default goes through here.
+const isEventSlot = (id) => String(id).startsWith("e:");
+const defaultTrained = (d, slotId) => isEventSlot(slotId)
+  ? (d.requiredTrainedEvents ?? DEFAULT_REQUIRED_TRAINED_EVENTS)
+  : (d.requiredTrained ?? DEFAULT_REQUIRED_TRAINED);
 const pub = (p) => ({ id: p.id, name: p.name, sections: p.sections || [], trained: !!p.trained, lead: !!p.lead, secretary: !!p.secretary });
 const isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
 const isSlotId = (s) => typeof s === "string" && /^[me]:\d{4}-\d{2}-\d{2}(:.{1,140})?$/.test(s);
@@ -191,7 +201,9 @@ export function createHandler(storeFactory) {
         const sections = {};
         for (const k of keys) {
           const { doc } = await readDoc(store, "section/" + k, sectionFallback);
-          sections[k] = { required: doc.required, requiredTrained: doc.requiredTrained ?? DEFAULT_REQUIRED_TRAINED, slots: doc.slots, updatedAt: doc.updatedAt || null };
+          sections[k] = { required: doc.required, requiredTrained: doc.requiredTrained ?? DEFAULT_REQUIRED_TRAINED,
+            requiredTrainedEvents: doc.requiredTrainedEvents ?? DEFAULT_REQUIRED_TRAINED_EVENTS,
+            slots: doc.slots, updatedAt: doc.updatedAt || null };
         }
         // Club leaders and the coordinator see everyone. Others see the people
         // who share a club with them, which is all coverage needs.
@@ -217,10 +229,10 @@ export function createHandler(storeFactory) {
           s.who = [...new Set([...s.who.filter((id) => !remove.includes(id)), ...add])].filter((id) => known.has(id));
           if ("off" in b) s.off = !!b.off;
           if ("need" in b) { const n = num(b.need); if (n >= 1 && n <= 9 && n !== d.required) s.need = n; else delete s.need; }
-          if ("needTrained" in b) { const n = num(b.needTrained); if (n >= 0 && n <= 9 && n !== (d.requiredTrained ?? DEFAULT_REQUIRED_TRAINED)) s.needTrained = n; else delete s.needTrained; }
+          if ("needTrained" in b) { const n = num(b.needTrained); if (n >= 0 && n <= 9 && n !== defaultTrained(d, b.id)) s.needTrained = n; else delete s.needTrained; }
           // Never ask for more trained leaders than leaders on the same night:
           // the leaders number wins, the trained number is clamped down to it.
-          const need = s.need ?? d.required, defT = d.requiredTrained ?? DEFAULT_REQUIRED_TRAINED;
+          const need = s.need ?? d.required, defT = defaultTrained(d, b.id);
           if ((s.needTrained ?? defT) > need) { if (need === defT) delete s.needTrained; else s.needTrained = need; }
           return d;
         });
@@ -232,18 +244,28 @@ export function createHandler(storeFactory) {
         if (!isKey(b.section)) return fail(400, "Bad club.");
         // Validate before the read-modify-write, so a bad number is a 400 and
         // not a throw out of the retry loop.
-        const wantN = "required" in b ? num(b.required) : null, wantT = "requiredTrained" in b ? num(b.requiredTrained) : null;
+        const wantN = "required" in b ? num(b.required) : null;
+        const wantT = "requiredTrained" in b ? num(b.requiredTrained) : null;
+        const wantE = "requiredTrainedEvents" in b ? num(b.requiredTrainedEvents) : null;
         if (wantN !== null && !(wantN >= 1 && wantN <= 9)) return fail(400, "Leaders needed must be 1 to 9.");
-        if (wantT !== null && !(wantT >= 0 && wantT <= 9)) return fail(400, "Trained leaders needed must be 0 to 9.");
+        for (const v of [wantT, wantE]) if (v !== null && !(v >= 0 && v <= 9)) return fail(400, "Trained leaders needed must be 0 to 9.");
         const cur = await readDoc(store, "section/" + b.section, sectionFallback);
-        const finalN = wantN ?? cur.doc.required, finalT = wantT ?? (cur.doc.requiredTrained ?? DEFAULT_REQUIRED_TRAINED);
-        if (finalT > finalN) return fail(400, "You cannot need more trained leaders than leaders.");
+        const finalN = wantN ?? cur.doc.required;
+        const finalT = wantT ?? (cur.doc.requiredTrained ?? DEFAULT_REQUIRED_TRAINED);
+        const finalE = wantE ?? (cur.doc.requiredTrainedEvents ?? DEFAULT_REQUIRED_TRAINED_EVENTS);
+        if (finalT > finalN || finalE > finalN) return fail(400, "You cannot need more trained leaders than leaders.");
         const doc = await update(store, "section/" + b.section, sectionFallback, (d) => {
-          const required = wantN ?? d.required, requiredTrained = wantT ?? (d.requiredTrained ?? DEFAULT_REQUIRED_TRAINED);
-          if (requiredTrained > required) return false;
-          d.required = required; d.requiredTrained = requiredTrained;
-          // A per-night override that now matches the club default is not an override.
-          for (const s of Object.values(d.slots)) { if (s.need === required) delete s.need; if (s.needTrained === requiredTrained) delete s.needTrained; }
+          const required = wantN ?? d.required;
+          const requiredTrained = wantT ?? (d.requiredTrained ?? DEFAULT_REQUIRED_TRAINED);
+          const requiredTrainedEvents = wantE ?? (d.requiredTrainedEvents ?? DEFAULT_REQUIRED_TRAINED_EVENTS);
+          if (requiredTrained > required || requiredTrainedEvents > required) return false;
+          d.required = required; d.requiredTrained = requiredTrained; d.requiredTrainedEvents = requiredTrainedEvents;
+          // A per-night override that now matches its own kind's default is
+          // no longer an override, so it stops showing as changed.
+          for (const [id, s] of Object.entries(d.slots)) {
+            if (s.need === required) delete s.need;
+            if (s.needTrained === defaultTrained(d, id)) delete s.needTrained;
+          }
           return d;
         });
         return json(200, { section: doc });
