@@ -51,6 +51,8 @@ window.DEFAULT_KITS = [
     title: "Full uniform",
     event: "Scouts and Ventures: investitures, parades, once-a-term uniform night, county and national events",
     summary: "Full uniform starts in Scouts. Beavers and Cubs wear their jumper and necker; from Scouts on, full uniform means the Scouting Ireland shirt with badges, group necker, dark trousers and proper shoes. It comes out for investitures, parades, awards and the once-a-term uniform night.",
+    imageUrl: "photos/uniform-badge-placement.jpg",
+    imageCaption: "Where the badges go",
     tips: [
       "Badges go on the shirt in the positions Scouting Ireland sets out. Ask a leader before sewing anything on; moving badges leaves holes.",
       "Iron the shirt the night before and roll the necker properly. It sounds fussy but a smart patrol on parade is noticed.",

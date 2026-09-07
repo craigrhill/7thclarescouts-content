@@ -380,6 +380,11 @@ function renderKits(){
     </div>
     <label>Event (one line)</label><input value="${esc(k.event||"")}" oninput="C.kits[${i}].event=this.value">
     <label>Summary</label><textarea oninput="C.kits[${i}].summary=this.value">${esc(k.summary||"")}</textarea>
+    <div class="row">
+      <div><label>Picture (optional)</label><input value="${esc(k.imageUrl||"")}" oninput="C.kits[${i}].imageUrl=this.value" placeholder="photos/uniform-badge-placement.jpg"></div>
+      <div><label>Picture heading</label><input value="${esc(k.imageCaption||"")}" oninput="C.kits[${i}].imageCaption=this.value" placeholder="Where the badges go"></div>
+    </div>
+    ${k.imageUrl?`<img src="${esc(k.imageUrl)}" alt="" style="max-height:160px;width:auto;border-radius:8px;margin:.2rem 0 .6rem">`:""}
     <label>Items (see format above)</label><textarea style="min-height:320px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem" oninput="C.kits[${i}].groups=textToGroups(this.value)">${esc(kitToText(k))}</textarea>
     <label>Guides and downloads (one per line: Title | link | note). Put PDFs in a docs/ folder in the zip, e.g. docs/Sionnach_Tips.pdf</label><textarea oninput="C.kits[${i}].docs=this.value.split('\\n').map(l=>l.split('|').map(x=>x.trim())).filter(p=>p[0]).map(p=>({title:p[0],url:p[1]||'',note:p[2]||''}))">${esc((k.docs||[]).map(d=>[d.title,d.url,d.note||''].join(' | ')).join("\\n"))}</textarea>
     <label>Packing tips (one per line)</label><textarea oninput="C.kits[${i}].tips=this.value.split('\n').map(x=>x.trim()).filter(Boolean)">${esc((k.tips||[]).join("\n"))}</textarea>

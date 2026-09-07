@@ -99,6 +99,8 @@ warning fires correctly for leaders.
     lab/roster.html     the secretary's roster: people, sections, codes
     lab/rota-lib.js     sign-in, API calls and helpers shared by both
     lab/rota.css        styles shared by both
+    photos/            images referenced from content, such as the badge
+                       placement chart on the Full uniform kit list
     docs/Sionnach_Tips.pdf
 
 Tabs: Home, Calendar, Kit, Sections, More. Home is personalised per phone via
@@ -199,6 +201,13 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
   leaves it alone and says so, or a leader with no signal would be logged out.
   A save that hits 401 asks for the password inline rather than signing out,
   which would throw away unsaved edits.
+* **A kit list can carry one picture.** `imageUrl` with an optional
+  `imageCaption` renders a card under the summary, tappable into the same
+  lightbox the gallery uses, with a plain link beside it to the file itself so
+  a phone can pinch-zoom detail the lightbox cannot. It is left out of the A4
+  print, as tips and downloads already are, so the printed sheet stays a tight
+  packing checklist. The Full uniform list uses it for Scouting Ireland's badge
+  placement chart.
 * **One photo list, two surfaces.** `gallery` is the only place photos live.
   The gallery page under More shows all of them with a chip per section; a
   section page shows the ones whose `section` matches its key, capped at eight,
@@ -238,7 +247,8 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
       events: [{date, endDate?, title, section, location?, time?, kitId?, details}],
       news: [{date, title, body}],
       gallery: [{url, caption?, section?}],
-      kits: [{id, title, event, summary, docs: [{title, url, note}], tips[],
+      kits: [{id, title, event, summary, imageUrl?, imageCaption?,
+              docs: [{title, url, note}], tips[],
               groups: [{name, items: [{n, note?, must?}]}], dontBring[]}],
       appliedUpdates: [], updatedAt, updatedBy }
 
