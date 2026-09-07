@@ -216,6 +216,24 @@ ul.plain{margin:0;padding-left:1.15em;color:var(--stone-600)}ul.plain li{margin:
 .sponsors{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.7rem}
 .sponsor{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:.9rem;text-align:center;text-decoration:none;color:var(--ink);font-weight:600;font-size:.9rem;display:flex;flex-direction:column;align-items:center;gap:.5rem;justify-content:center;min-height:90px}
 .sponsor img{max-height:48px;width:auto}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.5rem}
+.gallery button{padding:0;border:0;background:var(--stone-100);border-radius:12px;overflow:hidden;cursor:pointer;display:block;aspect-ratio:1}
+.gallery img{width:100%;height:100%;object-fit:cover}
+.strip{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.4rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.strip::-webkit-scrollbar{display:none}
+.strip button{flex:none;width:132px;height:132px;padding:0;border:0;border-radius:12px;overflow:hidden;background:var(--stone-100);cursor:pointer}
+.strip img{width:100%;height:100%;object-fit:cover}
+.lightbox{position:fixed;inset:0;background:rgba(20,22,24,.94);display:none;z-index:60;align-items:center;justify-content:center;padding:1rem}
+.lightbox.on{display:flex}
+.lightbox figure{margin:0;max-width:min(100%,900px);max-height:100%;display:flex;flex-direction:column;gap:.6rem}
+.lightbox img{max-height:76vh;width:auto;margin:0 auto;border-radius:10px;object-fit:contain}
+.lightbox figcaption{color:#F4F1EA;text-align:center;font-size:.9rem;min-height:1.2em}
+.lightbox .lb-btn{position:absolute;top:0;bottom:0;width:22%;border:0;background:none;color:#fff;font-size:2rem;cursor:pointer;opacity:.85;text-shadow:0 1px 6px rgba(0,0,0,.7)}
+.lightbox .lb-prev{left:0}.lightbox .lb-next{right:0}
+.lightbox .lb-close{position:absolute;top:.5rem;right:.7rem;width:auto;height:auto;border:0;background:none;color:#fff;font-size:2rem;line-height:1;cursor:pointer}
+.social-row{display:flex;flex-wrap:wrap;gap:.5rem;margin:.6rem 0 0}
+.social-row a{display:inline-flex;align-items:center;gap:.4em;border:1px solid var(--stone-200);background:#fff;border-radius:999px;padding:.45em .9em;font-size:.85rem;font-weight:600;color:var(--sea-700);text-decoration:none}
+.social-row svg{width:18px;height:18px;stroke:var(--sea-500);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .necker-card{display:grid;grid-template-columns:150px 1fr;gap:1rem;align-items:center;background:linear-gradient(135deg,#fff,var(--stone-50))}
 .necker svg{width:100%;height:auto;display:block}
 @media (max-width:480px){.necker-card{grid-template-columns:1fr}.necker{max-width:220px;margin:0 auto}}
@@ -317,6 +335,7 @@ ul.plain{margin:0;padding-left:1.15em;color:var(--stone-600)}ul.plain li{margin:
     <div id="moreIndex">
       <div class="page-head"><h1>More</h1></div>
       <div id="moreMenu"></div>
+      <div id="moreSocial"></div>
       <p class="small muted" style="text-align:center;margin-top:2rem">Part of <a href="https://www.scouts.ie" target="_blank" rel="noopener">Scouting Ireland</a> · <a href="admin.html" title="Admin login, password needed" aria-label="Admin login, password needed">Admin login</a> · <span id="updatedAt"></span></p>
     </div>
     <div id="moreDetail" style="display:none"></div>
@@ -333,6 +352,12 @@ ul.plain{margin:0;padding-left:1.15em;color:var(--stone-600)}ul.plain li{margin:
 
 <div class="sheet-bg" id="sheetBg" onclick="if(event.target===this)closeSheet()"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
+<div class="lightbox" id="lightbox" onclick="if(event.target===this)closePhoto()" role="dialog" aria-modal="true" aria-label="Photo">
+  <button class="lb-close" onclick="closePhoto()" aria-label="Close">&times;</button>
+  <button class="lb-btn lb-prev" onclick="stepPhoto(-1)" aria-label="Previous photo">&#8249;</button>
+  <button class="lb-btn lb-next" onclick="stepPhoto(1)" aria-label="Next photo">&#8250;</button>
+  <figure><img id="lbImg" src="" alt=""><figcaption id="lbCap"></figcaption></figure>
+</div>
 
 <script src="defaults.js"></script>
 <script src="kit-defaults.js"></script>
@@ -356,10 +381,18 @@ const ICON = {
   mail:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
   phone:'<svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>',
   users:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 18a4 4 0 0 1 7 0"/></svg>',
-  chev:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>'
+  chev:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>',
+  photo:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-6 6-3-3-4 4"/></svg>',
+  facebook:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M15 8h-2a2 2 0 0 0-2 2v11M9 13h5"/></svg>',
+  instagram:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17 7h.01"/></svg>',
+  tiktok:'<svg viewBox="0 0 24 24"><path d="M15 4v10.5a4 4 0 1 1-4-4"/><path d="M15 4.5a5 5 0 0 0 5 4.5"/></svg>',
+  youtube:'<svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="4"/><path d="M10.5 9.5l5 2.5-5 2.5z"/></svg>',
+  whatsapp:'<svg viewBox="0 0 24 24"><path d="M20.5 11.8a8.4 8.4 0 0 1-12.4 7.4L3.5 20.5l1.4-4.4A8.4 8.4 0 1 1 20.5 11.8z"/><path d="M9.2 9.3c.3 2 2 3.9 4.2 4.6"/></svg>',
+  x:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg>',
+  link:'<svg viewBox="0 0 24 24"><path d="M10.5 13.5a4.5 4.5 0 0 0 6.4 0l2-2a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M13.5 10.5a4.5 4.5 0 0 0-6.4 0l-2 2a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>'
 };
 let C = window.DEFAULT_CONTENT, KITS = window.DEFAULT_KITS;
-let eventFilter = "all", showPast = false;
+let eventFilter = "all", showPast = false, galleryFilter = "all";
 
 /* ---------- routing ---------- */
 const TABS = ["home","calendar","kit","sections","more"];
@@ -380,7 +413,7 @@ function route(){
   if (t === "calendar") renderCalendar();
   if (t === "kit") { sub ? showKit(sub) : showKitIndex(); }
   if (t === "sections") { sub ? showSection(sub) : showSectionIndex(); }
-  if (t === "more") { sub ? showMore(sub) : showMoreIndex(); }
+  if (t === "more") { sub ? showMore(sub, rest[1]) : showMoreIndex(); }
   if (tab === "events" && rest[0]) openEvent(rest[0]);
   window.scrollTo({top:0});
   document.title = (t === "home" ? "" : t[0].toUpperCase() + t.slice(1) + " · ") + "7th Clare Scouts";
@@ -564,20 +597,71 @@ function showSection(key){
   const x = (C.settings.sections||[]).find(z => z.key === key); if (!x) { location.hash = "sections"; return; }
   $("secIndex").style.display = "none"; $("secDetail").style.display = "block";
   const leaders = (C.settings.team||[]).filter(p => (p.section||"").toLowerCase() === key);
-  const ev = sectionEvents(key);
+  const ev = sectionEvents(key), pics = sectionPhotos(key);
   $("secDetail").innerHTML = `<a class="back" href="#sections">‹ Sections</a>
     <div class="card section-card ${esc(x.key)}"><div class="age">${esc(x.ages)}</div><h1 style="margin:.1em 0 .3em">${esc(x.name)}</h1>
     <p class="muted" style="font-size:.95rem">${esc(x.blurb)}</p>
     <div class="kv" style="margin-bottom:0">${ICON.cal}<span>${ph(x.day)}</span>${ICON.clock}<span>${ph(x.time)}</span>${x.venue?`${ICON.pin}<span>${ph(x.venue)}</span>`:""}</div>
     <div class="btn-row"><button class="btn ${(getMy()||[]).includes(key)?"":"orange"}" onclick="toggleMySection('${esc(key)}')">${(getMy()||[]).includes(key)?"✓ On my Home · remove":"Add to my Home"}</button></div></div>
     ${leaders.length?`<div class="sec-head"><h2>Leaders</h2><a href="#more/team">Whole team</a></div><div class="card">${leaders.map(personHtml).join("")}</div>`:""}
+    ${pics.length?`<div class="sec-head"><h2>Photos</h2><a href="#more/gallery/${esc(key)}">All photos</a></div>
+    <div class="strip">${pics.slice(0,8).map((p,i) => photoTile(p, i, `sectionPhotos('${esc(key)}')`)).join("")}</div>`:""}
     <div class="sec-head"><h2>${esc(x.name)} calendar</h2><a href="#calendar">Full calendar</a></div>${eventListHtml(ev)}`;
 }
 function personHtml(p){ const ini = (p.name||"?").split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
   return `<div class="person"><div class="avatar">${esc(ini)}</div><div><strong>${ph(p.name)}</strong><div class="role">${esc(p.role)}${p.section?` · ${esc(p.section[0].toUpperCase()+p.section.slice(1))}`:""}</div></div></div>`; }
+/* ---------- photos ---------- */
+/* One list, two surfaces. The gallery page shows every photo; a section page
+   shows the ones tagged with that section. A photo with no section is
+   group-wide and appears on the gallery only, so leaders keep one list. */
+const photos = () => (C.gallery||[]).filter(p => p && p.url);
+const sectionPhotos = key => photos().filter(p => (p.section||"") === key);
+const galleryList = () => galleryFilter === "all" ? photos() : sectionPhotos(galleryFilter);
+function photoTile(p, i, listExpr){
+  return `<button onclick="${esc(`openPhoto(${listExpr}, ${i})`)}" aria-label="${esc(p.caption || "Open photo")}"><img src="${esc(p.url)}" alt="${esc(p.caption||"")}" loading="lazy"></button>`;
+}
+function galleryHtml(){
+  const secs = (C.settings.sections||[]).filter(x => sectionPhotos(x.key).length);
+  const chips = [["all","All"], ...secs.map(x => [x.key, x.name])];
+  const list = galleryList();
+  return `<a class="back" href="#more">‹ More</a><div class="page-head"><h1>Photo gallery</h1><p>Camps, meetings and adventures.</p></div>
+    ${chips.length > 1 ? `<div class="chips">${chips.map(([k,l]) => `<button class="chip ${galleryFilter===k?"on":""}" onclick="showMore('gallery','${esc(k)}')">${esc(l)}</button>`).join("")}</div>` : ""}
+    ${list.length ? `<div class="gallery">${list.map((x,i) => photoTile(x, i, "galleryList()")).join("")}</div>`
+                  : `<div class="empty">No photos here yet.</div>`}`;
+}
+let LB = { list: [], i: 0 };
+function openPhoto(list, i){ LB = { list, i }; showPhoto(); $("lightbox").classList.add("on"); document.body.style.overflow = "hidden"; }
+function showPhoto(){ const p = LB.list[LB.i]; if (!p) return;
+  $("lbImg").src = p.url; $("lbImg").alt = p.caption || ""; $("lbCap").textContent = p.caption || "";
+  document.querySelectorAll(".lb-btn").forEach(b => b.style.display = LB.list.length > 1 ? "" : "none"); }
+function stepPhoto(d){ if (!LB.list.length) return; LB.i = (LB.i + d + LB.list.length) % LB.list.length; showPhoto(); }
+function closePhoto(){ $("lightbox").classList.remove("on"); document.body.style.overflow = ""; LB = { list: [], i: 0 }; }
+document.addEventListener("keydown", e => {
+  if (!$("lightbox").classList.contains("on")) return;
+  if (e.key === "Escape") closePhoto();
+  if (e.key === "ArrowLeft") stepPhoto(-1);
+  if (e.key === "ArrowRight") stepPhoto(1);
+});
+
+/* ---------- social ---------- */
+/* settings.social is a list so a new account is a row, not a code change.
+   Content saved before that list existed kept one field per network. */
+const NET_NAME = {facebook:"Facebook", instagram:"Instagram", tiktok:"TikTok", youtube:"YouTube", whatsapp:"WhatsApp", x:"X", website:"Website"};
+const NET_ICON = {facebook:ICON.facebook, instagram:ICON.instagram, tiktok:ICON.tiktok, youtube:ICON.youtube, whatsapp:ICON.whatsapp, x:ICON.x, website:ICON.link};
+function socialLinks(s){
+  if (Array.isArray(s.social)) return s.social.filter(x => x && x.url);
+  return [["facebook", s.facebook], ["instagram", s.instagram]].filter(([,u]) => u).map(([name,url]) => ({name, url}));
+}
+function socialHtml(s){
+  const list = socialLinks(s); if (!list.length) return "";
+  return `<div class="social-row">${list.map(x => { const k = String(x.name||"").toLowerCase();
+    return `<a href="${esc(x.url)}" target="_blank" rel="noopener">${NET_ICON[k] || ICON.link}${esc(NET_NAME[k] || x.name || "Link")}</a>`; }).join("")}</div>`;
+}
+
 const MORE = [
   ["fundraising","Fundraising","Donate, campaigns and sponsors",'<svg viewBox="0 0 24 24"><path d="M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10z"/></svg>'],
   ["badges","Adventure Skills and badges","The nine skills and where badges go",'<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>'],
+  ["gallery","Photo gallery","Camps, meetings and adventures",'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-6 6-3-3-4 4"/></svg>'],
   ["team","Our team","Group leaders and section leaders",'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 18a4 4 0 0 1 7 0"/></svg>'],
   ["contact","Contact and venues","Email, maps and directions",'<svg viewBox="0 0 24 24"><path d="M12 22s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>'],
   ["join","How to join","Places, taster nights and registration",'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0M19 8h4M21 6v4"/></svg>'],
@@ -585,7 +669,9 @@ const MORE = [
   ["rota","Leaders' area","Volunteer rota, roster and county events, with your personal code",'<svg viewBox="0 0 24 24"><path d="M9 4h6v3H9z"/><path d="M7 5H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2"/><path d="M8 13l2 2 4-4"/></svg>',"lab/rota.html"]
 ];
 function showMoreIndex(){ $("moreDetail").style.display = "none"; $("moreIndex").style.display = "block";
-  $("moreMenu").innerHTML = `<div class="menu">${MORE.map(([k,t,d,i,href]) => `<a href="${href||`#more/${k}`}">${i}<span class="grow"><strong>${t}</strong><small>${d}</small></span><span class="chev">${ICON.chev}</span></a>`).join("")}</div>`; }
+  $("moreMenu").innerHTML = `<div class="menu">${MORE.map(([k,t,d,i,href]) => `<a href="${href||`#more/${k}`}">${i}<span class="grow"><strong>${t}</strong><small>${d}</small></span><span class="chev">${ICON.chev}</span></a>`).join("")}</div>`;
+  const soc = socialHtml(C.settings);
+  $("moreSocial").innerHTML = soc ? `<div class="sec-head"><h2>Follow us</h2></div>${soc}` : ""; }
 const SKILLS = [
   ["Camping","Pitching, cooking, keeping yourself and your patrol dry and fed: from a first night in a tent to running a lightweight camp in wild country."],
   ["Backwoods","Fire lighting, shelters, cooking without pots, knife and axe safety, and living comfortably with what the woods give you."],
@@ -627,9 +713,10 @@ function badgesHtml(){
     <div class="sec-head"><h2>Sewing tips</h2></div>
     <div class="card"><ul class="plain"><li>Pin the badge on with the jumper on the child, then take it off to sew. Badges sewn flat on a table end up in odd places.</li><li>Sew round the edge with small stitches in thread that matches the border. Iron-on glue alone falls off in the wash.</li><li>Wash jumpers inside out on a cool wash to keep badge colours.</li><li>When a Scout moves up a stage, unpick the old badge and put the new one in the same spot.</li></ul></div>`;
 }
-function showMore(sub){
+function showMore(sub, arg){
   $("moreIndex").style.display = "none"; $("moreDetail").style.display = "block";
   const s = C.settings, email = (s.email||"").replace(/\[PLACEHOLDER\]\s*/,"");
+  if (sub === "gallery") { galleryFilter = arg || "all"; $("moreDetail").innerHTML = galleryHtml(); return; }
   if (sub === "fundraising") { $("moreDetail").innerHTML = `<a class="back" href="#more">‹ More</a><div class="page-head"><h1>Fundraising</h1><p id="fundIntro"></p></div><div id="fundDonate"></div><div class="sec-head"><h2>Current campaigns</h2></div><div id="fundCampaigns"></div><div class="sec-head"><h2>Other ways to help</h2></div><div class="card" id="fundHelp"></div><div class="sec-head"><h2>Thank you to our sponsors</h2></div><div id="fundSponsors"></div>`; renderFundraising(); return; }
   if (sub === "badges") { $("moreDetail").innerHTML = badgesHtml(); return; }
   if (sub === "team") { const team = s.team||[]; const top = team.filter(p=>!p.section), secs = team.filter(p=>p.section);
@@ -648,7 +735,7 @@ function showMore(sub){
       <p class="small muted" style="margin:.9rem 0 0">Adult volunteers are always welcome too. No experience needed, full training provided.</p></div>`; return; }
   if (sub === "about") { $("moreDetail").innerHTML = `<a class="back" href="#more">‹ More</a><div class="page-head"><h1>About the group</h1></div><div class="card">${paras(s.about)}</div>${s.aboutPhotoUrl?`<img src="${esc(s.aboutPhotoUrl)}" alt="" style="border-radius:var(--radius)">`:""}`; return; }
   // contact
-  $("moreDetail").innerHTML = `<a class="back" href="#more">‹ More</a><div class="page-head"><h1>Contact</h1><p id="venueText"></p></div><div class="card" id="contactCard"></div><div class="sec-head"><h2>Where we meet</h2></div><div id="maps"></div>`;
+  $("moreDetail").innerHTML = `<a class="back" href="#more">‹ More</a><div class="page-head"><h1>Contact</h1><p id="venueText"></p></div><div class="card" id="contactCard"></div><div id="social"></div><div class="sec-head"><h2>Where we meet</h2></div><div id="maps"></div>`;
   renderContact();
 }
 function renderContact(){
@@ -657,9 +744,9 @@ function renderContact(){
   const rows = [];
   if (s.email) rows.push(`${ICON.mail}<span><a href="mailto:${esc(email)}">${ph(s.email)}</a></span>`);
   if (s.phone) rows.push(`${ICON.phone}<span><a href="tel:${esc(s.phone.replace(/\s/g,""))}">${ph(s.phone)}</a></span>`);
-  if (s.facebook) rows.push(`${ICON.users}<span><a href="${esc(s.facebook)}" target="_blank" rel="noopener">Facebook</a></span>`);
-  if (s.instagram) rows.push(`${ICON.users}<span><a href="${esc(s.instagram)}" target="_blank" rel="noopener">Instagram</a></span>`);
   $("contactCard").innerHTML = `<div class="kv" style="margin:0">${rows.join("")}</div>${email?`<div class="btn-row"><a class="btn orange block" href="mailto:${esc(email)}">Email the leaders</a></div>`:""}`;
+  const soc = socialHtml(s);
+  $("social").innerHTML = soc ? `<div class="sec-head"><h2>Follow us</h2></div><div class="card">${soc}</div>` : "";
   const byVenue = {};
   (s.sections||[]).forEach(x => { if (x.venue) (byVenue[x.venue] = byVenue[x.venue] || []).push(`${x.name}: ${x.day} ${x.time}`); });
   $("maps").innerHTML = (s.venues||[]).filter(v=>v.query).map(v => {

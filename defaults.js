@@ -7,8 +7,9 @@ window.DEFAULT_CONTENT = {
     venue: "Beavers and Cubs meet at the hall in Ballyvaughan. Scouts and Ventures meet at Newquay National School.",
     email: "7thclarescouts@gmail.com",
     phone: "",
-    facebook: "",
-    instagram: "",
+    social: [
+      { name:"facebook", url:"" }
+    ],
     venues: [
       { name:"The Hall, Ballyvaughan", query:"Ballyvaughan Hall, Ballyvaughan, Co. Clare", link:"https://maps.app.goo.gl/EUeUCyrZT5u3BVAE6" },
       { name:"Newquay National School", query:"Newquay National School, New Quay, Co. Clare", link:"https://maps.app.goo.gl/f47QxW9KYiKD9x3DA" }
@@ -67,5 +68,9 @@ window.DEFAULT_CONTENT = {
   ],
   news: [
     { date:"2026-09-01", title:"New website launched", body:"Our new home online. Events, notices and news will appear here through the year." }
-  ]
+  ],
+  // Photos are added by leaders in admin. A photo with a section key shows on
+  // that section's page as well as in the gallery; without one it is
+  // group-wide and shows in the gallery only.
+  gallery: []
 };

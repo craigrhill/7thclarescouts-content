@@ -63,6 +63,7 @@ textarea{min-height:90px;resize:vertical}
     <button data-pane="sections">Sections</button>
     <button data-pane="kits">Kit lists</button>
     <button data-pane="team">Team</button>
+    <button data-pane="photos">Photos</button>
     <button data-pane="badges">Badges</button>
     <button data-pane="fund">Fundraising</button>
     <button data-pane="settings">Site text &amp; contact</button>
@@ -96,6 +97,12 @@ textarea{min-height:90px;resize:vertical}
   <div class="pane" id="pane-team">
     <div class="card"><h2>Our team</h2><p class="hint">Name, role and section only. Leave section blank for group roles (Group Leader, Deputy GL, Chair, Treasurer, Secretary). No personal contact details are published.</p>
       <div id="teamList"></div><button class="btn secondary" onclick="addPerson()">+ Add person</button></div>
+  </div>
+
+  <div class="pane" id="pane-photos">
+    <div class="card" style="border-top-color:var(--gorse)"><h2>Before you add photos</h2><p class="hint">The site is public, so anything here can be seen, saved and cached by anyone. Only add photos you have the parents' permission to publish, and avoid naming young people in captions. Removing a photo later takes it off the site but cannot un-share a copy someone already has.</p></div>
+    <div class="card"><h2>Photos</h2><p class="hint">Paste an image link, or the file name if the photo is in the site itself (for example <code>photos/camp.jpg</code>). Give it a section to have it show on that section's page as well as in the gallery; leave the section blank for a group photo that shows in the gallery only.</p>
+      <div id="photoList"></div><button class="btn secondary" onclick="addPhoto()">+ Add photo</button></div>
   </div>
 
   <div class="pane" id="pane-badges">
@@ -134,11 +141,9 @@ textarea{min-height:90px;resize:vertical}
         <div><label>Phone</label><input id="s_phone"></div>
       </div>
       <label>Where we meet (general note; per-section venues are under Sections)</label><input id="s_venue">
-      <div class="row">
-        <div><label>Facebook URL</label><input id="s_facebook"></div>
-        <div><label>Instagram URL</label><input id="s_instagram"></div>
-      </div>
     </div>
+    <div class="card"><h2>Social media</h2><p class="hint">Shown on the Contact page and at the bottom of More. Add a row per account: Facebook, Instagram, TikTok, YouTube, WhatsApp, X, or any other link.</p>
+      <div id="socialList"></div><button class="btn secondary" onclick="addSocial()">+ Add link</button></div>
     <div class="card"><h2>Images</h2><p class="hint">Paste image URLs (e.g. from a photo hosted on the site itself: upload the file into the zip and use its name, like <code>photos/group.jpg</code>).</p>
       <label>Logo</label><input id="s_logoUrl" placeholder="logo.png">
       <label>About photo</label><input id="s_aboutPhotoUrl" placeholder="photos/group.jpg">
@@ -240,7 +245,41 @@ document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
   b.classList.add("on"); $("pane-" + b.dataset.pane).classList.add("on");
 });
 
-function renderAll(){ renderNotices(); renderEvents(); renderNews(); renderSections(); renderSettings(); renderKits(); renderTeam(); renderFund(); renderBadges(); checkUpdate(); }
+function renderAll(){ renderNotices(); renderEvents(); renderNews(); renderSections(); renderSettings(); renderSocial(); renderPhotos(); renderKits(); renderTeam(); renderFund(); renderBadges(); checkUpdate(); }
+
+// ---- Social links ----
+const NETWORKS = [["facebook","Facebook"],["instagram","Instagram"],["tiktok","TikTok"],["youtube","YouTube"],["whatsapp","WhatsApp"],["x","X"],["website","Website"]];
+/* Content saved before this list existed kept one field per network. Fold
+   those in once, so there is a single place to edit from then on. */
+function migrateSocial(){
+  const s = C.settings;
+  if (Array.isArray(s.social)) return;
+  s.social = [["facebook", s.facebook], ["instagram", s.instagram]].filter(([,u]) => u).map(([name,url]) => ({name, url}));
+  delete s.facebook; delete s.instagram;
+}
+function renderSocial(){
+  migrateSocial();
+  $("socialList").innerHTML = C.settings.social.map((x,i) => `<div class="item"><div class="row">
+    <div><label>Network</label><select onchange="C.settings.social[${i}].name=this.value">${NETWORKS.map(([k,l]) => `<option value="${k}"${x.name===k?" selected":""}>${l}</option>`).join("")}${NETWORKS.some(([k])=>k===x.name)?"":`<option value="${esc(x.name||"")}" selected>${esc(x.name||"Other")}</option>`}</select></div>
+    <div><label>Link</label><input value="${esc(x.url||"")}" oninput="C.settings.social[${i}].url=this.value" placeholder="https://facebook.com/7thclarescouts"></div></div>
+    <div class="actions"><button class="btn danger" onclick="C.settings.social.splice(${i},1);renderSocial()">Delete</button></div></div>`).join("")
+    || `<p class="hint">No links yet.</p>`;
+}
+function addSocial(){ migrateSocial(); C.settings.social.push({name:"facebook", url:""}); renderSocial(); }
+
+// ---- Photos ----
+function renderPhotos(){
+  C.gallery = C.gallery || [];
+  const secs = C.settings.sections || [];
+  $("photoList").innerHTML = C.gallery.map((x,i) => `<div class="item"><div class="row">
+    <div><label>Image link</label><input value="${esc(x.url||"")}" oninput="C.gallery[${i}].url=this.value" placeholder="photos/camp.jpg"></div>
+    <div><label>Caption (optional)</label><input value="${esc(x.caption||"")}" oninput="C.gallery[${i}].caption=this.value" placeholder="Autumn hike on Black Head"></div>
+    <div><label>Section</label><select onchange="C.gallery[${i}].section=this.value"><option value=""${x.section?"":" selected"}>Group (gallery only)</option>${secs.map(sx => `<option value="${esc(sx.key)}"${x.section===sx.key?" selected":""}>${esc(sx.name)}</option>`).join("")}</select></div></div>
+    ${x.url?`<img src="${esc(x.url)}" alt="" style="max-height:120px;width:auto;border-radius:8px;margin-top:.6rem">`:""}
+    <div class="actions"><button class="btn danger" onclick="C.gallery.splice(${i},1);renderPhotos()">Delete</button></div></div>`).join("")
+    || `<p class="hint">No photos yet.</p>`;
+}
+function addPhoto(){ C.gallery = C.gallery || []; C.gallery.push({url:"", caption:"", section:""}); renderPhotos(); }
 
 // ---- Merge logic shared by import and deploy updates ----
 function mergeContent(base, patch){
@@ -398,7 +437,7 @@ function renderSections(){
     <label>Blurb</label><textarea oninput="C.settings.sections[${i}].blurb=this.value">${esc(s.blurb)}</textarea></div>`).join("");
 }
 
-const SETTING_KEYS = ["heroTitle","heroLede","about","email","phone","venue","facebook","instagram","logoUrl","aboutPhotoUrl","joinPhotoUrl"];
+const SETTING_KEYS = ["heroTitle","heroLede","about","email","phone","venue","logoUrl","aboutPhotoUrl","joinPhotoUrl"];
 function renderSettings(){ SETTING_KEYS.forEach(k => { const el = $("s_"+k); el.value = C.settings[k] || ""; el.oninput = () => C.settings[k] = el.value; });
   C.settings.venues = C.settings.venues || [];
   $("venueMapList").innerHTML = C.settings.venues.map((v,i) => `<div class="item">

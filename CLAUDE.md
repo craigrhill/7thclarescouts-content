@@ -199,6 +199,19 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
   leaves it alone and says so, or a leader with no signal would be logged out.
   A save that hits 401 asks for the password inline rather than signing out,
   which would throw away unsaved edits.
+* **One photo list, two surfaces.** `gallery` is the only place photos live.
+  The gallery page under More shows all of them with a chip per section; a
+  section page shows the ones whose `section` matches its key, capped at eight,
+  linking on to `#more/gallery/<key>`. A photo with no `section` is group-wide
+  and shows in the gallery only. So leaders add a photo once, in the Photos tab
+  in admin, and tag it rather than filing it twice.
+* **Social links are a list, not fields.** `settings.social` is
+  `[{name, url}]`, so a new account is a row in admin rather than a code
+  change. `name` picks the icon (facebook, instagram, tiktok, youtube,
+  whatsapp, x, website); anything else still renders with a generic link icon.
+  Content saved before the list existed had `settings.facebook` and
+  `settings.instagram`: `index.html` falls back to reading those, and admin
+  folds them into the list and deletes them on the next save.
 * **`knownKitIds` is a ledger, not a setting.** It records every built-in kit
   list admin has already offered, so a list a leader deleted on purpose is not
   auto-added back on the next load. Admin writes it on every save. Do not hand
@@ -211,8 +224,9 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
 
 ## Content shape
 
-    { settings: { heroTitle, heroLede, about, venue, email, phone, facebook,
-                  instagram, logoUrl?, aboutPhotoUrl?, joinPhotoUrl?,
+    { settings: { heroTitle, heroLede, about, venue, email, phone,
+                  social: [{name, url}],
+                  logoUrl?, aboutPhotoUrl?, joinPhotoUrl?,
                   venues: [{name, query, link}],
                   team: [{name, role, section}],
                   sections: [{key, name, ages, day, time, venue, blurb}] },
@@ -223,6 +237,7 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
       notices: [{title, body}],
       events: [{date, endDate?, title, section, location?, time?, kitId?, details}],
       news: [{date, title, body}],
+      gallery: [{url, caption?, section?}],
       kits: [{id, title, event, summary, docs: [{title, url, note}], tips[],
               groups: [{name, items: [{n, note?, must?}]}], dontBring[]}],
       appliedUpdates: [], updatedAt, updatedBy }
