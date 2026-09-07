@@ -278,9 +278,9 @@ window.DEFAULT_KITS = [
     ],
     groups: [
       { name: "Wear on the day", items: [
-        { n: "Walking boots", note: "Your own, broken in over a few weeks. Strong sole, ankle support, leather ideally: fabric and Gore-Tex boots don't survive Irish bog. Runners or trail shoes mean you go home.", must: true },
-        { n: "Walking socks", note: "Wool or synthetic, not cotton", must: true },
-        { n: "Walking trousers", note: "Quick-dry. No jeans, no cotton tracksuits.", must: true },
+        { n: "Hiking boots", note: "Your own, broken in over a few weeks. Strong sole, ankle support, leather ideally: fabric and Gore-Tex boots don't survive Irish bog. Runners or trail shoes mean you go home.", must: true },
+        { n: "Hiking socks", note: "Wool or synthetic, not cotton", must: true },
+        { n: "Hiking trousers", note: "Quick-dry. No jeans, no cotton tracksuits.", must: true },
         { n: "Base layer top", note: "Synthetic or merino, not cotton", must: true },
         { n: "Fleece or mid layer", must: true },
         { n: "Warm hat and gloves", note: "Plus a spare pair of gloves in the bag", must: true },
@@ -380,9 +380,9 @@ window.DEFAULT_KITS = [
     ],
     groups: [
       { name: "Wear on the day", items: [
-        { n: "Walking boots", note: "Broken in, ankle support, good sole. No runners or trail shoes.", must: true },
-        { n: "Walking socks", note: "Wool or synthetic", must: true },
-        { n: "Walking trousers", note: "Quick-dry, no jeans", must: true },
+        { n: "Hiking boots", note: "Broken in, ankle support, good sole. No runners or trail shoes.", must: true },
+        { n: "Hiking socks", note: "Wool or synthetic", must: true },
+        { n: "Hiking trousers", note: "Quick-dry, no jeans", must: true },
         { n: "Base layer top", note: "Synthetic or merino", must: true },
         { n: "Fleece or mid layer", must: true },
         { n: "Warm hat and gloves", note: "Plus spare gloves; hands get very cold navigating at night", must: true },

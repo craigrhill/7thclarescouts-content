@@ -1,5 +1,5 @@
 // 7th Clare Scouts service worker: offline shell + last-known content
-const VERSION = "v0_33";
+const VERSION = "v0_34";
 const SHELL = ["./", "./index.html", "./calendar.html", "./defaults.js", "./kit-defaults.js", "./logo.png", "./icon-192.png", "./icon-512.png", "./manifest.webmanifest", "./docs/Sionnach_Tips.pdf"];
 const SHELL_CACHE = "shell-" + VERSION, DATA_CACHE = "data-" + VERSION, FONT_CACHE = "fonts";
 
@@ -21,6 +21,16 @@ self.addEventListener("fetch", e => {
   // Fonts: cache as they arrive
   if (url.hostname.includes("fonts.g")) {
     e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => { const copy = res.clone(); caches.open(FONT_CACHE).then(c => c.put(e.request, copy)); return res; }).catch(() => r)));
+    return;
+  }
+  // The rota function: leaders' data is never cached, so a lab page always
+  // reads live and nothing private sits in a cache. The one public read, the
+  // badge board, is network first with the last copy as fallback, so a section
+  // page still shows a board when there is no signal.
+  if (url.pathname.includes("/.netlify/functions/rota")) {
+    if (url.searchParams.get("a") !== "board") return;
+    e.respondWith(fetch(e.request).then(r => { const copy = r.clone(); caches.open(DATA_CACHE).then(c => c.put(e.request, copy)); return r; })
+      .catch(() => caches.match(e.request)));
     return;
   }
   // lab/ is for experiments and is deliberately not part of the app: never
