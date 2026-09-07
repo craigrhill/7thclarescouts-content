@@ -28,7 +28,13 @@ const signInBtn = (p) => p.getByRole("button", { name: "Sign in", exact: true })
 const status = (p, i) => p.locator(".slot").nth(i).locator(".status").innerText().then((t) => t.trim());
 const pickSec = async (p, n) => { await p.getByRole("button", { name: n, exact: true }).first().click(); await p.waitForTimeout(150); };
 const names = async (p) => (await p.locator("#people .person .nm").allInnerTexts()).map((t) => t.split("\n")[0].replace(/\s*\(you\)\s*$/, "").trim());
-const addOnRoster = async (p, name, secs, lead) => { await p.fill("#newName", name); for (const s of secs) await p.locator(`#newSecs input[data-key=${s}]`).check(); if (lead) await p.check("#newLead"); await p.getByRole("button", { name: "Add and get a code" }).click(); await p.waitForTimeout(800); return p.locator("#codeText").innerText(); };
+// Adds via the form and returns the new person's code, read from their row.
+const addOnRoster = async (p, name, secs, lead) => {
+  for (const i of await p.locator("#newSecs input").all()) await i.uncheck();
+  await p.fill("#newName", name); for (const s of secs) await p.locator(`#newSecs input[data-key=${s}]`).check(); if (lead) await p.check("#newLead");
+  await p.getByRole("button", { name: "Add", exact: true }).click(); await p.waitForTimeout(800);
+  return (await p.locator("#people tr.person", { hasText: name.split(",")[0].trim() }).locator("td.code-cell code").innerText()).trim();
+};
 
 try {
   const S = await page(390, 844); await go(S, "roster.html");
@@ -39,11 +45,21 @@ try {
   ok("setup refuses a wrong admin password", (await S.locator("#bootMsg").innerText()).includes("Wrong password"), true);
   await S.fill("#bootPw", "local"); await S.getByRole("button", { name: "Create the secretary" }).click(); await S.waitForTimeout(900);
   ok("setup creates the secretary", [await S.locator("#app").isVisible(), await S.locator("#meRole").innerText()], [true, ", secretary, section lead"]);
-  const secCode = await S.locator("#codeText").innerText();
+  const secCode = (await S.locator("#people tr.person", { hasText: "Sec Test" }).locator("td.code-cell code").innerText()).trim();
+  ok("the secretary's own code is in their row, with no banner", [/^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(secCode), await S.locator("#codeBox").count()], [true, 0]);
   const leadCode = await addOnRoster(S, "Lead Test", ["scouts"], true);
   const memberCode = await addOnRoster(S, "Member Test", ["scouts"], false);
   await addOnRoster(S, "Beaver Helper", ["beavers"], false);
   ok("roster lists all four", await names(S), ["Sec Test", "Lead Test", "Member Test", "Beaver Helper"]);
+  ok("a newly added row is highlighted", await S.locator("#people tr.fresh").count() >= 1, true);
+  ok("section chips stay ticked for the next add", await S.locator("#newSecs input[data-key=beavers]").isChecked(), true);
+  ok("no secretary checkbox on the add form", await S.locator("#newSecretary").count(), 0);
+  await S.fill("#newName", "Bulk One, Bulk Two"); await S.getByRole("button", { name: "Add", exact: true }).click(); await S.waitForTimeout(1200);
+  ok("several names at once, comma separated", (await names(S)).slice(-2), ["Bulk One", "Bulk Two"]);
+  ok("both got codes", await S.locator("#people tr.person td.code-cell code").count(), 6);
+  for (const n of ["Bulk One", "Bulk Two"]) { await S.locator("#people tr.person", { hasText: n }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(150); await S.locator("#people tr.editor button:has-text('Remove from roster')").click(); await S.waitForTimeout(700); }
+  await S.locator("#newSecs input[data-key=beavers]").uncheck();
+  ok("bulk rows removed again", (await names(S)).length, 4);
   ok("secretary sees a code for everyone", await S.locator("#people tr.person td.code-cell code").count(), 4);
   ok("the lead's shown code is the one issued", (await S.locator("#people tr.person", { hasText: "Lead Test" }).locator("td.code-cell code").innerText()).trim(), leadCode);
   ok("section pills rendered, one per section held (the secretary has none)", await S.locator("#people .spill").count(), 3);
@@ -85,9 +101,8 @@ try {
   await S.locator("#people tr.person", { hasText: "Member Test" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(200);
   ok("Edit opens one editor row", await S.locator("#people tr.editor").count(), 1);
   await S.locator("#people tr.editor button:has-text('New code')").click(); await S.waitForTimeout(800);
-  const newCode = await S.locator("#codeText").innerText();
-  ok("secretary issues a new code", newCode !== memberCode, true);
-  ok("the table shows the new code straight away", (await S.locator("#people tr.person", { hasText: "Member Test" }).locator("td.code-cell code").innerText()).trim(), newCode);
+  const newCode = (await S.locator("#people tr.person", { hasText: "Member Test" }).locator("td.code-cell code").innerText()).trim();
+  ok("secretary issues a new code and the row shows it", /^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(newCode) && newCode !== memberCode, true);
   await S.locator("#people tr.person", { hasText: "Beaver Helper" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(200);
   await S.locator("#people tr.editor button:has-text('Remove from roster')").click(); await S.waitForTimeout(800);
   ok("secretary removes the helper", (await names(S)).includes("Beaver Helper"), false);
@@ -105,6 +120,11 @@ try {
   await S2.screenshot({ path: ".e2e/roster-1280.png" });
   await L.click("text=Sign out"); await L.waitForTimeout(300);
   ok("sign out returns to the gate", await L.locator("#gate").isVisible(), true);
+  await S.locator("#people tr.person", { hasText: "Lead Test" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(150);
+  ok("editor offers to hand the secretary role over", await S.locator("#people tr.editor button:has-text('Make secretary instead of me')").count(), 1);
+  await S.locator("#people tr.editor button:has-text('Make secretary instead of me')").click(); await S.waitForTimeout(1200);
+  ok("after handing over, the page is read-only for the old secretary", [await S.locator("#addCard").isVisible(), (await S.locator("#intro").innerText()).startsWith("Only the secretary")], [false, true]);
+  ok("and the roster shows the new secretary", (await S.locator("#people tr.person", { hasText: "Lead Test" }).innerText()).toLowerCase().includes("secretary"), true);
 } catch (e) { fail++; console.log("FAIL  suite threw:", e.message); }
 await b.close(); stop();
 console.log(`\n${pass} passed, ${fail} failed`);

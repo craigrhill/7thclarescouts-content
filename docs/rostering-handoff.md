@@ -20,7 +20,10 @@ here so you understand what you are copying and what to change.
   by the page:
   * **secretary** keeps the roster on `roster.html`: who is on it, which
     sections (teams, units, whatever the group calls them) each can cover,
-    codes. The roster always keeps at least one secretary.
+    codes. The roster always keeps at least one secretary, and the page
+    assumes exactly one: the role is handed on from a person's row rather
+    than ticked at add time. Adding is a name (or several, comma
+    separated), section chips and Add; the code appears in the row.
   * **lead** runs coverage on `rota.html` for a section: adults needed, per
     section and per meeting; anyone's ticks; marking a week as no meeting.
   * neither: sees the rota, ticks only themselves, sees only people who

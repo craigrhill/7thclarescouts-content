@@ -41,10 +41,17 @@
       <span class="small muted">Signed in as <b id="meName"></b><span id="meRole"></span></span>
       <span><a class="btn quiet" href="rota.html">Rota</a><button class="btn quiet" onclick="signOut()">Sign out</button></span>
     </div>
-    <div id="codeBox" class="banner" hidden></div>
 
     <h1>Roster</h1>
     <p class="muted" id="intro"></p>
+
+    <div class="card" id="addCard" hidden>
+      <div class="add">
+        <input type="text" id="newName" placeholder="Name (or several, separated by commas)" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addPeople()}">
+        <div class="secs" id="newSecs"></div>
+        <div class="row"><button class="btn primary" onclick="addPeople()">Add</button><label class="small"><input type="checkbox" id="newLead"> Section lead</label><span class="small muted" id="addMsg"></span></div>
+      </div>
+    </div>
 
     <div class="card">
       <table class="roster">
@@ -53,16 +60,6 @@
       </table>
     </div>
 
-    <div class="card" id="addCard" hidden>
-      <h2>Add a Scouter</h2>
-      <div class="add">
-        <input type="text" id="newName" placeholder="Name" autocomplete="off">
-        <div class="secs" id="newSecs"></div>
-        <label class="small"><input type="checkbox" id="newLead"> Section lead: sets adults needed and can tick anyone</label>
-        <label class="small"><input type="checkbox" id="newSecretary"> Secretary: can change this roster</label>
-        <div><button class="btn primary" onclick="addPerson()">Add and get a code</button></div>
-      </div>
-    </div>
   </section>
 </main>
 <footer class="wrap">Nothing on this page is public. Codes are personal.</footer>
@@ -80,7 +77,7 @@ function render(){
   const me = D.me, manage = canManage();
   $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
   $("intro").textContent = manage
-    ? "Everyone who can be on a rota, the sections each can cover, and their code. Section leads see this list on the rota page but cannot change it. Edit a row to change sections, roles or the code."
+    ? "Type a name, tap the sections they can cover, press Add. Their code appears in the row; Copy it and send it to them. Edit a row to change anything later."
     : "Only the secretary can change the roster. This is the list as it stands.";
   $("addCard").hidden = !manage; $("codeHead").hidden = !manage;
   const people = D.people || [];
@@ -96,29 +93,42 @@ function render(){
     return row + `<tr class="editor"><td colspan="5"><div class="edrow">
       <div class="row"><input type="text" id="edName" value="${esc(p.name)}"><button class="btn" onclick="saveName('${esc(p.id)}')">Save name</button></div>
       <div class="secs">${chips(p.sections || [], k => `setSections('${esc(p.id)}','${k}',this.checked)`)}</div>
-      <div class="row"><label><input type="checkbox" ${p.lead ? "checked" : ""} onchange="setFlag('${esc(p.id)}','lead',this.checked)"> Section lead</label><label><input type="checkbox" ${p.secretary ? "checked" : ""} onchange="setFlag('${esc(p.id)}','secretary',this.checked)"> Secretary</label></div>
-      <div class="row"><button class="btn" onclick="recode('${esc(p.id)}')">New code</button><button class="btn quiet" onclick="removePerson('${esc(p.id)}')">Remove from roster</button></div>
+      <div class="row"><label><input type="checkbox" ${p.lead ? "checked" : ""} onchange="setFlag('${esc(p.id)}','lead',this.checked)"> Section lead</label></div>
+      <div class="row"><button class="btn" onclick="recode('${esc(p.id)}')">New code</button><button class="btn quiet" onclick="removePerson('${esc(p.id)}')">Remove from roster</button>${p.id !== me.id && !p.secretary ? `<button class="btn quiet" onclick="handOver('${esc(p.id)}')">Make secretary instead of me</button>` : ""}</div>
     </div></td></tr>`;
   }).join("") : `<tr><td colspan="5" class="empty">Nobody yet. Add the first Scouter below.</td></tr>`;
-  if (manage) $("newSecs").innerHTML = chips([], null);
+  if (manage && !$("newSecs").children.length) $("newSecs").innerHTML = chips([], null);
 }
 async function load(){ showErr(""); D = await api("GET", "?sections="); $("gate").hidden = true; $("app").hidden = false; render(); }
 async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); await load().catch(() => {}); } }
 function edit(id){ editing = editing === id ? null : id; render(); }
-const addPerson = () => guarded(async () => {
-  const name = $("newName").value.trim(); if (!name) return;
+const addPeople = () => guarded(async () => {
+  const names = $("newName").value.split(/[,\n]/).map(x => x.trim()).filter(Boolean); if (!names.length) return;
   const sections = [...$("newSecs").querySelectorAll("input:checked")].map(i => i.dataset.key);
-  const r = await api("POST", "?a=person", { name, sections, lead: $("newLead").checked, secretary: $("newSecretary").checked });
-  $("newName").value = ""; $("newLead").checked = false; $("newSecretary").checked = false; await load(); showCode(r.person.name, r.code);
+  if (!sections.length) { $("addMsg").textContent = "Tap at least one section."; return; }
+  const added = [], failed = [];
+  for (const name of names) { try { added.push((await api("POST", "?a=person", { name, sections, lead: $("newLead").checked })).person.id); } catch (e) { failed.push(name + " (" + e.message.replace(/\.$/, "") + ")"); } }
+  $("newName").value = ""; $("newLead").checked = false;
+  $("addMsg").textContent = failed.length ? "Not added: " + failed.join(", ") : "";
+  await load();
+  for (const id of added) { const row = document.querySelector(`tr.person[data-id="${id}"]`); if (row) row.classList.add("fresh"); }
+  $("newName").focus();
+});
+const handOver = (id) => guarded(async () => {
+  const p = personById(id);
+  if (!confirm("Make " + p.name + " the secretary instead of you? You will keep your other roles but will no longer be able to change the roster.")) return;
+  await api("POST", "?a=person-update", { id, secretary: true });
+  await api("POST", "?a=person-update", { id: D.me.id, secretary: false });
+  editing = null; await load();
 });
 const saveName = (id) => guarded(async () => { const name = $("edName").value.trim(); if (!name) return; await api("POST", "?a=person-update", { id, name }); await load(); });
 const setSections = (id, key, on) => guarded(async () => { const p = personById(id); const sections = on ? [...new Set([...(p.sections || []), key])] : (p.sections || []).filter(x => x !== key); await api("POST", "?a=person-update", { id, sections }); await load(); });
 const setFlag = (id, flag, on) => guarded(async () => { await api("POST", "?a=person-update", { id, [flag]: on }); await load(); });
-const recode = (id) => guarded(async () => { const p = personById(id); if (!confirm("Give " + p.name + " a new code? Their old code will stop working.")) return; const r = await api("POST", "?a=recode", { id }); await load(); showCode(p.name, r.code); });
+const recode = (id) => guarded(async () => { const p = personById(id); if (!confirm("Give " + p.name + " a new code? Their old code will stop working.")) return; await api("POST", "?a=recode", { id }); await load(); const row = document.querySelector(`tr.person[data-id="${id}"]`); if (row) row.classList.add("fresh"); });
 const removePerson = (id) => guarded(async () => { const p = personById(id); if (!confirm("Remove " + p.name + " from the roster? Their ticks on every rota are removed too.")) return; editing = null; await api("POST", "?a=person-remove", { id, sections: C.settings.sections.map(x => x.key) }); await load(); });
 async function bootstrap(){
   $("bootMsg").textContent = ""; $("bootMsg").className = "msg";
-  try { const r = await api("POST", "?a=bootstrap", { name: $("bootName").value }, { "x-admin-password": $("bootPw").value }); $("bootPw").value = ""; await signIn(r.code, "bootMsg", load); showCode(r.person.name, r.code); }
+  try { const r = await api("POST", "?a=bootstrap", { name: $("bootName").value }, { "x-admin-password": $("bootPw").value }); $("bootPw").value = ""; await signIn(r.code, "bootMsg", load); }
   catch (e) { $("bootMsg").textContent = e.message; $("bootMsg").className = "msg err"; }
 }
 function signOut(msg){ setToken(null); D = null; editing = null; $("app").hidden = true; $("gate").hidden = false; $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }

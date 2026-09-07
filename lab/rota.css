@@ -88,4 +88,5 @@ table.roster tr.editor td{background:var(--stone-50);border-bottom:1px solid var
   table.roster tr.editor{padding:0}
   table.roster tr.editor td{display:block;padding:.8rem .7rem}
 }
+table.roster tr.fresh td{background:#FFF8EA;transition:background 1.5s}
 [hidden]{display:none!important}

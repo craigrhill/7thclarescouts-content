@@ -118,9 +118,13 @@ Roles are flags on a person, and the function enforces them, not the pages:
 
 * **secretary** keeps the roster on `roster.html`: who is on it, which
   sections each can cover, codes. Done once, by the group secretary. The
-  roster always keeps at least one secretary. Codes are kept in the store
-  so the secretary can see them again; GET returns them to secretaries
-  only, never to leads or helpers.
+  roster always keeps at least one secretary, and the pages assume exactly
+  one: the add form has no secretary option, and the role is passed on
+  with "Make secretary instead of me" in a person's row. Codes are kept in
+  the store so the secretary can see them again; GET returns them to
+  secretaries only, never to leads or helpers. Adding is a name (or
+  several, comma separated), section chips and Add; the code shows in the
+  row.
 * **lead** runs coverage on `rota.html`: adults needed per section and per
   meeting, anyone's ticks, weeks off. Leads see the roster there read-only.
 * neither: sees the rota, ticks only themselves, and sees only people who
