@@ -39,6 +39,10 @@ const CASES = [
     req: () => new Request(base) },
   { name: "POST save, no env, blobs write (unconfigured here)", env: { ADMIN_PASSWORD: PW },
     req: () => new Request(base, { method: "POST", headers: { "x-admin-password": PW }, body: '{"settings":{}}' }) },
+  { name: "GET ?ics=1, no calendar available", env: {},
+    req: () => new Request(base + "?ics=1") },
+  { name: "GET ?ics=1&section=..., no calendar available", env: {},
+    req: () => new Request(base + "?ics=1&section=scouts") },
 ];
 
 // Strip values that legitimately differ run to run before comparing.

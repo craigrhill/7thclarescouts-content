@@ -4,7 +4,7 @@
   "description": "7th Clare Scouts app. Static site plus one Netlify Function; see CLAUDE.md.",
   "scripts": {
     "build:function": "esbuild netlify/src/content.mjs netlify/src/rota.mjs --bundle --platform=node --format=esm --outdir=netlify/functions --out-extension:.js=.mjs --log-level=warning",
-    "test:function": "node tools/test-function.mjs netlify/functions/content.mjs && node tools/test-rota.mjs",
+    "test:function": "node tools/test-function.mjs netlify/functions/content.mjs && node tools/test-ics.mjs && node tools/test-rota.mjs",
     "serve": "node tools/serve.mjs",
     "test": "npm run test:function && node tools/test-kits.mjs && node tools/test-merge.mjs",
     "e2e": "node tools/e2e-rota.mjs"

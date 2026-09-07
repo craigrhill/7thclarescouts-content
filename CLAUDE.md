@@ -62,6 +62,12 @@ warning fires correctly for leaders.
 
 ## Layout
 
+    calendar.html       /calendar: the full calendar, ported from the county
+                        app. Public. Month grid, agenda, table, A3 poster,
+                        .ics download and subscribe. Reads the group calendar
+                        from the content function and adapts it to the shape
+                        that code was written for, so the renderers are
+                        untouched. Its "County" button is the leads' inbox.
     index.html          app shell, hash routing (#home #calendar #kit/<id>
                         #sections/<key> #more/<sub> #events/<i>)
     admin.html          leader editor, noindexed via netlify.toml
@@ -77,6 +83,7 @@ warning fires correctly for leaders.
     tools/test-function.mjs         offline smoke test of the built content
                                     function; pass two bundles to prove equivalence
     tools/test-rota.mjs             offline harness for the rota function
+    tools/test-ics.mjs              the subscription feed's iCalendar output
     tools/test-kits.mjs             drift guard: mergeBuiltInKits in both files
     tools/test-merge.mjs            drift guard: mergeContent in both files
     tools/e2e-rota.mjs              browser suite for the leaders' area
@@ -156,6 +163,11 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
   keeps the deployed function self-contained so the zip-drop fallback works.
   `@netlify/blobs` is pinned exactly in package.json; bumping it changes the
   vendor code, so re-run the equivalence check before committing.
+* **The content function serves an iCalendar feed.** `?ics=1`, optionally
+  `&section=<key>`, public and read only, so a parent's calendar subscribes
+  once and stays current. A section feed carries that section's events plus
+  anything group-wide. `tools/test-ics.mjs` pins the awkward parts: the
+  exclusive DTEND, escaping, stable UIDs and the 75 octet fold.
 * **The rota function writes `content.json` too.** Calendar events from the
   secretary go through the same GitHub-or-Blobs path `content.mjs` uses, so
   those helpers are duplicated in `netlify/src/rota.mjs`. One difference is

@@ -51,11 +51,67 @@ async function ghWrite(g, data, message) {
   const r = await fetch(g.url, { method: "PUT", headers: { ...ghHeaders(g.token), "Content-Type": "application/json" }, body: JSON.stringify(body) });
   if (!r.ok) throw new Error(`GitHub write failed: ${r.status} ${await r.text()}`);
 }
+// A subscription feed, so a parent's calendar keeps itself up to date instead
+// of holding a snapshot that goes stale. Public and read only: ?ics=1, with an
+// optional &section= to take just one section plus whole-group events.
+const icsEsc = (s) => String(s ?? "").replace(/([\\,;])/g, "\\$1").replace(/\r?\n/g, "\\n");
+const icsDay = (d) => String(d).replace(/-/g, "");
+const dayAfter = (d) => { const x = new Date(d + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + 1); return x.toISOString().slice(0, 10); };
+// RFC 5545 wants lines folded at 75 octets, continued with a leading space.
+const fold = (line) => {
+  const out = []; let s = line;
+  while (Buffer.byteLength(s, "utf8") > 75) {
+    let cut = 75;
+    while (cut > 1 && Buffer.byteLength(s.slice(0, cut), "utf8") > 75) cut--;
+    out.push(s.slice(0, cut)); s = " " + s.slice(cut);
+  }
+  out.push(s); return out;
+};
+export function toICS(events, name, host) {
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//7th Clare Scouts//Calendar//EN",
+    "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:" + icsEsc(name), "X-WR-TIMEZONE:Europe/Dublin"];
+  for (const e of events) {
+    if (!e || !e.date || !e.title) continue;
+    const uid = (e.countyId || (e.date + "-" + String(e.title).toLowerCase().replace(/[^a-z0-9]+/g, "-"))) + "@" + host;
+    lines.push("BEGIN:VEVENT", "UID:" + uid, "DTSTAMP:" + stamp,
+      "DTSTART;VALUE=DATE:" + icsDay(e.date), "DTEND;VALUE=DATE:" + icsDay(dayAfter(e.endDate || e.date)),
+      "SUMMARY:" + icsEsc(e.title));
+    if (e.location) lines.push("LOCATION:" + icsEsc(e.location));
+    const desc = [e.details, e.time ? "Time: " + e.time : ""].filter(Boolean).join("\n\n");
+    if (desc) lines.push("DESCRIPTION:" + icsEsc(desc));
+    lines.push("END:VEVENT");
+  }
+  lines.push("END:VCALENDAR");
+  return lines.flatMap(fold).join("\r\n") + "\r\n";
+}
+
 export default async (req) => {
   // A 204 must not carry a body, even an empty string: the Fetch spec makes the
   // Response constructor throw, which turned every CORS preflight into a 502.
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
   const g = gh();
+  if (req.method === "GET" && new URL(req.url).searchParams.get("ics")) {
+    try {
+      const url = new URL(req.url);
+      const want = (url.searchParams.get("section") || "").trim().toLowerCase();
+      let data = null;
+      if (g) data = (await ghRead(g)).data;
+      if (!data) data = await getStore(STORE).get(KEY, { type: "json" });
+      if (!data) return json(404, { error: "No calendar yet." });
+      const all = Array.isArray(data.events) ? data.events : [];
+      // A section feed carries that section's events plus anything group-wide.
+      const list = want ? all.filter((e) => !e.section || e.section === want) : all;
+      const names = (data.settings && data.settings.sections) || [];
+      const label = want ? (names.find((s) => s.key === want) || {}).name || want : "All sections";
+      return new Response(toICS(list, "7th Clare Scouts: " + label, url.host), {
+        status: 200,
+        headers: { "Content-Type": "text/calendar; charset=utf-8", "Cache-Control": "public, max-age=900", "Access-Control-Allow-Origin": "*" }
+      });
+    } catch (e) {
+      return json(500, { error: String(e.message || e) });
+    }
+  }
   if (req.method === "GET") {
     try {
       if (g) {

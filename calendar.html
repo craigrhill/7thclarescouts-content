@@ -1,0 +1,3942 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calendar: 7th Clare Scouts</title>
+<meta name="description" content="County events calendar for Clare Scout County: training, county and national events for every section.">
+<meta name="theme-color" content="#1F409B">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Clare Scouts">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAyBAMAAAAercAnAAAAMFBMVEXE3F6xq5d9rkYknbgCv/YBufADt/AFpuBnZ1ZRQywbdbcjRZlNPSlFOikgPpkbPJwP7MHRAAADoklEQVR42n2VT2gcVRzHP2/edLeQbHYmCvUUNxV6yjoTNyqKKxuaSy4SsaE1Bw1USkUo8VQ9iL1JUCG3wkI2e/EiQkRPwlY3VC+aTWbTikTIn7YoWMjO223AJt3Z52Fm/0RI5vSY953v+77v7/v7jahx0hNYxknbCSQG4njAIwEmfZ8cj5ATWQPluXo9LXUmkL57x9G4Fek5Gi1d/QRMeI7R6lsxAsP1cM1RiLmYo9JSwdgqGGAtIr8XgfQ9FkfKWmt+DYp4qhJQBRPUZemiCWyX9J0cTYKXvFlc4QYeYMJW1gsWHZFpeXu53ZG7TZLsBbf7BYHUIGrNGXDERlpsDDVqVqNl15N+6j57ZkJY4mrWBCN1r2DMFoz31lMWg2AJm6G1NV52FGAArRFaBVp51UJpXyl8tbMGVawQoP1CaMuWbFkKjc+AAzxeIxTJUORb6+uYkwyXPwIoQoaeYjSPGG1EDPrvK+1XeleHi5wHvHM/QgWVSmWrudJf1l54gmg0OkeYgLAR9YHNTR7MeHbI8FdqF3nPjjRY0BpZiM/x79IjrSwhkjpxKWWMChUxYLdihY8ucEbN/9kc94QtrHrlol7XIhJZH3jw6umpEmPizWWmfrtb0baltxqptgahxMObK2WowLQup6+dO7uNkUyqUHCtObM/GZ8udWPW/NhIMb6R0gh1NWuCnLz5c6kn6S9+ppifcrfrqbZR3/1SQmbLbcSqOa0tNXjL9I0IYBeGMjYTzTJjWJRIlzAvlN6If/OCCn0Y3ly71tSlfUgyVs7JpyfOB7dOXbLnooJoJfYSZfDOjwV9+IhSqZ6jedv1OhVDpAjQ25b6gYV9F1ZNpP6gqrqAvackwc5P8gYfegooy9c3B4etDgBrod6+xLkbAE6+8Sy6CzCmoijx+TNLwPPvbyD8HRUVC711OQBEPxysjE/Aod3axsh0AOJ010n15JX43MjZ/jKn+uzQB2FZWirgtX+AL+Fgfn142fcfFvOireEgrFMceCwAne9Jbqu2s31GAKgqwP4cFLvRtizHedd3NEDVAUgCs12AEsvLn/pLwgPCzH97ERZ6miMInQLI/Q7wxdHuCYj9r7MOerY1Bhx2miRwAOI9vdi5pvAAeeTjiMHsGYpZ84/rcFhcvg75NkMEMHM0mYyQ+V4OU4bqvioeM2wNJMDbRaIZMAtcITbb1iBqwjph3vsJU2gfAlnJVDKe6+HipSV4biCpZKoO4uQfCon/ACKnbT7oj+swAAAAAElFTkSuQmCC">
+<style>
+/* Palette taken straight off the county badge:
+   sky #00B9F0 · deep blue #1F409B · sun #FFF100 · grass #8DC345 · dolmen #51432C · stone #B5A8A3 */
+:root{
+  --sky:#00B9F0; --deep:#1F409B; --sun:#FFF100; --grass:#8DC345; --dolmen:#51432C; --stone:#B5A8A3;
+  --bg:#F1F8FC; --surface:#FFFFFF; --surface-2:#E9F4FA; --line:#CDE2EE; --line-soft:#E3EFF6;
+  --text:#17263A; --text-soft:#4E6275; --text-faint:#7C8FA0;
+  --shadow:0 1px 2px rgba(23,38,58,.06), 0 8px 24px -12px rgba(23,38,58,.22);
+  --r:12px;
+  --training:#0B7396; --training-tint:#E0F5FD; --training-edge:#00B9F0;
+  --county:#8A6400;   --county-tint:#FEF7C9;   --county-edge:#EFC600;
+  --national:#4E7A16; --national-tint:#EDF7DE; --national-edge:#8DC345;
+  --sec-beavers:#00A9D6; --sec-cubs:#3C9A52; --sec-scouts:#1F409B;
+  --sec-ventures:#8E2B3F; --sec-rovers:#C0392B; --sec-scouters:#6B5CA5;
+  --on-accent:#FFFFFF; --accent:var(--deep); --tint:22%; --chip-tint:26%;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1725; --surface:#152134; --surface-2:#1C2B41; --line:#2C3E58; --line-soft:#223349;
+    --text:#E9F1F7; --text-soft:#A9BCCC; --text-faint:#7A8DA0;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 28px -14px rgba(0,0,0,.75);
+    --training:#63D2F7; --training-tint:#0C2C3A; --training-edge:#00B9F0;
+    --county:#F5D65A;  --county-tint:#332B08;  --county-edge:#EFC600;
+    --national:#A9DC6C; --national-tint:#1C2C12; --national-edge:#8DC345;
+    --sec-beavers:#4FCBEC; --sec-cubs:#59BE72; --sec-scouts:#6E9FD4;
+    --sec-ventures:#D2687C; --sec-rovers:#E0705F; --sec-scouters:#A192DC;
+    --on-accent:#0D1725; --accent:var(--sky); --tint:34%; --chip-tint:38%;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text); min-height:100vh;
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3{font-family:"Archivo","Archivo Black",Helvetica,Arial,sans-serif;font-weight:700;letter-spacing:-.005em}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--training)}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+
+/* ---------- shell ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 64px;
+      padding-left:max(16px, env(safe-area-inset-left));
+      padding-right:max(16px, env(safe-area-inset-right))}
+.offline{display:none;align-items:center;gap:8px;margin:10px 0 0;padding:9px 13px;border-radius:9px;
+         background:var(--county-tint);border:1px solid var(--county-edge);color:var(--county);font-size:13px}
+.offline.on{display:flex}
+.offline b{font-weight:700}
+.installrow{margin-top:10px}
+.substep{padding:12px 14px;border:1px solid var(--line);border-radius:10px;margin-bottom:12px;background:var(--surface)}
+.substep h4{margin:0 0 4px;font-size:14.5px}
+.substep .note{margin:0 0 9px}
+.urlrow{display:flex;gap:8px;margin-bottom:8px}
+.urlbox{flex:1;min-width:0;padding:9px 11px;border:1px solid var(--line);border-radius:9px;
+        background:var(--bg);color:var(--text);font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.installsteps{margin:8px 0 0;padding-left:20px;font-size:13.5px;color:var(--text-soft);line-height:1.55}
+.installsteps li{margin-bottom:6px}
+header.top{background:var(--deep);color:#fff;border-bottom:4px solid var(--sun);
+           padding-top:env(safe-area-inset-top)}   /* under the iOS status bar */
+header.top .wrap{display:flex;align-items:center;gap:14px;padding-top:16px;padding-bottom:16px}
+.mark{width:60px;flex:0 0 60px;border-radius:7px;background:#fff;padding:3px;box-shadow:0 2px 6px rgba(0,0,0,.28);display:block}
+.mark img{width:100%;height:auto;display:block;border-radius:4px}
+.brand h1{margin:0;font-size:19px;line-height:1.12;color:#fff;text-transform:uppercase;letter-spacing:.02em;font-weight:800}
+.brand p{margin:3px 0 0;font-size:12.5px;color:var(--sun);letter-spacing:.09em;text-transform:uppercase;font-weight:600}
+.top-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.ghost-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.35);color:#fff;padding:7px 13px;border-radius:8px;cursor:pointer;font-weight:600}
+.ghost-btn:hover{background:rgba(255,255,255,.2);border-color:#fff}
+.ghost-btn .ico{display:none;width:17px;height:17px;fill:currentColor}
+
+/* ---------- controls ---------- */
+.controls{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px;margin:18px 0}
+.ctl-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.ctl-row + .ctl-row{margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)}
+.lbl{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--text-faint);margin-right:2px}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{border:1px solid var(--line);background:var(--surface-2);color:var(--text-soft);padding:6px 12px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.pill:hover{border-color:var(--sky)}
+.pill[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px;background:var(--text-faint)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface-2)}
+.seg button{background:transparent;border:0;padding:7px 15px;cursor:pointer;color:var(--text-soft)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:600;box-shadow:inset 0 0 0 1px var(--line)}
+.spacer{flex:1 1 auto}
+.icon-btn{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;width:34px;height:34px;cursor:pointer;display:grid;place-items:center;color:var(--text-soft)}
+.icon-btn:hover{border-color:var(--sky);color:var(--text)}
+.month-nav{display:flex;align-items:center;gap:8px}
+.month-nav h2{margin:0;font-size:20px;min-width:190px;text-align:center}
+
+/* ---------- calendar ---------- */
+.cal{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);background:var(--surface-2);border-bottom:1px solid var(--line)}
+.dow div{padding:8px 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);text-align:center}
+.grid{display:block}
+.week{position:relative}
+.week + .week{border-top:1px solid var(--line-soft)}
+.week-bg{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,1fr);pointer-events:none}
+.week-bg span{border-right:1px solid var(--line-soft)}
+.week-bg span:last-child{border-right:0}
+.week-bg span.out{background:var(--surface-2);opacity:.5}
+.week-grid{position:relative;display:grid;grid-template-columns:repeat(7,1fr);row-gap:3px;padding:6px 0 8px;min-height:112px;align-content:start}
+.dnum{grid-row:1;font-size:12px;font-weight:700;color:var(--text-soft);width:22px;height:22px;display:grid;place-items:center;justify-self:start;margin:0 0 3px 5px}
+.dnum.out{opacity:.55}
+.dnum.today{background:var(--accent);color:var(--on-accent);border-radius:50%}
+/* one bar per event per week, spanning the days it covers */
+.bar{position:relative;display:flex;align-items:center;gap:6px;min-width:0;margin:0 3px;border:0;border-radius:5px;padding:4px 8px 4px 13px;
+     font-size:11.5px;line-height:1.3;cursor:pointer;color:var(--text);text-align:left;overflow:hidden;background:var(--surface-2)}
+.bar:hover{filter:brightness(.96);box-shadow:inset 0 0 0 1px var(--line)}
+.bar .edge{position:absolute;left:0;top:0;bottom:0;width:6px}
+.bar .btxt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.bar .btxt em{font-style:normal;font-weight:400;color:var(--text-soft)}
+.mev-name em, em.muted{font-style:normal;font-weight:400;color:var(--text-faint)}
+/* squared-off edges show a camp carrying on into the next week */
+.bar.cl{border-top-left-radius:0;border-bottom-left-radius:0;margin-left:0;padding-left:8px}
+.bar.cl .edge{display:none}
+.bar.cr{border-top-right-radius:0;border-bottom-right-radius:0;margin-right:0}
+.moreb{background:none;border:0;font-size:11px;color:var(--text-faint);cursor:pointer;text-align:left;padding:1px 6px;margin:0 3px}
+.moreb:hover{color:var(--text);text-decoration:underline}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;padding:0 2px 2px;margin:0 0 10px}
+.legend span{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-soft);white-space:nowrap}
+.legend i{width:16px;height:10px;border-radius:3px;font-style:normal;flex:0 0 16px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.secchip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:2px 8px;border-radius:999px;margin:0 3px 3px 0;white-space:nowrap;color:var(--text)}
+.secchip i{width:7px;height:7px;border-radius:50%;font-style:normal}
+
+/* ---------- agenda / table ---------- */
+.agenda{display:none}
+.mgroup{margin-top:20px}
+.mgroup h3{margin:0 0 8px;font-size:15px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-faint)}
+.tbl{width:100%;table-layout:fixed;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.tbl th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);padding:10px 12px;background:var(--surface-2);border-bottom:1px solid var(--line);font-weight:700}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top;overflow-wrap:anywhere}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tbody tr{cursor:pointer}
+.tbl tbody tr:hover{background:var(--surface-2)}
+.tbl .when{white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:600}
+.tbl .sub{color:var(--text-soft);font-size:13px}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.tag.training{color:var(--training);background:var(--training-tint)}
+.tag.county{color:var(--county);background:var(--county-tint)}
+.tag.national{color:var(--national);background:var(--national-tint)}
+.secdots{display:inline-flex;gap:3px;flex-wrap:wrap;align-items:center}
+.secdot{width:8px;height:8px;border-radius:50%}
+.seclist{font-size:12px;color:var(--text-soft)}
+.empty{text-align:center;padding:56px 20px;color:var(--text-faint);background:var(--surface);border:1px dashed var(--line);border-radius:var(--r)}
+.empty strong{display:block;font-size:17px;color:var(--text-soft);margin-bottom:6px;font-family:"Archivo",Helvetica,Arial,sans-serif}
+
+/* ---------- modal ---------- */
+.scrim{position:fixed;inset:0;background:rgba(21,25,30,.55);backdrop-filter:blur(2px);display:none;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto;z-index:50}
+.scrim.on{display:flex}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);width:100%;max-width:560px;margin:auto}
+.modal.wide{max-width:900px}
+.modal header{display:flex;gap:12px;align-items:flex-start;padding:18px 20px;border-bottom:1px solid var(--line-soft)}
+.modal header h2{margin:0;font-size:21px;flex:1}
+.modal .body{padding:18px 20px}
+.modal footer{padding:14px 20px;border-top:1px solid var(--line-soft);display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--surface-2);border-radius:0 0 14px 14px}
+.x{background:none;border:0;font-size:22px;line-height:1;cursor:pointer;color:var(--text-faint);padding:2px 4px}
+.x:hover{color:var(--text)}
+dl.detail{margin:0;display:grid;grid-template-columns:118px 1fr;gap:10px 14px}
+dl.detail dt{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);padding-top:2px}
+dl.detail dd{margin:0}
+.desc{white-space:pre-wrap}
+.btn{background:var(--accent);color:var(--on-accent);border:1px solid var(--accent);padding:9px 16px;border-radius:9px;cursor:pointer;font-weight:600}
+.btn:hover{opacity:.9}
+.btn.sec{background:var(--surface);color:var(--text);border-color:var(--line)}
+.btn.sec:hover{border-color:var(--sky);opacity:1}
+.btn.danger{background:transparent;color:#B3402F;border-color:#E4B7AF}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ---------- admin ---------- */
+.field{margin-bottom:13px}
+.field > label{display:block;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);margin-bottom:5px}
+.field input[type=text],.field input[type=date],.field input[type=email],.field input[type=tel],.field textarea,.field select{
+  width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--text)}
+.field textarea{min-height:88px;resize:vertical}
+.field input:focus,.field textarea:focus,.field select:focus{outline:2px solid var(--sky);outline-offset:-1px;border-color:var(--sky)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px}
+.checks{display:flex;flex-wrap:wrap;gap:6px}
+.check{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface-2);padding:6px 11px;border-radius:999px;cursor:pointer;font-size:13px}
+.check input{accent-color:var(--deep);margin:0}
+.check.on{border-color:var(--text-soft);background:var(--surface);font-weight:600}
+.adminlist{max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.arow{display:flex;gap:10px;align-items:center;padding:9px 11px;border-bottom:1px solid var(--line-soft)}
+.arow:last-child{border-bottom:0}
+.arow .when{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--text-soft);white-space:nowrap;min-width:104px}
+.arow .nm{flex:1;font-weight:600;font-size:13.5px}
+.arow button{background:none;border:1px solid var(--line);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;color:var(--text-soft)}
+.arow button:hover{border-color:var(--sky);color:var(--text)}
+.note{font-size:12.5px;color:var(--text-faint)}
+.scopenote{font-size:13px;color:var(--text-soft);background:var(--surface-2);border-left:4px solid var(--sun);border-radius:8px;padding:10px 12px;margin:0 0 12px}
+.scopenote strong{color:var(--text)}
+.secmini{width:16px;height:16px;border-radius:4px;flex:0 0 16px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.arow.locked{opacity:.55}
+.arow.locked .nm{font-weight:400}
+.lockchip{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-faint);border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+.check.fixed{opacity:.85;cursor:default}
+.histlist{border:1px solid var(--line);border-radius:10px;max-height:46vh;overflow:auto}
+.histrow{padding:10px 13px;border-bottom:1px solid var(--line-soft);position:relative}
+.histrow:last-child{border-bottom:0}
+.histhead{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.histwho{font-weight:700;font-size:13.5px}
+.histwhen{font-size:12.5px;color:var(--text-faint)}
+.histnow{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--national);
+         background:var(--national-tint);border-radius:999px;padding:2px 8px}
+.histsum{font-size:12.5px;color:var(--text-soft);margin-top:2px}
+.histdetail{font-size:12px;color:var(--text-faint);margin-top:3px}
+.histbtn{position:absolute;right:12px;top:11px;background:var(--surface);border:1px solid var(--line);
+         border-radius:8px;padding:5px 11px;font-size:12.5px;cursor:pointer;color:var(--text-soft)}
+.histbtn:hover{border-color:var(--sky);color:var(--text)}
+.clashwarn{display:none}
+.clashwarn.on{display:block;margin:0 0 12px;padding:10px 13px;border:1px solid var(--county-edge);
+              border-left:4px solid var(--county-edge);border-radius:9px;background:var(--county-tint);
+              color:var(--county);font-size:13px}
+.clashwarn b{display:block;margin-bottom:4px}
+.clashwarn ul{margin:0;padding-left:18px}
+.clashwarn li{margin-bottom:2px}
+.clashwarn .note{display:block;margin-top:5px}
+.importwarn{margin-top:12px;padding:11px 14px;border:1px solid var(--line);border-left:4px solid var(--county-edge);
+            border-radius:9px;background:var(--surface-2);font-size:12.5px;color:var(--text-soft)}
+.importwarn ul{margin:6px 0 0;padding-left:18px}
+.importwarn li{margin-bottom:3px}
+.pinlist{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.pinrow{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line-soft)}
+.pinrow:last-child{border-bottom:0}
+.pinname{flex:1;font-weight:600;font-size:13.5px}
+.pininput{width:110px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);
+          font-variant-numeric:tabular-nums;letter-spacing:.14em;text-align:center}
+.pininput:focus{outline:2px solid var(--sky);outline-offset:-1px}
+.steps{margin-top:14px;padding:14px 16px;border:1px solid var(--line);border-left:4px solid var(--sun);border-radius:10px;background:var(--surface-2)}
+.steps-head{margin:0 0 8px;font-weight:700;color:var(--text)}
+.steps ol{margin:0;padding-left:20px}
+.steps li{margin-bottom:5px;color:var(--text-soft)}
+.steps li.done{color:var(--text-faint);text-decoration:line-through}
+.steps .note{margin:9px 0 0}
+.err{color:#B3402F;font-size:13px;margin-top:8px}
+.ok{color:var(--national);font-size:13px}
+.rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.rolebtn{display:flex;align-items:center;gap:11px;text-align:left;border:1px solid var(--line);background:var(--surface);
+         border-radius:10px;padding:11px 13px;cursor:pointer;color:var(--text);font:inherit}
+.rolebtn:hover{border-color:var(--sky);background:var(--surface-2)}
+.rolebtn.county{grid-column:1 / -1}
+.roleswatch{width:18px;height:18px;border-radius:5px;flex:0 0 18px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.roletxt{display:flex;flex-direction:column;min-width:0}
+.roletxt strong{font-size:14.5px;font-weight:600}
+.roletxt small{font-size:12px;color:var(--text-faint)}
+.whorow{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 12px;background:var(--surface-2);
+        border-radius:9px;border:1px solid var(--line)}
+.whoname{flex:1;font-weight:600;font-size:14px}
+.linkbtn{background:none;border:0;color:var(--training);cursor:pointer;font:inherit;font-size:13px;text-decoration:underline;padding:2px 4px}
+.linkbtn:hover{color:var(--text)}
+.pinbox{display:flex;gap:8px}
+.pinbox input{flex:1;letter-spacing:.4em;font-size:19px;text-align:center;padding:11px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;background:var(--deep);color:#fff;padding:11px 18px;border-radius:999px;box-shadow:var(--shadow);z-index:80;font-size:14px;opacity:0;pointer-events:none;transition:opacity .18s}
+.toast.on{opacity:1}
+footer.site{text-align:center;color:var(--text-faint);font-size:12.5px;padding:28px 16px 0}
+
+/* ---------- the printable sheet ---------- */
+#printout{display:none}
+/* shown when the page is opened from the "print in Safari" link */
+.printbar{position:sticky;top:0;z-index:70;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+          background:var(--deep);color:#fff;padding:12px 16px;box-shadow:var(--shadow)}
+.printbar .pbtxt{display:flex;flex-direction:column;line-height:1.25;flex:1;min-width:140px}
+.printbar .pbtxt b{font-size:15px}
+.printbar .pbtxt span{font-size:12.5px;opacity:.85}
+.printbar .btn{background:#fff;color:var(--deep);border-color:#fff}
+.printbar .pbnote{flex:1 0 100%;margin:2px 0 0;font-size:11.5px;opacity:.8}
+@media print{
+  @page{size:A4 portrait;margin:12mm 10mm}
+  header.top, .controls, .legend, #navRow, #calView, #tblView, footer.site, .scrim, .toast,
+  .printbar{display:none !important}
+  html,body{background:#fff !important;color:#000 !important}
+  /* gives percentage heights inside a sheet something real to resolve against:
+     in paged media this is the page area, whatever the paper and margins are */
+  html,body{height:100%}
+  /* The palette follows the device theme. A phone in dark mode was therefore
+     washing the bars in dark grey-blue and then writing black text on them, on
+     white paper. Printing always uses the light values. Tripled :root to beat
+     the dark-mode block's specificity rather than relying on source order. */
+  :root:root:root{
+    --surface:#FFFFFF; --tint:22%; --chip-tint:26%;
+    --sec-beavers:#00A9D6; --sec-cubs:#3C9A52; --sec-scouts:#1F409B;
+    --sec-ventures:#8E2B3F; --sec-rovers:#C0392B; --sec-scouters:#6B5CA5;
+    --training:#0B7396; --county:#8A6400; --national:#4E7A16;
+  }
+  /* the app shell is hidden, but its padding still takes a strip off page one */
+  .wrap{padding:0 !important;margin:0 !important}
+  /* height:100% here is what lets a sheet inside ask for "exactly one page":
+     a percentage height needs a parent with a definite one to resolve against,
+     and without it the poster quietly fell back to its natural height. */
+  #printout{display:block;height:100%;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .psheet{page-break-after:always}
+  .psheet:last-child{page-break-after:auto}
+  .phead{display:flex;align-items:center;gap:12px;border-bottom:3px solid #1F409B;padding-bottom:8px;margin-bottom:12px}
+  .phead img{width:52px;height:auto;border:1px solid #ccc;border-radius:4px}
+  .phead h1{margin:0;font-size:17pt;color:#1F409B;text-transform:uppercase;letter-spacing:.01em}
+  .phead p{margin:2px 0 0;font-size:10pt;color:#333}
+  .phead .pwho{margin-left:auto;text-align:right;font-size:11pt;font-weight:700;color:#000}
+  .phead .pwho small{display:block;font-weight:400;font-size:8.5pt;color:#555}
+  .pmonths{display:grid;grid-template-columns:repeat(3,1fr);gap:5mm 5mm}
+  .pmonth{break-inside:avoid}
+  .pmonth h3{margin:0 0 2px;font-size:9pt;border-bottom:1px solid #999;padding-bottom:1px}
+  .pdows{display:grid;grid-template-columns:repeat(7,1fr);background:#eee;border:1px solid #bbb;border-bottom:0}
+  .pdows span{text-align:center;font-weight:700;font-size:6.5pt;padding:1.2px 0;color:#333}
+  .pweeks{border:1px solid #bbb}
+  .pweek{position:relative}
+  .pweek + .pweek{border-top:1px solid #ddd}
+  .pwbg{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,1fr)}
+  .pwbg i{border-right:1px solid #ddd}
+  .pwbg i:last-child{border-right:0}
+  .pwbg i.pwout{background:#f5f5f5}
+  .pwgrid{position:relative;display:grid;grid-template-columns:repeat(7,1fr);row-gap:.5mm;
+          padding:.5mm 0 .8mm;min-height:7.4mm;align-content:start}
+  .pdnum{grid-row:1;font-size:6.6pt;text-align:right;padding:0 1.2px;line-height:1.15}
+  .pdnum.pout{color:#bbb}
+  .pdnum.ptoday{font-weight:700;text-decoration:underline}
+  /* the mark itself: a filled block for one day, a continuous bar across many */
+  .pbar{height:1.7mm;border-radius:.5mm;margin:0 .4mm;
+        -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pbar.pcl{margin-left:0;border-top-left-radius:0;border-bottom-left-radius:0}
+  .pbar.pcr{margin-right:0;border-top-right-radius:0;border-bottom-right-radius:0}
+  /* the one-page handout for each section */
+  .gurl{background:#1F409B;color:#fff;text-align:center;padding:3.5mm 2mm;border-radius:2mm;margin:0 0 4mm;
+        -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .gurl b{display:block;font-size:19pt;letter-spacing:.01em;line-height:1.1}
+  .gurl span{display:block;font-size:8.5pt;opacity:.85;margin-top:1mm}
+  .gpin{border:1.2pt solid #1F409B;border-radius:2mm;padding:2.5mm 3mm;margin:0 0 4mm;display:flex;
+        align-items:center;gap:3mm}
+  .gpin .glab{font-size:8.5pt;color:#333;flex:1}
+  .gpin .gnum{font-size:20pt;font-weight:700;letter-spacing:.12em;color:#1F409B;font-variant-numeric:tabular-nums}
+  .gcols{column-count:2;column-gap:7mm}
+  .gstep{break-inside:avoid;margin:0 0 3.5mm}
+  .gstep h4{margin:0 0 1mm;font-size:9.5pt;color:#1F409B;display:flex;gap:2mm;align-items:baseline}
+  .gstep h4 i{font-style:normal;background:#1F409B;color:#fff;border-radius:50%;width:4.6mm;height:4.6mm;
+              display:inline-flex;align-items:center;justify-content:center;font-size:7pt;flex:0 0 4.6mm;
+              -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .gstep p{margin:0 0 1mm;font-size:8.3pt;line-height:1.4;color:#222}
+  .gstep ul{margin:.5mm 0 0;padding-left:4mm;font-size:8.3pt;line-height:1.4;color:#222}
+  .gstep li{margin-bottom:.8mm}
+  .gstep b{color:#000}
+  .gnote{font-size:8pt;color:#444;background:#f2f6fb;border-left:1mm solid #1F409B;padding:2mm 2.5mm;
+         border-radius:0 1mm 1mm 0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* the single-month wall sheet: landscape-ish proportions, big cells */
+  .bigmonth{display:flex;flex-direction:column;height:196mm;overflow:hidden;break-inside:avoid}
+  .bigtitle{margin:0 0 2mm;font-size:19pt;color:#1F409B;letter-spacing:-.01em}
+  .bigdows{display:grid;grid-template-columns:repeat(7,1fr);background:#1F409B;border-radius:1.5mm 1.5mm 0 0;
+           -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .bigdows span{text-align:center;font-size:8.5pt;font-weight:700;color:#fff;padding:1.8mm 0;letter-spacing:.04em}
+  .bigweeks{display:grid;flex:1;min-height:0;border:1px solid #999;border-top:0;break-inside:avoid}
+  .bigweek{position:relative;border-bottom:1px solid #ccc;min-height:0;break-inside:avoid}
+  .bigweek:last-child{border-bottom:0}
+  .bigbg{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,1fr)}
+  .bigbg i{border-right:1px solid #e2e2e2}
+  .bigbg i:last-child{border-right:0}
+  .bigbg i.bigout{background:#f7f7f7}
+  .biggrid{position:relative;display:grid;grid-template-columns:repeat(7,1fr);row-gap:.8mm;
+           padding:1mm 0 1mm;align-content:start;height:100%}
+  .bignum{grid-row:1;font-size:11pt;font-weight:700;color:#333;text-align:right;padding:0 1.5mm .5mm}
+  .bignum.out{color:#c4c4c4;font-weight:400}
+  .bigbar{border-radius:0 1mm 1mm 0;margin:0 1mm 0 .6mm;padding:.6mm 1.5mm;
+          overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .bigbar.cl{margin-left:0;border-radius:0 1mm 1mm 0}
+  .bigbar.cr{margin-right:0;border-radius:0}
+  /* wrap to two lines rather than truncate: on a wall sheet the name matters */
+  .bigbartxt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+             font-size:7.6pt;font-weight:600;line-height:1.2;color:#111;overflow:hidden}
+  .bigbartxt em{font-style:normal;font-weight:400;color:#444}
+  .bigweek.tight .bigbartxt{-webkit-line-clamp:1;font-size:7.2pt}
+  /* the A3 poster: the whole year on one sheet, names written into the days.
+     A3 landscape gives a wider day cell than portrait (about 2mm more), and on a
+     14mm-wide cell every millimetre is another character of the event name. */
+  .a3sheet .phead h1{font-size:20pt}
+  .a3sheet .phead{margin-bottom:2.5mm}
+  .a3sheet .pkey{font-size:8.5pt;margin:0 0 2.5mm}
+  .a3sheet .pfoot{margin-top:3mm}
+  /* Landscape puts the year in four columns of three; portrait in three of four.
+     iOS Safari ignores the @page size and orientation entirely and prints to
+     whatever paper AirPrint has, always portrait, so the portrait layout is the
+     only one that comes out the right shape there, and it is the default on
+     iPhones and iPads. On a portrait page the months are taller and slightly
+     narrower; on landscape, wider and shorter. */
+  /* The poster must fill exactly one page and never spill onto a second, and it
+     cannot know how tall that page is: the paper is whatever the user picked,
+     and browsers apply their own margins regardless of what @page asks for,
+     Safari on iOS notably uses margins of its own, which is what pushed a
+     fixed-height poster onto a second sheet. So no fixed heights. In paged
+     media a percentage height resolves against the page area, so the sheet is
+     told to be exactly one page tall and the grid simply takes whatever is left
+     after the heading and the footer. Any paper, any margins, one page. */
+  .psheet.a3sheet{height:100%;display:flex;flex-direction:column;overflow:hidden}
+  /* Authored at twice size and scaled to half.
+
+     A year on one sheet needs type around 5pt. iOS will not render type that
+     small: it applies a minimum font size, which lifts the day numbers and event
+     names but leaves the headings alone, so the poster came off an iPhone with
+     its small text inflated to nearly heading size while the grid stayed put.
+     -webkit-text-size-adjust does not govern that floor.
+
+     A transform does. Everything inside is specified at double (10.4pt text in
+     a box twice as wide) and the whole thing is scaled by half, which is a
+     geometric operation the font machinery never sees. The computed font size
+     stays comfortably above any floor; the printed result is the 5.2pt it always
+     was. Vector either way, so nothing is rasterised or softened. */
+  .poster{flex:1;min-height:0;position:relative}
+  .posterScale{position:absolute;top:0;left:0;width:200%;height:200%;
+               transform:scale(.5);transform-origin:0 0;
+               display:grid;grid-auto-rows:minmax(0,1fr);gap:7mm 8mm}
+  .posterScale.pland{grid-template-columns:repeat(4,1fr)}
+  .posterScale.pport{grid-template-columns:repeat(3,1fr)}
+  .pomonth{display:flex;flex-direction:column;min-height:0;break-inside:avoid}
+  .poh{margin:0 0 1.6mm;font-size:18pt;color:#1F409B;border-bottom:2.4px solid #1F409B;
+       padding-bottom:1mm;letter-spacing:0}
+  .podows{display:grid;grid-template-columns:repeat(7,1fr);background:#eef1f7;border:2px solid #bbb;
+          border-bottom:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .podows span{text-align:center;font-weight:700;font-size:12pt;padding:1.2mm 0;color:#334}
+  .poweeks{display:grid;grid-auto-rows:minmax(0,1fr);flex:1;min-height:0;border:2px solid #bbb;border-top:0}
+  .poweek{position:relative;min-height:0;overflow:hidden}
+  .poweek + .poweek{border-top:2px solid #ddd}
+  .pobg{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,1fr)}
+  .pobg i{border-right:2px solid #e4e4e4}
+  .pobg i:last-child{border-right:0}
+  .pobg i.poout{background:#f7f7f7}
+  .pogrid{position:relative;display:grid;grid-template-columns:repeat(7,1fr);row-gap:.8mm;
+          padding:.6mm 0 .8mm;align-content:start;height:100%}
+  .ponum{grid-row:1;font-size:11.6pt;text-align:right;padding:0 1mm;line-height:1.1;color:#333}
+  .ponum.out{color:#c8c8c8}
+  .pobar{border-radius:0 1.2mm 1.2mm 0;margin:0 .4mm 0 .3mm;
+         padding:.3mm .7mm;overflow:hidden;
+         -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pobar.cl{margin-left:0;border-radius:0 1.2mm 1.2mm 0}
+  .pobar.cr{margin-right:0;border-radius:0}
+  .pobartxt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+            font-size:10.4pt;line-height:1.12;font-weight:600;color:#111;
+            overflow-wrap:anywhere;hyphens:auto}
+  /* Lane count decides how many lines each name gets. A week with one event has
+     the whole cell to itself, so it can run to three lines and most names
+     survive intact; three overlapping events have to share, so they get one. */
+  .poweek.tight .pobartxt{-webkit-line-clamp:1}
+  .poweek.roomy .pobartxt{-webkit-line-clamp:3}
+  .pkey{display:flex;flex-wrap:wrap;gap:1.5mm 5mm;margin:0 0 4mm;font-size:7.5pt;color:#333}
+  .pkey span{display:inline-flex;align-items:center;gap:1.5mm}
+  .pkey i{width:5mm;height:2.4mm;border-radius:.5mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .plist{margin-top:6mm}
+  .plist h3{margin:0 0 4px;font-size:11pt;border-bottom:1px solid #999;padding-bottom:2px}
+  .ptable{width:100%;border-collapse:collapse;font-size:8.5pt;table-layout:fixed}
+  .ptable th{text-align:left;font-size:7.5pt;text-transform:uppercase;letter-spacing:.05em;color:#444;
+             border-bottom:1px solid #999;padding:3px 4px}
+  .ptable td{padding:3.5px 4px;border-bottom:1px solid #ddd;vertical-align:top}
+  .ptable tr{break-inside:avoid}
+  .ptable .pw{white-space:nowrap;font-weight:700}
+  .ptable .pmeta{color:#444}
+  .pempty{font-size:9pt;color:#555;font-style:italic;margin-top:6mm}
+  .pfoot{margin-top:6mm;border-top:1px solid #ccc;padding-top:3px;font-size:7.5pt;color:#666;display:flex;justify-content:space-between}
+}
+
+/* ---------- mobile: a real month grid, tapped a day at a time ---------- */
+.secsel{display:none}
+.mcal{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.mdow{display:grid;grid-template-columns:repeat(7,1fr);background:var(--surface-2);border-bottom:1px solid var(--line)}
+.mdow span{padding:6px 0;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);text-align:center}
+.mgrid{display:grid;grid-template-columns:repeat(7,1fr)}
+.mcell{position:relative;background:none;border:0;border-right:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);
+       min-height:46px;padding:5px 2px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--text);font:inherit}
+.mcell:nth-child(7n){border-right:0}
+.mcell.out .mnum{opacity:.38}
+.mnum{font-size:13px;font-weight:600;width:24px;height:24px;line-height:24px;border-radius:50%;text-align:center}
+.mcell.today .mnum{background:var(--accent);color:var(--on-accent)}
+.mcell.sel{background:var(--surface-2)}
+.mcell.sel .mnum{box-shadow:0 0 0 2px var(--accent)}
+.mcell.sel.today .mnum{box-shadow:none}
+.mdots{display:flex;gap:3px;align-items:center;min-height:7px;flex-wrap:wrap;justify-content:center;max-width:100%}
+.mdots i{width:6px;height:6px;border-radius:50%;font-style:normal;flex:0 0 6px}
+.mdots b{font-size:9px;font-weight:700;color:var(--text-faint);line-height:6px}
+.mday{margin-top:14px}
+.mday h3{margin:0 0 9px;font-size:15px}
+.mday h3 span{color:var(--text-faint);font-weight:400;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.mev{position:relative;display:flex;align-items:flex-start;gap:9px;width:100%;text-align:left;border:1px solid var(--line);
+     border-radius:10px;background:var(--surface);padding:10px 12px 10px 15px;margin-bottom:8px;cursor:pointer;color:var(--text);font:inherit}
+.mev .edge{position:absolute;left:0;top:0;bottom:0;width:6px;border-radius:9px 0 0 9px}
+.mev-main{flex:1;min-width:0}
+.mev-name{display:block;font-weight:600;font-size:14px;line-height:1.3}
+.mev-meta{display:block;font-size:12.5px;color:var(--text-soft);margin-top:2px}
+.mev-secs{display:block;font-size:12px;color:var(--text-faint);margin-top:3px}
+
+@media (max-width:560px){
+  header.top .wrap{gap:10px;padding-top:12px;padding-bottom:12px}
+  .mark{width:46px;flex:0 0 46px;border-radius:6px;padding:2px}
+  .brand{flex:1 1 auto;min-width:0}
+  .brand h1{font-size:14px;letter-spacing:0;line-height:1.2}
+  .brand p{display:none}
+  header.top .wrap{padding-top:10px;padding-bottom:10px;gap:9px}
+  .mark{width:38px;flex:0 0 38px}
+  /* the two utility buttons become icons so the county name stays on one line */
+  .ghost-btn .wide{display:none}
+  #btnPrint .lbltxt, #btnIcsAll .lbltxt{display:none}
+  #btnPrint .ico, #btnIcsAll .ico{display:block}
+  #btnPrint, #btnIcsAll{padding:7px 9px}
+  .ghost-btn{padding:6px 10px;font-size:12.5px}
+  .brand h1{font-size:14px}
+  .top-actions{gap:6px}
+  .ghost-btn{padding:6px 9px;font-size:12.5px;white-space:nowrap}
+  .controls{padding:12px}
+  .month-nav h2{min-width:0;flex:1}
+  .modal header{padding:14px 16px}
+  .modal .body{padding:14px 16px}
+  .arow{flex-wrap:wrap;gap:7px}
+  .arow .nm{order:-1;flex:1 1 100%}
+  .arow .when{min-width:0;font-size:12px}
+  .arow .tag{margin-right:auto}
+}
+@media (max-width:720px){
+  .cal{display:none}
+  .agenda{display:block}
+  .month-nav h2{min-width:0;font-size:17px;flex:1}
+  /* the pill wall becomes one dropdown */
+  #sectionPills{display:none}
+  .secsel{display:block;flex:1 1 auto;min-width:0;padding:9px 11px;border:1px solid var(--line);
+          border-radius:9px;background:var(--surface-2);color:var(--text);font-weight:600}
+  .lbl{display:none}
+  .controls{padding:10px;margin:12px 0}
+  .ctl-row{gap:8px}
+  .ctl-row + .ctl-row{margin-top:8px;padding-top:8px}
+  .seg button{padding:8px 13px}
+  #countNote{display:none}
+  #today{padding:6px 12px !important;font-size:13.5px}
+  #navRow{margin:10px 0 8px !important;gap:6px}
+  .icon-btn{width:32px;height:32px}
+  .controls{margin:10px 0}
+  .legend{gap:5px 12px;font-size:12px;margin-bottom:8px}
+  .legend span{font-size:12px}
+  .two,.three{grid-template-columns:1fr}
+  .rolegrid{grid-template-columns:1fr}
+  dl.detail{grid-template-columns:1fr;gap:3px 0}
+  dl.detail dd{margin-bottom:9px}
+  .mgroup{margin-top:14px}
+  .mgroup:first-child{margin-top:4px}
+  .mgroup h3{margin:0 0 7px;font-size:12px;letter-spacing:.07em}
+  .tbl thead{display:none}
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%}
+  .wrap{padding-bottom:40px}
+  .tbl tr{border-bottom:1px solid var(--line);padding:4px 0}
+  .tbl td{border:0;padding:3px 12px}
+  .tbl td:first-child{padding-top:11px}
+  .tbl td:last-child{padding-bottom:11px}
+}
+
+/* ---------------------------------------------------------------------
+   7th Clare Scouts: the Burren palette mapped onto the calendar's own
+   variable names, so every rule above keeps working unchanged. Light first,
+   then the same swap for dark, matching the order the original uses. */
+:root{
+  --sky:#2E6F8E; --deep:#1B4A63; --sun:#F07800; --grass:#5C7A4A; --dolmen:#51432C; --stone:#9A968C;
+  --bg:#F4F1EA; --surface:#FFFFFF; --surface-2:#EFEBE2; --line:#D3CFC4; --line-soft:#E8E4DA;
+  --text:#1E2124; --text-soft:#5E5C55; --text-faint:#9A968C;
+  --shadow:0 8px 24px rgba(30,33,36,.08), 0 1px 2px rgba(30,33,36,.06);
+  --r:16px;
+  --group:#9A4B00;    --group-tint:#FDE8D3;    --group-edge:#F07800;
+  --county:#1B4A63;   --county-tint:#DCEAF0;   --county-edge:#2E6F8E;
+  --training:var(--county); --training-tint:var(--county-tint); --training-edge:var(--county-edge);
+  --national:#3B5230; --national-tint:#E3ECDC; --national-edge:#5C7A4A;
+  --sec-beavers:#22407F; --sec-cubs:#3B5230; --sec-scouts:#9A4B00; --sec-ventures:#7E2049;
+  --sec-rovers:#7A1F2E; --sec-scouters:#5E5C55;
+  --on-accent:#FFFFFF; --accent:var(--deep); --tint:22%; --chip-tint:26%;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#14181B; --surface:#1C2226; --surface-2:#242B30; --line:#39434A; --line-soft:#2C343A;
+    --text:#ECE8DF; --text-soft:#B4AFA4; --text-faint:#8A857B;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 28px -14px rgba(0,0,0,.75);
+    --group:#FFB366;    --group-tint:#3A2410;    --group-edge:#F07800;
+    --county:#8FB7C9;   --county-tint:#12303D;   --county-edge:#2E6F8E;
+    --training:var(--county); --training-tint:var(--county-tint); --training-edge:var(--county-edge);
+    --national:#A9C48F; --national-tint:#1E2A17; --national-edge:#5C7A4A;
+    --sec-beavers:#8FA8DC; --sec-cubs:#9CC182; --sec-scouts:#F0A45A; --sec-ventures:#E094AB;
+    --sec-rovers:#E0705F; --sec-scouters:#B4AFA4;
+    --on-accent:#14181B; --accent:#8FB7C9;
+  }
+}
+.mark img{border-radius:10px;background:#fff}
+.crow{display:grid;grid-template-columns:6.5rem 1fr auto;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--line-soft)}
+.clist .crow:first-child{border-top:0}
+.cwhen{font-weight:700;color:var(--text-soft);font-size:.92rem}
+.cname{font-weight:600}
+.cmeta{color:var(--text-soft);font-size:.86rem}
+.cflag{display:inline-block;margin-top:3px;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--group);background:var(--group-tint);padding:.15em .5em;border-radius:999px}
+.cacts{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.cstate{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-soft)}
+.cstate.ok{color:var(--national)}
+.cstate.no{color:var(--text-faint)}
+.chead{margin:14px 0 2px;font-size:.95rem}
+.cerr{background:var(--group-tint);border-left:3px solid var(--group-edge);padding:8px 10px;border-radius:8px;margin-bottom:10px}
+#btnCounty.has-news{background:var(--group-edge);color:#fff;border-color:var(--group-edge)}
+@media (max-width:640px){ .crow{grid-template-columns:1fr} .cacts{flex-direction:row;align-items:center;justify-content:flex-start} }
+
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="mark"><img src="logo.png" alt="7th Clare Scouts" width="200" height="185"></span>
+    <div class="brand">
+      <h1>7th Clare Scouts</h1>
+      <p>Calendar</p>
+    </div>
+    <div class="top-actions">
+      <button class="ghost-btn" id="btnPrint" title="Printable calendar, or save it as a PDF" aria-label="Print">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v4H7z"/><path d="M5 8h14a2 2 0 0 1 2 2v6h-4v4H7v-4H3v-6a2 2 0 0 1 2-2zm4 8h6v4H9z"/></svg>
+        <span class="lbltxt">Print</span>
+      </button>
+      <button class="ghost-btn" id="btnIcsAll" title="Put these events in your own calendar" aria-label="Add to calendar">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h2v3H7zm8 0h2v3h-2z"/><path d="M4 5h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 5v9h14v-9z"/><path d="M11 12h2v6h-2z"/><path d="M9 14h6v2H9z"/></svg>
+        <span class="lbltxt"><span class="wide">Add to </span>Calendar</span>
+      </button>
+      <button class="ghost-btn" id="btnCounty">County</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="offline" id="offlineBar" role="status">
+    <b>Offline.</b> <span>Showing the last copy saved on this device. It will refresh when you are back online.</span>
+  </div>
+
+  <section class="controls" aria-label="Filters">
+    <div class="ctl-row">
+      <span class="lbl">Section</span>
+      <div class="pills" id="sectionPills"></div>
+      <select class="secsel" id="secSelect" aria-label="Section"></select>
+      <span class="spacer"></span>
+      <div class="seg" role="group" aria-label="View">
+        <button id="viewCal" aria-pressed="true">Calendar</button>
+        <button id="viewTbl" aria-pressed="false">Table</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="legend" id="legend" aria-label="Section colours"></div>
+
+  <div class="ctl-row" style="margin-bottom:12px" id="navRow">
+    <div class="month-nav">
+      <button class="icon-btn" id="prev" aria-label="Previous month">‹</button>
+      <h2 id="monthLabel"></h2>
+      <button class="icon-btn" id="next" aria-label="Next month">›</button>
+    </div>
+    <button class="btn sec" id="today" style="padding:7px 14px">Today</button>
+    <span class="spacer"></span>
+    <span class="note" id="countNote"></span>
+  </div>
+
+  <main id="calView">
+    <div class="cal">
+      <div class="dow"><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div></div>
+      <div class="grid" id="grid"></div>
+    </div>
+    <div class="agenda" id="agenda"></div>
+  </main>
+
+  <main id="tblView" hidden>
+    <div class="ctl-row" style="margin-bottom:12px">
+      <div class="seg" role="group" aria-label="Range">
+        <button id="rangeUpcoming" aria-pressed="true">Upcoming</button>
+        <button id="rangeAll" aria-pressed="false">All events</button>
+      </div>
+    </div>
+    <div id="tblWrap"></div>
+  </main>
+
+  <footer class="site">
+    <span id="stamp"></span>
+    <div class="installrow"><button class="linkbtn" id="btnInstall">Install this calendar as an app</button></div>
+  </footer>
+</div>
+
+<!-- Event detail -->
+<div class="scrim" id="evScrim">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="evTitle">
+    <header>
+      <h2 id="evTitle">Event</h2>
+      <button class="x" data-close="evScrim" aria-label="Close">×</button>
+    </header>
+    <div class="body" id="evBody"></div>
+    <footer>
+      <button class="btn" id="evIcs">Add to my calendar</button>
+      <button class="btn sec" data-close="evScrim">Close</button>
+    </footer>
+  </div>
+</div>
+
+<!-- Admin -->
+<div class="scrim" id="adScrim">
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="adTitle">
+    <header>
+      <h2 id="adTitle">Admin</h2>
+      <button class="x" data-close="adScrim" aria-label="Close">×</button>
+    </header>
+    <div class="body" id="adBody"></div>
+  </div>
+</div>
+
+<!-- Print options -->
+<div class="scrim" id="prScrim">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="prTitle">
+    <header>
+      <h2 id="prTitle">Printable calendar</h2>
+      <button class="x" data-close="prScrim" aria-label="Close">&times;</button>
+    </header>
+    <div class="body" id="prBody"></div>
+  </div>
+</div>
+
+<!-- Subscribe / export -->
+<div class="scrim" id="subScrim">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="subTitle">
+    <header>
+      <h2 id="subTitle">Add to your calendar</h2>
+      <button class="x" data-close="subScrim" aria-label="Close">&times;</button>
+    </header>
+    <div class="body" id="subBody"></div>
+  </div>
+</div>
+
+<!-- Install help -->
+<div class="scrim" id="inScrim">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="inTitle">
+    <header>
+      <h2 id="inTitle">Install the calendar</h2>
+      <button class="x" data-close="inScrim" aria-label="Close">&times;</button>
+    </header>
+    <div class="body" id="inBody"></div>
+  </div>
+</div>
+
+<!-- Built on demand, only ever visible on paper -->
+<div id="printout" aria-hidden="true"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------------------------------------------------------- config */
+/* The group's own calendar. Events come from the same content the app reads,
+   so anything approved here shows on the app's Calendar tab too. */
+var API = '/.netlify/functions/content';
+var ROTA = '/.netlify/functions/rota';
+var SITE_ADDRESS = '';
+var HELP_CONTACT = { name:'7th Clare Scouts', phone:'', how:'7thclarescouts@gmail.com' };
+function siteAddress(){ return SITE_ADDRESS || location.host; }
+
+var SECTIONS = [
+  {id:'beavers',  name:'Beavers',  colour:'var(--sec-beavers)'},
+  {id:'cubs',     name:'Cubs',     colour:'var(--sec-cubs)'},
+  {id:'scouts',   name:'Scouts',   colour:'var(--sec-scouts)'},
+  {id:'ventures', name:'Ventures', colour:'var(--sec-ventures)'}
+];
+var SEC_BY_ID = {}; SECTIONS.forEach(function(s){ SEC_BY_ID[s.id]=s; });
+var ALL_SECTION_IDS = SECTIONS.map(function(s){return s.id;});
+
+var CATEGORIES = [
+  {id:'group',  name:'Ours',   swatch:'var(--group-edge)'},
+  {id:'county', name:'County', swatch:'var(--county-edge)'}
+];
+
+var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+/* ---------------------------------------------------------------- state */
+var state = {
+  events: [],
+  updatedAt: null,
+  section: 'all',
+  view: 'cal',
+  apiDown: false,
+  stale: false,
+  selDay: null,
+  range: 'upcoming',
+  cursor: startOfMonth(new Date())
+};
+
+/* ---------------------------------------------------------------- utils */
+function $(id){ return document.getElementById(id); }
+function el(tag, cls, txt){ var n=document.createElement(tag); if(cls) n.className=cls; if(txt!=null) n.textContent=txt; return n; }
+function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+function iso(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function parseISO(s){ var p=String(s).split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+function todayISO(){ return iso(new Date()); }
+function fmtDay(s){ var d=parseISO(s); return d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3); }
+function fmtLong(s){ var d=parseISO(s); return DAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear(); }
+function fmtRange(ev){
+  if(!ev.end || ev.end===ev.start) return fmtLong(ev.start);
+  var a=parseISO(ev.start), b=parseISO(ev.end);
+  if(a.getMonth()===b.getMonth() && a.getFullYear()===b.getFullYear())
+    return a.getDate()+'–'+b.getDate()+' '+MONTHS[a.getMonth()]+' '+a.getFullYear();
+  return fmtDay(ev.start)+' – '+fmtLong(ev.end);
+}
+function fmtRangeShort(ev){
+  if(!ev.end || ev.end===ev.start) return fmtDay(ev.start);
+  return fmtDay(ev.start)+' – '+fmtDay(ev.end);
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function catName(id){ for(var i=0;i<CATEGORIES.length;i++) if(CATEGORIES[i].id===id) return CATEGORIES[i].name; return 'County'; }
+function toast(msg){
+  var t=$('toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(t._t); t._t=setTimeout(function(){ t.classList.remove('on'); }, 2400);
+}
+function daysBetween(startISO, endISO){
+  var out=[], d=parseISO(startISO), last=parseISO(endISO||startISO);
+  var guard=0;
+  while(d<=last && guard++<400){ out.push(iso(d)); d.setDate(d.getDate()+1); }
+  return out;
+}
+function sectionLabel(ev){
+  if(!ev.sections || ev.sections.length===0 || ev.sections.length===SECTIONS.length) return 'All Sections';
+  return ev.sections.map(function(id){ return SEC_BY_ID[id] ? SEC_BY_ID[id].name : id; }).join(', ');
+}
+
+/* ---------------------------------------------------------------- filtering */
+function visible(){
+  return state.events.filter(function(ev){
+    if(state.section!=='all'){
+      var secs = (ev.sections && ev.sections.length) ? ev.sections : ALL_SECTION_IDS;
+      if(secs.indexOf(state.section)===-1) return false;
+    }
+    return true;
+  });
+}
+function sortByDate(a,b){ return a.start<b.start ? -1 : a.start>b.start ? 1 : a.name.localeCompare(b.name); }
+
+/* ---------------------------------------------------------------- controls */
+function buildControls(){
+  var sp=$('sectionPills'); sp.innerHTML='';
+  var mk=function(id,name,colour){
+    var b=el('button','pill'); b.type='button';
+    b.setAttribute('aria-pressed', String(state.section===id));
+    if(colour){ var d=el('span','dot'); d.style.background=colour; b.appendChild(d); }
+    b.appendChild(document.createTextNode(name));
+    b.onclick=function(){ state.section=id; buildControls(); render(); };
+    sp.appendChild(b);
+  };
+  mk('all','All Sections',null);
+  SECTIONS.forEach(function(s){ mk(s.id, s.name, s.colour); });
+
+  var sel=$('secSelect');
+  if(!sel.options.length){
+    [{id:'all',name:'All Sections'}].concat(SECTIONS).forEach(function(o){
+      var opt=el('option',null,o.name); opt.value=o.id; sel.appendChild(opt);
+    });
+    sel.onchange=function(){ state.section=sel.value; buildControls(); render(); };
+  }
+  sel.value = state.section;
+
+  var lg=$('legend');
+  if(!lg.childNodes.length){
+    SECTIONS.forEach(function(sec){
+      var item=el('span');
+      var sw=el('i'); sw.style.background=sec.colour;
+      item.appendChild(sw); item.appendChild(document.createTextNode(sec.name));
+      lg.appendChild(item);
+    });
+  }
+}
+
+/* ---------------------------------------------------------------- render */
+function render(){
+  $('viewCal').setAttribute('aria-pressed', String(state.view==='cal'));
+  $('viewTbl').setAttribute('aria-pressed', String(state.view==='tbl'));
+  $('calView').hidden = state.view!=='cal';
+  $('tblView').hidden = state.view!=='tbl';
+  $('navRow').style.display = state.view==='cal' ? '' : 'none';
+  if(state.view==='cal') renderCalendar(); else renderTable();
+  $('stamp').textContent = state.updatedAt
+    ? 'Last updated ' + new Date(state.updatedAt).toLocaleString('en-IE', {dateStyle:'medium', timeStyle:'short'})
+    : '';
+}
+
+var MAX_LANES = 4;
+
+// The phone layout is a different layout, not a squeezed one, so the render
+// path forks here and re-runs when the viewport crosses the breakpoint.
+var MOBILE_Q = window.matchMedia('(max-width:720px)');
+function isPhone(){ return MOBILE_Q.matches; }
+if(MOBILE_Q.addEventListener) MOBILE_Q.addEventListener('change', function(){ render(); });
+else if(MOBILE_Q.addListener) MOBILE_Q.addListener(function(){ render(); });
+
+function addDays(d, n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function dayGap(fromDate, isoStr){
+  return Math.round((parseISO(isoStr) - fromDate) / 86400000);
+}
+function secsOf(ev){
+  return (ev.sections && ev.sections.length) ? ev.sections : ALL_SECTION_IDS;
+}
+// The left edge carries the section. One section is a solid block; several
+// sections stack into hard-edged stripes so a joint event still reads at a glance.
+function sectionPaint(secs){
+  if(secs.length === 1) return SEC_BY_ID[secs[0]].colour;
+  var n = secs.length, stops = [];
+  secs.forEach(function(id, i){
+    var c = SEC_BY_ID[id].colour;
+    stops.push(c + ' ' + (i*100/n).toFixed(2) + '% ' + ((i+1)*100/n).toFixed(2) + '%');
+  });
+  return 'linear-gradient(180deg,' + stops.join(',') + ')';
+}
+function sectionTint(secs, strength){
+  if(secs.length !== 1) return null;              // all-sections events stay neutral
+  return 'color-mix(in srgb, ' + SEC_BY_ID[secs[0]].colour + ' var(' + (strength||'--tint') + '), var(--surface))';
+}
+
+function renderCalendar(){
+  var evs = visible();
+  var cur = state.cursor;
+  $('monthLabel').textContent = MONTHS[cur.getMonth()]+' '+cur.getFullYear();
+
+  var first = new Date(cur.getFullYear(), cur.getMonth(), 1);
+  var offset = (first.getDay()+6)%7;           // Monday-first
+  var gridStart = new Date(first); gridStart.setDate(1-offset);
+
+  var monthCount = evs.filter(function(ev){
+    return daysBetween(ev.start,ev.end).some(function(d){
+      var p=parseISO(d); return p.getMonth()===cur.getMonth() && p.getFullYear()===cur.getFullYear();
+    });
+  }).length;
+  $('countNote').textContent = monthCount + (monthCount===1?' event':' events') + ' this month';
+
+  var grid=$('grid'); grid.innerHTML='';
+  var tISO = todayISO();
+
+  for(var w=0; w<6; w++){
+    var weekStart = addDays(gridStart, w*7);
+    var wsISO = iso(weekStart), weISO = iso(addDays(weekStart, 6));
+
+    var week = el('div','week');
+
+    var bg = el('div','week-bg');
+    for(var i=0;i<7;i++){
+      var d = addDays(weekStart, i);
+      bg.appendChild(el('span', d.getMonth()!==cur.getMonth() ? 'out' : null));
+    }
+    week.appendChild(bg);
+
+    var wg = el('div','week-grid');
+    for(var i=0;i<7;i++){
+      var d = addDays(weekStart, i), key = iso(d);
+      var n = el('span','dnum'+(d.getMonth()!==cur.getMonth()?' out':'')+(key===tISO?' today':''), String(d.getDate()));
+      n.style.gridColumn = String(i+1);
+      wg.appendChild(n);
+    }
+
+    // Everything overlapping this week, clipped to it.
+    var items = evs.filter(function(ev){
+      return ev.start <= weISO && (ev.end||ev.start) >= wsISO;
+    }).map(function(ev){
+      var evEnd = ev.end || ev.start;
+      var s = ev.start > wsISO ? ev.start : wsISO;
+      var e = evEnd    < weISO ? evEnd    : weISO;
+      return {
+        ev: ev,
+        c1: dayGap(weekStart, s) + 1,
+        c2: dayGap(weekStart, e) + 1,
+        clipL: ev.start < wsISO,
+        clipR: evEnd    > weISO
+      };
+    }).sort(function(a,b){
+      if(a.c1 !== b.c1) return a.c1 - b.c1;
+      var la = a.c2-a.c1, lb = b.c2-b.c1;
+      if(la !== lb) return lb - la;              // longer camps take the top lane
+      return a.ev.name.localeCompare(b.ev.name);
+    });
+
+    // Pack into lanes so nothing overlaps, and count what did not fit.
+    var lanes = [], overflow = [0,0,0,0,0,0,0];
+    items.forEach(function(it){
+      var lane = 0;
+      while(lane < MAX_LANES){
+        var taken = (lanes[lane]||[]).some(function(r){ return it.c1 <= r.c2 && it.c2 >= r.c1; });
+        if(!taken) break;
+        lane++;
+      }
+      if(lane >= MAX_LANES){
+        for(var c=it.c1; c<=it.c2; c++) overflow[c-1]++;
+        return;
+      }
+      (lanes[lane] = lanes[lane] || []).push(it);
+      var bar = makeBar(it);
+      bar.style.gridColumn = it.c1 + ' / span ' + (it.c2 - it.c1 + 1);
+      bar.style.gridRow = String(lane + 2);
+      wg.appendChild(bar);
+    });
+
+    for(var c=0;c<7;c++){
+      if(overflow[c] > 0){
+        var m = el('button','moreb','+'+overflow[c]+' more');
+        m.style.gridColumn = String(c+1);
+        m.style.gridRow = String(MAX_LANES + 2);
+        (function(dk){ m.onclick=function(){ openDay(dk); }; })(iso(addDays(weekStart, c)));
+        wg.appendChild(m);
+      }
+    }
+
+    week.appendChild(wg);
+    grid.appendChild(week);
+  }
+
+  renderAgenda(evs, cur);
+}
+
+function makeBar(it){
+  var ev = it.ev, secs = secsOf(ev), span = it.c2 - it.c1 + 1;
+  var b = el('button','bar'+(it.clipL?' cl':'')+(it.clipR?' cr':''));
+  b.type = 'button';
+
+  var edge = el('span','edge');
+  edge.style.background = sectionPaint(secs);
+  b.appendChild(edge);
+
+  var lbl = el('span','btxt');
+  lbl.textContent = ev.name;
+  if(span >= 2 && ev.time) lbl.appendChild(el('em', null, '  ·  ' + ev.time));
+  b.appendChild(lbl);
+
+  b.style.background = 'var(--surface-2)';
+  var tint = sectionTint(secs);
+  if(tint) b.style.background = tint;           // ignored if color-mix is unsupported
+
+  b.title = ev.name + '\n' + sectionLabel(ev) + ' · ' + catName(ev.category) +
+            (ev.time ? ' · ' + ev.time : '') + '\n' + fmtRange(ev);
+  b.onclick = function(){ openEvent(ev); };
+  return b;
+}
+
+function renderAgenda(evs, cur){
+  var box=$('agenda'); box.innerHTML='';
+  if(state.apiDown){ box.appendChild(apiDownBox()); return; }
+
+  var first = new Date(cur.getFullYear(), cur.getMonth(), 1);
+  var offset = (first.getDay()+6)%7;
+  var gridStart = new Date(first); gridStart.setDate(1-offset);
+  var tISO = todayISO();
+
+  // which days have what
+  var byDay = {};
+  evs.forEach(function(ev){
+    daysBetween(ev.start, ev.end).forEach(function(d){ (byDay[d]=byDay[d]||[]).push(ev); });
+  });
+
+  // keep the selected day sensible when the month changes
+  var inThisMonth = state.selDay &&
+    parseISO(state.selDay).getMonth()===cur.getMonth() &&
+    parseISO(state.selDay).getFullYear()===cur.getFullYear();
+  if(!inThisMonth){
+    var todayHere = parseISO(tISO).getMonth()===cur.getMonth() && parseISO(tISO).getFullYear()===cur.getFullYear();
+    if(todayHere) state.selDay = tISO;
+    else {
+      var firstBusy = Object.keys(byDay).filter(function(d){
+        var p=parseISO(d); return p.getMonth()===cur.getMonth() && p.getFullYear()===cur.getFullYear();
+      }).sort()[0];
+      state.selDay = firstBusy || iso(first);
+    }
+  }
+
+  var cal = el('div','mcal');
+  var dow = el('div','mdow');
+  ['M','T','W','T','F','S','S'].forEach(function(d){ dow.appendChild(el('span',null,d)); });
+  cal.appendChild(dow);
+
+  var grid = el('div','mgrid');
+  for(var i=0;i<42;i++){
+    var d = addDays(gridStart, i), key = iso(d);
+    var out = d.getMonth()!==cur.getMonth();
+    var cell = el('button','mcell'+(out?' out':'')+(key===tISO?' today':'')+(key===state.selDay?' sel':''));
+    cell.type='button';
+    cell.setAttribute('aria-label', fmtLong(key));
+    cell.appendChild(el('span','mnum', String(d.getDate())));
+
+    var list = (byDay[key]||[]).slice().sort(sortByDate);
+    var dots = el('span','mdots');
+    list.slice(0,4).forEach(function(ev){
+      var dot = el('i');
+      dot.style.background = sectionPaint(secsOf(ev));
+      dots.appendChild(dot);
+    });
+    if(list.length>4) dots.appendChild(el('b',null,'+'));
+    cell.appendChild(dots);
+
+    (function(k){ cell.onclick=function(){ state.selDay=k; renderAgenda(visible(), state.cursor); }; })(key);
+    grid.appendChild(cell);
+  }
+  cal.appendChild(grid);
+  box.appendChild(cal);
+
+  // the day itself
+  var day = el('div','mday');
+  var list = (byDay[state.selDay]||[]).slice().sort(sortByDate);
+  var h = el('h3', null, fmtLong(state.selDay) + ' ');
+  h.appendChild(el('span', null, list.length ? '· ' + list.length + (list.length===1?' event':' events') : ''));
+  day.appendChild(h);
+
+  if(!list.length){
+    day.appendChild(el('p','note','Nothing on this day. Tap another, or use the table view for everything coming up.'));
+  } else {
+    list.forEach(function(ev){ day.appendChild(dayCard(ev)); });
+  }
+  box.appendChild(day);
+}
+
+function fmtCardDate(ev){
+  var d = parseISO(ev.start);
+  if(!ev.end || ev.end === ev.start){
+    return DAYS[d.getDay()].slice(0,3) + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()].slice(0,3);
+  }
+  return fmtRangeShort(ev);
+}
+
+function dayCard(ev, showDate){
+  var secs = secsOf(ev);
+  var b = el('button','mev'); b.type='button';
+
+  var edge = el('span','edge');
+  edge.style.background = sectionPaint(secs);
+  b.appendChild(edge);
+
+  var main = el('span','mev-main');
+  var nm = el('span','mev-name', ev.name);
+  main.appendChild(nm);
+
+  var bits = [];
+  if(showDate) bits.push(fmtCardDate(ev));
+  else if(ev.end && ev.end!==ev.start) bits.push(fmtRangeShort(ev));
+  if(ev.time) bits.push(ev.time);
+  if(ev.location) bits.push(ev.location);
+  if(bits.length) main.appendChild(el('span','mev-meta', bits.join('  ·  ')));
+
+  main.appendChild(el('span','mev-secs', sectionLabel(ev)));
+  b.appendChild(main);
+
+  b.onclick = function(){ openEvent(ev); };
+  return b;
+}
+
+function apiDownBox(){
+  var local = location.protocol === 'file:';
+  return emptyBox(
+    local ? 'Open this through the website, not the file' : 'The events service is not responding',
+    local
+      ? 'This page talks to a function on the site, which cannot run from a file on your computer. Open the Netlify address instead.'
+      : 'Check that you dropped the whole unzipped folder onto Netlify, and that Logs then Functions on the site lists an "events" function.');
+}
+function emptyBox(title, sub){
+  var e=el('div','empty');
+  e.appendChild(el('strong', null, title));
+  e.appendChild(document.createTextNode(sub));
+  return e;
+}
+
+var TBL_COLS = ['17%','30%','17%','18%','18%'];   // date, event, sections, host, contact
+
+function buildTable(list){
+  var t=el('table','tbl');
+  var cg=el('colgroup');
+  TBL_COLS.forEach(function(w){ var c=el('col'); c.style.width=w; cg.appendChild(c); });
+  t.appendChild(cg);
+  var thead=el('thead');
+  var hr=el('tr');
+  ['Date','Event','Sections','Hosted by','Contact'].forEach(function(h){ hr.appendChild(el('th',null,h)); });
+  thead.appendChild(hr); t.appendChild(thead);
+  var tb=el('tbody');
+  list.forEach(function(ev){
+    var tr=el('tr');
+    tr.onclick=function(){ openEvent(ev); };
+
+    var td1=el('td','when'); td1.appendChild(document.createTextNode(fmtRangeShort(ev)));
+    var yr=el('div','sub', parseISO(ev.start).getFullYear() + (ev.time? ' · '+ev.time : ''));
+    td1.appendChild(yr); tr.appendChild(td1);
+
+    var td2=el('td');
+    var nm=el('div',null,ev.name);
+    td2.appendChild(nm);
+    if(ev.location) td2.appendChild(el('div','sub', ev.location));
+    tr.appendChild(td2);
+
+    var td4=el('td');
+    var secs=secsOf(ev);
+    if(secs.length===SECTIONS.length){
+      var all=el('span','secchip','All Sections');
+      all.style.background='var(--surface-2)';
+      td4.appendChild(all);
+    } else {
+      secs.forEach(function(id){
+        var sec=SEC_BY_ID[id]; if(!sec) return;
+        var c=el('span','secchip');
+        var dot=el('i'); dot.style.background=sec.colour;
+        c.appendChild(dot); c.appendChild(document.createTextNode(sec.name));
+        c.style.background='var(--surface-2)';
+        var tint=sectionTint([id],'--chip-tint');
+        if(tint) c.style.background=tint;
+        td4.appendChild(c);
+      });
+    }
+    tr.appendChild(td4);
+
+    tr.appendChild(el('td', null, ev.host||''));
+
+    var td6=el('td');
+    td6.appendChild(document.createTextNode(ev.contactName||''));
+    if(ev.contactEmail) td6.appendChild(el('div','sub', ev.contactEmail));
+    else if(ev.contactPhone) td6.appendChild(el('div','sub', ev.contactPhone));
+    tr.appendChild(td6);
+
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+  return t;
+}
+
+function renderTable(){
+  var evs=visible().sort(sortByDate);
+  if(state.range==='upcoming'){
+    var t=todayISO();
+    evs=evs.filter(function(ev){ return (ev.end||ev.start) >= t; });
+  }
+  $('rangeUpcoming').setAttribute('aria-pressed', String(state.range==='upcoming'));
+  $('rangeAll').setAttribute('aria-pressed', String(state.range==='all'));
+
+  var wrap=$('tblWrap'); wrap.innerHTML='';
+  if(!evs.length){
+    wrap.appendChild(state.apiDown ? apiDownBox()
+      : emptyBox('No events to show', state.events.length ? 'Adjust the section or type filters above.' : 'The calendar is empty. Use Admin to add the first event.'));
+    return;
+  }
+  var groups={}, order=[];
+  evs.forEach(function(ev){
+    var d=parseISO(ev.start), k=d.getFullYear()+'-'+d.getMonth();
+    if(!groups[k]){ groups[k]=[]; order.push({k:k, label:MONTHS[d.getMonth()]+' '+d.getFullYear()}); }
+    groups[k].push(ev);
+  });
+  var phone = isPhone();
+  order.forEach(function(g){
+    var sec=el('section','mgroup');
+    sec.appendChild(el('h3', null, g.label));
+    if(phone){
+      groups[g.k].forEach(function(ev){ sec.appendChild(dayCard(ev, true)); });
+    } else {
+      sec.appendChild(buildTable(groups[g.k]));
+    }
+    wrap.appendChild(sec);
+  });
+}
+
+/* ---------------------------------------------------------------- detail */
+var currentEvent=null;
+function openEvent(ev){
+  currentEvent=ev;
+  $('evTitle').textContent = ev.name;
+  var rows=[
+    ['Type','<span class="tag '+ev.category+'">'+esc(catName(ev.category))+'</span>'],
+    ['When', esc(fmtRange(ev)) + (ev.time ? ' <span class="sub">· '+esc(ev.time)+'</span>' : '')],
+    ['Sections', esc(sectionLabel(ev))]
+  ];
+  if(ev.location) rows.push(['Where', esc(ev.location)]);
+  if(ev.host) rows.push(['Hosted by', esc(ev.host)]);
+  var contact=[];
+  if(ev.contactName) contact.push(esc(ev.contactName));
+  if(ev.contactEmail) contact.push('<a href="mailto:'+esc(ev.contactEmail)+'">'+esc(ev.contactEmail)+'</a>');
+  if(ev.contactPhone) contact.push('<a href="tel:'+esc(ev.contactPhone.replace(/\s/g,''))+'">'+esc(ev.contactPhone)+'</a>');
+  if(contact.length) rows.push(['Contact', contact.join('<br>')]);
+  if(ev.link){
+    rows.push(['Link','<a href="'+esc(ev.link)+'" target="_blank" rel="noopener noreferrer">'+esc(ev.link)+'</a>']);
+  }
+  if(ev.description) rows.push(['Details','<div class="desc">'+esc(ev.description)+'</div>']);
+
+  $('evBody').innerHTML = '<dl class="detail">' + rows.map(function(r){
+    return '<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>';
+  }).join('') + '</dl>';
+  open$('evScrim');
+}
+
+function openDay(dayKey){
+  var list = visible().filter(function(ev){ return daysBetween(ev.start,ev.end).indexOf(dayKey)>-1; }).sort(sortByDate);
+  $('evTitle').textContent = fmtLong(dayKey);
+  var box=el('div');
+  list.forEach(function(ev){
+    var b=makeBar({ev:ev, c1:1, c2:1, clipL:false, clipR:false});
+    b.style.margin='0 0 6px'; b.style.padding='9px 12px 9px 14px'; b.style.fontSize='13px';
+    box.appendChild(b);
+  });
+  $('evBody').innerHTML=''; $('evBody').appendChild(box);
+  currentEvent=null;
+  open$('evScrim');
+}
+
+/* ==================================================================
+   Spreadsheet in and out.
+   An .xlsx is a zip of XML, so both directions are done by hand here
+   rather than pulling in a library the site would have to load.
+   ================================================================== */
+
+var SHEET_COLS = [
+  'Name', 'Start date', 'End date', 'Time', 'Type', 'Sections',
+  'Location', 'Link', 'Description', 'Hosted by', 'Contact name', 'Contact email', 'Contact phone'
+];
+
+/* ---------------------------------------------------------- zip writing */
+var CRC_TABLE = (function(){
+  var t = new Uint32Array(256), c, n, k;
+  for(n=0;n<256;n++){
+    c = n;
+    for(k=0;k<8;k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes){
+  var c = 0xFFFFFFFF;
+  for(var i=0;i<bytes.length;i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function utf8(strv){ return new TextEncoder().encode(strv); }
+
+// Stored (uncompressed) zip. Fine for a few KB of XML and keeps this small.
+function zipStore(files){
+  var parts = [], central = [], offset = 0;
+  files.forEach(function(f){
+    var nameB = utf8(f.name), data = f.data;
+    var crc = crc32(data);
+    var local = new Uint8Array(30 + nameB.length);
+    var dv = new DataView(local.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true); dv.setUint16(6, 0, true); dv.setUint16(8, 0, true);
+    dv.setUint16(10, 0, true); dv.setUint16(12, 0, true);
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, data.length, true); dv.setUint32(22, data.length, true);
+    dv.setUint16(26, nameB.length, true); dv.setUint16(28, 0, true);
+    local.set(nameB, 30);
+    parts.push(local, data);
+
+    var cen = new Uint8Array(46 + nameB.length);
+    var cv = new DataView(cen.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true); cv.setUint16(10, 0, true);
+    cv.setUint16(12, 0, true); cv.setUint16(14, 0, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, data.length, true); cv.setUint32(24, data.length, true);
+    cv.setUint16(28, nameB.length, true);
+    cv.setUint32(42, offset, true);
+    cen.set(nameB, 46);
+    central.push(cen);
+
+    offset += local.length + data.length;
+  });
+
+  var cenSize = central.reduce(function(a,c){ return a + c.length; }, 0);
+  var end = new Uint8Array(22);
+  var ev = new DataView(end.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true); ev.setUint16(10, files.length, true);
+  ev.setUint32(12, cenSize, true); ev.setUint32(16, offset, true);
+
+  var all = parts.concat(central, [end]);
+  var total = all.reduce(function(a,c){ return a + c.length; }, 0);
+  var out = new Uint8Array(total), p = 0;
+  all.forEach(function(chunk){ out.set(chunk, p); p += chunk.length; });
+  return out;
+}
+
+/* ------------------------------------------------------------ xlsx out */
+function xesc(v){
+  return String(v==null?'':v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');   // control chars break Excel
+}
+function colName(n){
+  var s='';
+  while(n>=0){ s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n/26) - 1; }
+  return s;
+}
+
+// Every value is written as an inline string. Dates go out as YYYY-MM-DD text,
+// which sorts correctly and cannot be misread as day/month or month/day.
+function buildXlsx(rows){
+  var sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<cols>' +
+      '<col min="1" max="1" width="34" customWidth="1"/>' +
+      '<col min="2" max="3" width="13" customWidth="1"/>' +
+      '<col min="4" max="4" width="15" customWidth="1"/>' +
+      '<col min="5" max="5" width="11" customWidth="1"/>' +
+      '<col min="6" max="6" width="26" customWidth="1"/>' +
+      '<col min="7" max="7" width="24" customWidth="1"/>' +
+      '<col min="8" max="8" width="46" customWidth="1"/>' +
+      '<col min="9" max="12" width="22" customWidth="1"/>' +
+    '</cols><sheetData>';
+
+  rows.forEach(function(row, r){
+    sheet += '<row r="'+(r+1)+'">';
+    row.forEach(function(cell, c){
+      if(cell === '' || cell == null) return;
+      sheet += '<c r="'+colName(c)+(r+1)+'" t="inlineStr"'+(r===0?' s="1"':'')+'>' +
+               '<is><t xml:space="preserve">'+xesc(cell)+'</t></is></c>';
+    });
+    sheet += '</row>';
+  });
+  sheet += '</sheetData></worksheet>';
+
+  var files = [
+    {name:'[Content_Types].xml', data: utf8('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+      '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+      '</Types>')},
+    {name:'_rels/.rels', data: utf8('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+      '</Relationships>')},
+    {name:'xl/workbook.xml', data: utf8('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ' +
+      'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+      '<sheets><sheet name="Events" sheetId="1" r:id="rId1"/></sheets></workbook>')},
+    {name:'xl/_rels/workbook.xml.rels', data: utf8('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+      '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+      '</Relationships>')},
+    {name:'xl/styles.xml', data: utf8('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font>' +
+      '<font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
+      '<fills count="1"><fill><patternFill patternType="none"/></fill></fills>' +
+      '<borders count="1"><border/></borders>' +
+      '<cellStyleXfs count="1"><xf/></cellStyleXfs>' +
+      '<cellXfs count="2"><xf xfId="0"/><xf xfId="0" fontId="1" applyFont="1"/></cellXfs>' +
+      '</styleSheet>')},
+    {name:'xl/worksheets/sheet1.xml', data: utf8(sheet)}
+  ];
+  return new Blob([zipStore(files)], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+/* ------------------------------------------------------------- xlsx in */
+async function inflateRaw(bytes){
+  if(typeof DecompressionStream === 'undefined') throw new Error('nodeflate');
+  var ds = new DecompressionStream('deflate-raw');
+  var stream = new Blob([bytes]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+// Read the zip's central directory rather than scanning local headers, so
+// entries written with streaming descriptors still give correct sizes.
+async function unzip(buf){
+  var b = new Uint8Array(buf), dv = new DataView(b.buffer);
+  var eocd = -1;
+  for(var i=b.length-22; i>=0 && i>b.length-66000; i--){
+    if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  }
+  if(eocd < 0) throw new Error('notzip');
+  var count = dv.getUint16(eocd+10, true);
+  var cenOff = dv.getUint32(eocd+16, true);
+
+  var out = {}, p = cenOff;
+  for(var n=0; n<count; n++){
+    if(dv.getUint32(p, true) !== 0x02014b50) break;
+    var method = dv.getUint16(p+10, true);
+    var csize  = dv.getUint32(p+20, true);
+    var nameLen= dv.getUint16(p+28, true);
+    var extLen = dv.getUint16(p+30, true);
+    var cmtLen = dv.getUint16(p+32, true);
+    var lho    = dv.getUint32(p+42, true);
+    var name   = new TextDecoder().decode(b.subarray(p+46, p+46+nameLen));
+
+    var lNameLen = dv.getUint16(lho+26, true);
+    var lExtLen  = dv.getUint16(lho+28, true);
+    var start = lho + 30 + lNameLen + lExtLen;
+    var raw = b.subarray(start, start + csize);
+    out[name] = method === 0 ? raw : await inflateRaw(raw);
+    p += 46 + nameLen + extLen + cmtLen;
+  }
+  return out;
+}
+
+function xmlDoc(bytes){
+  return new DOMParser().parseFromString(new TextDecoder().decode(bytes), 'application/xml');
+}
+function cellRef(ref){                       // "BC12" -> column index 54
+  var m = /^([A-Z]+)/.exec(ref || '');
+  if(!m) return 0;
+  var n = 0;
+  for(var i=0;i<m[1].length;i++) n = n*26 + (m[1].charCodeAt(i) - 64);
+  return n - 1;
+}
+function excelSerialToISO(num){
+  var ms = Math.round((num - 25569) * 86400000);   // 25569 = 1970-01-01
+  var d = new Date(ms);
+  if(isNaN(d)) return '';
+  return d.toISOString().slice(0,10);
+}
+
+async function parseXlsx(buf){
+  var files = await unzip(buf);
+  var shared = [];
+  if(files['xl/sharedStrings.xml']){
+    var sdoc = xmlDoc(files['xl/sharedStrings.xml']);
+    var sis = sdoc.getElementsByTagName('si');
+    for(var i=0;i<sis.length;i++){
+      var ts = sis[i].getElementsByTagName('t'), txt = '';
+      for(var j=0;j<ts.length;j++) txt += ts[j].textContent;
+      shared.push(txt);
+    }
+  }
+  var sheetName = Object.keys(files).filter(function(n){
+    return /^xl\/worksheets\/sheet\d+\.xml$/.test(n);
+  }).sort()[0];
+  if(!sheetName) throw new Error('nosheet');
+
+  var doc = xmlDoc(files[sheetName]);
+  var rowEls = doc.getElementsByTagName('row');
+  var rows = [];
+  for(var r=0;r<rowEls.length;r++){
+    var cells = rowEls[r].getElementsByTagName('c'), row = [];
+    for(var c=0;c<cells.length;c++){
+      var cell = cells[c];
+      var idx = cellRef(cell.getAttribute('r'));
+      var t = cell.getAttribute('t');
+      var val = '';
+      if(t === 'inlineStr'){
+        var isEl = cell.getElementsByTagName('t');
+        for(var k=0;k<isEl.length;k++) val += isEl[k].textContent;
+      } else {
+        var v = cell.getElementsByTagName('v')[0];
+        var raw = v ? v.textContent : '';
+        if(t === 's') val = shared[parseInt(raw,10)] || '';
+        else if(t === 'b') val = raw === '1' ? 'TRUE' : 'FALSE';
+        else val = raw;
+      }
+      row[idx] = val;
+    }
+    for(var f=0;f<row.length;f++) if(row[f] === undefined) row[f] = '';
+    rows.push(row);
+  }
+  return rows;
+}
+
+/* -------------------------------------------------------------- csv in */
+function parseCsv(text){
+  text = text.replace(/^﻿/, '');
+  var rows = [], row = [], field = '', q = false, i = 0;
+  while(i < text.length){
+    var ch = text[i];
+    if(q){
+      if(ch === '"'){
+        if(text[i+1] === '"'){ field += '"'; i += 2; continue; }
+        q = false; i++; continue;
+      }
+      field += ch; i++; continue;
+    }
+    if(ch === '"'){ q = true; i++; continue; }
+    if(ch === ','){ row.push(field); field = ''; i++; continue; }
+    if(ch === '\r'){ i++; continue; }
+    if(ch === '\n'){ row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+    field += ch; i++;
+  }
+  if(field !== '' || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+/* --------------------------------------------------- rows <-> events */
+function eventsToRows(list){
+  var rows = [SHEET_COLS.slice()];
+  list.slice().sort(sortByDate).forEach(function(ev){
+    var secs = secsOf(ev);
+    rows.push([
+      ev.name,
+      ev.start,
+      ev.end || '',
+      ev.time || '',
+      catName(ev.category),
+      secs.length === SECTIONS.length ? 'All Sections'
+        : secs.map(function(id){ return SEC_BY_ID[id] ? SEC_BY_ID[id].name : id; }).join(', '),
+      ev.location || '',
+      ev.link || '',
+      ev.description || '',
+      ev.host || '',
+      ev.contactName || '',
+      ev.contactEmail || '',
+      ev.contactPhone || ''
+    ]);
+  });
+  return rows;
+}
+
+var HEADER_ALIASES = {
+  name:['name','event','event name','title'],
+  start:['start date','start','date','from'],
+  end:['end date','end','to','finish'],
+  time:['time','times'],
+  category:['type','category'],
+  sections:['sections','section'],
+  location:['location','venue','location / venue','where'],
+  link:['link','url','web','website','booking link'],
+  description:['description','details','notes'],
+  host:['hosted by','host','organiser','organizer'],
+  contactName:['contact name','contact'],
+  contactEmail:['contact email','email'],
+  contactPhone:['contact phone','phone','telephone','mobile']
+};
+
+function normHeader(v){ return String(v||'').trim().toLowerCase().replace(/\s+/g,' '); }
+
+function toISODate(v){
+  var s = String(v == null ? '' : v).trim();
+  if(!s) return '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  if(/^\d+(\.\d+)?$/.test(s)) return excelSerialToISO(parseFloat(s));   // Excel serial
+  var m = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/.exec(s);        // d/m/y, Irish order
+  if(m){
+    var d = +m[1], mo = +m[2], y = +m[3];
+    if(y < 100) y += 2000;
+    if(d > 31 || mo > 12) return '';
+    return y + '-' + String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+  }
+  var parsed = new Date(s);
+  if(!isNaN(parsed)) return iso(parsed);
+  return '';
+}
+
+function rowsToEvents(rows){
+  var errors = [], events = [];
+  if(!rows.length) return {events:events, errors:['The file is empty.']};
+
+  // find the header row (first row that mentions a name-ish and a date-ish column)
+  var headerRow = -1, map = {};
+  for(var r=0; r<Math.min(rows.length, 10); r++){
+    var candidate = {}, hits = 0;
+    rows[r].forEach(function(cell, c){
+      var h = normHeader(cell);
+      for(var key in HEADER_ALIASES){
+        if(HEADER_ALIASES[key].indexOf(h) > -1 && candidate[key] === undefined){
+          candidate[key] = c; hits++;
+        }
+      }
+    });
+    if(candidate.name !== undefined && candidate.start !== undefined){
+      headerRow = r; map = candidate; break;
+    }
+    if(hits > 3){ headerRow = r; map = candidate; }
+  }
+  if(headerRow < 0 || map.name === undefined || map.start === undefined){
+    return {events:events, errors:['Could not find the column headings. The sheet needs at least a "Name" column and a "Start date" column.']};
+  }
+
+  var SEC_BY_NAME = {};
+  SECTIONS.forEach(function(s){ SEC_BY_NAME[s.name.toLowerCase()] = s.id; SEC_BY_NAME[s.id] = s.id; });
+
+  for(var i = headerRow + 1; i < rows.length; i++){
+    var row = rows[i];
+    var get = function(key){ return map[key] === undefined ? '' : String(row[map[key]] == null ? '' : row[map[key]]).trim(); };
+    var name = get('name');
+    var startRaw = get('start');
+    if(!name && !startRaw) continue;                       // blank line, skip quietly
+
+    var start = toISODate(startRaw);
+    if(!name){ errors.push('Row ' + (i+1) + ': no event name, skipped.'); continue; }
+    if(!start){ errors.push('Row ' + (i+1) + ' (' + name + '): could not read the start date "' + startRaw + '", skipped.'); continue; }
+
+    var end = toISODate(get('end'));
+    if(end && end < start) end = '';
+
+    var catRaw = get('category').toLowerCase();
+    var category = 'county';
+    CATEGORIES.forEach(function(c){ if(catRaw.indexOf(c.id) > -1) category = c.id; });
+
+    var secRaw = get('sections');
+    var secs = [];
+    if(/all/i.test(secRaw) || !secRaw){
+      secs = ALL_SECTION_IDS.slice();
+    } else {
+      secRaw.split(/[,;/]+/).forEach(function(part){
+        var id = SEC_BY_NAME[part.trim().toLowerCase()];
+        if(id && secs.indexOf(id) === -1) secs.push(id);
+      });
+      if(!secs.length){
+        errors.push('Row ' + (i+1) + ' (' + name + '): sections "' + secRaw + '" not recognised, set to All Sections.');
+        secs = ALL_SECTION_IDS.slice();
+      }
+    }
+
+    events.push(normalise({
+      name: name, start: start, end: end, time: get('time'),
+      category: category, sections: secs,
+      location: get('location'), link: get('link'), description: get('description'), host: get('host'),
+      contactName: get('contactName'), contactEmail: get('contactEmail'), contactPhone: get('contactPhone')
+    }));
+  }
+  return {events:events, errors:errors};
+}
+
+/* ---------------------------------------------------------- subscribe */
+// A downloaded .ics is a snapshot and goes stale. A subscription URL keeps
+// working, so that is offered first and the download second.
+function feedUrl(section){
+  var base = location.origin + '/.netlify/functions/content?ics=1';
+  return section && section !== 'all' ? base + '&section=' + section : base;
+}
+
+function openSubscribe(){
+  var sec = state.section;
+  var label = sec === 'all' ? 'the whole county' : SEC_BY_ID[sec].name;
+  $('subTitle').textContent = 'Add ' + label + ' to your calendar';
+  var b = $('subBody'); b.innerHTML = '';
+
+  b.appendChild(el('p','note','You are looking at ' + label +
+    '. Change the section filter behind this box if you want a different one.'));
+
+  var sub = el('div','substep');
+  sub.appendChild(el('h4', null, 'Subscribe, and it stays up to date'));
+  sub.appendChild(el('p','note','Best option. Your calendar checks back on its own, so events added later turn up without you doing anything.'));
+
+  var urlRow = el('div','urlrow');
+  var urlBox = el('input'); urlBox.type='text'; urlBox.readOnly = true; urlBox.className='urlbox';
+  urlBox.value = feedUrl(sec);
+  urlBox.onclick = function(){ urlBox.select(); };
+  var copy = el('button','btn','Copy');
+  copy.onclick = function(){
+    urlBox.select();
+    var done = function(){ copy.textContent='Copied'; setTimeout(function(){ copy.textContent='Copy'; }, 1600); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(urlBox.value).then(done, function(){ try{ document.execCommand('copy'); done(); }catch(e){} });
+    } else { try{ document.execCommand('copy'); done(); }catch(e){} }
+  };
+  urlRow.appendChild(urlBox); urlRow.appendChild(copy);
+  sub.appendChild(urlRow);
+
+  var how = el('ul'); how.className='installsteps';
+  [ '<b>Google Calendar:</b> Other calendars, the plus, then From URL. Paste it there.',
+    '<b>iPhone or iPad:</b> Settings, Calendar, Accounts, Add Account, Other, Add Subscribed Calendar.',
+    '<b>Outlook:</b> on the web at outlook.com, Add calendar, Subscribe from web. The Outlook phone app cannot do this itself, but it picks the calendar up once it is added on the web.'
+  ].forEach(function(t){ var li=el('li'); li.innerHTML=t; how.appendChild(li); });
+  sub.appendChild(how);
+
+  var busyNote = el('p','note');
+  busyNote.innerHTML = 'County events come through as <b>free</b>, so they show in your calendar ' +
+    'without making you look busy all day to anyone checking your availability. ' +
+    'If you would rather they block your time, add <b>&amp;busy=1</b> to the end of the address above.';
+  sub.appendChild(busyNote);
+  b.appendChild(sub);
+
+  var once = el('div','substep');
+  once.appendChild(el('h4', null, 'Or download a one-off copy'));
+  once.appendChild(el('p','note','A snapshot of what is showing now. It will not update later, so you would need to download it again.'));
+  var dl = el('button','btn sec','Download .ics file');
+  dl.onclick = function(){
+    var list = visible().sort(sortByDate);
+    if(!list.length){ toast('Nothing to export'); return; }
+    download('clare-scout-county' + (sec==='all'?'':'-'+sec) + '.ics', buildICS(list), 'text/calendar;charset=utf-8');
+  };
+  once.appendChild(dl);
+  b.appendChild(once);
+
+  var foot = el('div','ctl-row'); foot.style.marginTop='10px';
+  var close = el('button','btn sec','Close');
+  close.onclick = function(){ close$('subScrim'); };
+  foot.appendChild(close);
+  b.appendChild(foot);
+  open$('subScrim');
+}
+
+/* ------------------------------------------------------------ install */
+// Registering the worker is what makes the site installable, and what lets it
+// open at all with no signal. It is deliberately not required for anything
+// else: if registration fails the calendar still works as a normal page.
+var deferredInstall = null;
+
+var secureCtx = location.protocol === 'https:' ||
+                location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+if('serviceWorker' in navigator && secureCtx){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){ /* not fatal */ });
+  });
+}
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  deferredInstall = e;
+});
+window.addEventListener('appinstalled', function(){ deferredInstall = null; });
+
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches ||
+         window.navigator.standalone === true;
+}
+function isIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function openInstall(){
+  var b = $('inBody'); b.innerHTML = '';
+
+  if(isStandalone()){
+    b.appendChild(el('p','note','This is already installed. You are running it as an app now.'));
+  } else if(deferredInstall){
+    b.appendChild(el('p','note','Adds the calendar to your desktop or home screen with the county badge as its icon. It opens in its own window, and keeps working without a signal by showing the last events it saw.'));
+    var go = el('button','btn','Install');
+    go.onclick = function(){
+      deferredInstall.prompt();
+      deferredInstall.userChoice.then(function(){ deferredInstall = null; close$('inScrim'); });
+    };
+    var row = el('div','ctl-row'); row.style.marginTop='12px';
+    row.appendChild(go);
+    b.appendChild(row);
+  } else if(isIOS()){
+    b.appendChild(el('p','note','On an iPhone or iPad, Safari installs it from the Share menu.'));
+    var ol = el('ol'); ol.className='installsteps';
+    ['Open this page in Safari (not Chrome).',
+     'Tap the Share button, the square with an arrow out of the top.',
+     'Scroll down and tap "Add to Home Screen".',
+     'Tap Add. The county badge appears on your home screen.'
+    ].forEach(function(t){ ol.appendChild(el('li',null,t)); });
+    b.appendChild(ol);
+  } else {
+    b.appendChild(el('p','note','Your browser installs this from its own menu.'));
+    var ul = el('ul'); ul.className='installsteps';
+    ['Chrome or Edge on Windows: the install icon at the right of the address bar, or the three-dot menu, then Cast, save and share, then Install page as app.',
+     'Android Chrome: the three-dot menu, then Add to Home screen.',
+     'Safari on Mac: File, then Add to Dock.'
+    ].forEach(function(t){ ul.appendChild(el('li',null,t)); });
+    b.appendChild(ul);
+  }
+
+  var foot = el('div','ctl-row'); foot.style.marginTop='12px';
+  var close = el('button','btn sec','Close');
+  close.onclick = function(){ close$('inScrim'); };
+  foot.appendChild(close);
+  b.appendChild(foot);
+  open$('inScrim');
+}
+
+/* -------------------------------------------------------------- print */
+// The printable sheet is built into a hidden div; the print stylesheet hides
+// the app and shows that instead, so "Save as PDF" in the print dialog gives
+// a clean PDF without the site needing a PDF library.
+var printOpts = { who:'current', range:'12', month:null, poster:false,
+                  posterOrient: isIOS() ? 'portrait' : 'landscape' };
+
+function openPrint(){
+  printOpts.who = state.section === 'all' ? 'all' : state.section;
+  printOpts.range = defaultPrintRange();
+  $('prTitle').textContent = 'Printable calendar';
+  var b = $('prBody'); b.innerHTML = '';
+  b.appendChild(el('p','note','Builds a clean A4 sheet: month grids with the dates marked, then the event details underneath. Choose "Save as PDF" as the printer to get a PDF file.'));
+
+  var f1 = el('div','field');
+  f1.appendChild(el('label',null,'Which calendar'));
+  var whoSel = el('select');
+  [{v:'all', t:'All sections on one sheet'}].concat(
+    SECTIONS.map(function(x){ return {v:x.id, t:x.name + ' only'}; }),
+    [{v:'each', t:'Every section, one sheet each'}]
+  ).forEach(function(o){
+    var op = el('option', null, o.t); op.value = o.v;
+    if(o.v === printOpts.who) op.selected = true;
+    whoSel.appendChild(op);
+  });
+  f1.appendChild(whoSel); b.appendChild(f1);
+
+  var f2 = el('div','field');
+  f2.appendChild(el('label',null,'How far ahead'));
+  var rSel = el('select');
+  var rangeOpts = [{v:'month', t:'One month only, as a wall sheet'},
+                   {v:'12', t:'The next 12 months'}];
+  programmeYears().forEach(function(y){ rangeOpts.push({v:'py'+y, t:programmeLabel(y)}); });
+  rangeOpts.push({v:'all', t:'Everything on the calendar'});
+  if(!rangeOpts.some(function(o){ return o.v === printOpts.range; })) printOpts.range = '12';
+  rangeOpts.forEach(function(o){
+    var op = el('option', null, o.t); op.value = o.v;
+    if(o.v === printOpts.range) op.selected = true;
+    rSel.appendChild(op);
+  });
+  f2.appendChild(rSel); b.appendChild(f2);
+
+  var f3 = el('div','field'); f3.style.display='none';
+  f3.appendChild(el('label',null,'Which month'));
+  var mSel = el('select');
+  var startM = startOfMonth(parseISO(todayISO()));
+  for(var i=-2;i<=14;i++){
+    var d = new Date(startM.getFullYear(), startM.getMonth()+i, 1);
+    var op = el('option', null, MONTHS[d.getMonth()] + ' ' + d.getFullYear());
+    op.value = iso(d);
+    if(iso(d) === iso(startOfMonth(state.cursor))) op.selected = true;
+    mSel.appendChild(op);
+  }
+  f3.appendChild(mSel); b.appendChild(f3);
+
+  var f4 = el('div','field');
+  var posterLab = el('label','check'); posterLab.style.textTransform='none';
+  var posterBox = el('input'); posterBox.type='checkbox'; posterBox.checked = !!printOpts.poster;
+  posterLab.appendChild(posterBox);
+  posterLab.appendChild(document.createTextNode('Print as one A3 poster instead of A4 pages'));
+  posterLab.classList.toggle('on', posterBox.checked);
+  posterBox.onchange = function(){ posterLab.classList.toggle('on', posterBox.checked); };
+  f4.appendChild(posterLab);
+  f4.appendChild(el('p','note','A whole year on one A3 sheet, with the event names written into the days. Long names on single days are shortened to fit; the A4 version keeps the full list underneath.'));
+
+  var f5 = el('div','field');
+  f5.appendChild(el('label',null,'Poster shape'));
+  var oSel = el('select');
+  [{v:'landscape', t:'Landscape, months 4 across'},
+   {v:'portrait',  t:'Portrait, months 3 across'}].forEach(function(o){
+    var op = el('option', null, o.t); op.value = o.v;
+    if(o.v === printOpts.posterOrient) op.selected = true;
+    oSel.appendChild(op);
+  });
+  f5.appendChild(oSel);
+  /* iOS has no paper or orientation control for web pages at all: Safari
+     ignores the page size we ask for and prints portrait on whatever AirPrint
+     is set to. Landscape simply cannot come out right there, so say so. */
+  if(isIOS()){
+    f5.appendChild(el('p','note','On an iPhone or iPad the print dialog does let you choose A3, but it always prints portrait, so portrait is chosen for you here. For a full-size A3 poster, use Share then Save to Files, and print that PDF from a computer.'));
+  } else {
+    f5.appendChild(el('p','note','Remember to pick A3, and the matching orientation, in the print dialog.'));
+  }
+  b.appendChild(f4);
+  b.appendChild(f5);
+
+  function syncFields(){
+    var isMonth = rSel.value === 'month';
+    f3.style.display = isMonth ? '' : 'none';
+    f4.style.display = isMonth ? 'none' : '';
+    f5.style.display = (!isMonth && posterBox.checked) ? '' : 'none';
+  }
+  rSel.onchange = syncFields;
+  posterBox.addEventListener('change', syncFields);
+  syncFields();
+
+  var msg = el('div','note','');
+  b.appendChild(msg);
+
+  var foot = el('div','ctl-row'); foot.style.marginTop='6px';
+  var go = el('button','btn','Print');
+  go.onclick = function(){
+    printOpts.who = whoSel.value; printOpts.range = rSel.value;
+    printOpts.month = mSel.value;
+    printOpts.poster = rSel.value !== 'month' && posterBox.checked;
+    printOpts.posterOrient = oSel.value;
+    var n = buildPrintout();
+    if(!n){ msg.className='err'; msg.textContent='There are no events in that range to print.'; return; }
+    /* straight from the tap: no timer, so the user gesture is still live */
+    if(doPrint(msg)) close$('prScrim');
+  };
+  var cancel = el('button','btn sec','Cancel');
+  cancel.onclick = function(){ close$('prScrim'); };
+  foot.appendChild(go); foot.appendChild(cancel);
+  b.appendChild(foot);
+  open$('prScrim');
+}
+
+/* A programme year runs 1 September to 31 August. August still belongs to the
+   year that is ending, not the one about to start: the national events that
+   land then, the Phoenix Challenge and Duslan, are the tail of the outgoing
+   year. So one boundary is used both for filing an event under a year and for
+   deciding which year we are in today. */
+var PROGRAMME_START_MONTH = 8;             // 0 = January, so 8 = September
+
+function programmeYearOf(isoStr){
+  var d = parseISO(isoStr);
+  return d.getFullYear() - (d.getMonth() < PROGRAMME_START_MONTH ? 1 : 0);
+}
+function currentProgrammeYear(){ return programmeYearOf(todayISO()); }
+function programmeYears(){
+  var years = {};
+  years[currentProgrammeYear()] = true;      // always offered, even if empty
+  state.events.forEach(function(ev){
+    var a = programmeYearOf(ev.start), b = programmeYearOf(ev.end || ev.start);
+    for(var y=a; y<=b; y++) years[y] = true;
+  });
+  return Object.keys(years).map(Number).sort(function(a,b){ return a-b; });
+}
+function programmeLabel(y){
+  return 'Programme year ' + y + '/' + String(y+1).slice(2) +
+         '  (Sep ' + y + ' to Aug ' + (y+1) + ')' +
+         (y === currentProgrammeYear() ? '  \u2014 current' : '');
+}
+/* Which year to open on. The year we are in wins while it still has something
+   to come, which keeps August pointed at Phoenix and Duslan rather than at a
+   year nobody has filled in yet. Once the current year has nothing left, it
+   steps to the next year that does, so the dialog is never opened on an empty
+   range in the planning months. */
+function defaultPrintRange(){
+  var cur = currentProgrammeYear(), today = todayISO();
+  var hasEvents = {}, hasUpcoming = {};
+  state.events.forEach(function(ev){
+    var a = programmeYearOf(ev.start), b = programmeYearOf(ev.end || ev.start);
+    var stillToCome = (ev.end || ev.start) >= today;
+    for(var y=a; y<=b; y++){
+      hasEvents[y] = true;
+      if(stillToCome) hasUpcoming[y] = true;
+    }
+  });
+  if(hasUpcoming[cur]) return 'py' + cur;
+  var later = Object.keys(hasUpcoming).map(Number)
+                .filter(function(y){ return y > cur; })
+                .sort(function(a,b){ return a-b; });
+  if(later.length) return 'py' + later[0];
+  if(hasEvents[cur]) return 'py' + cur;
+  return '12';
+}
+
+function printRange(){
+  var today = parseISO(todayISO());
+  if(printOpts.range === 'month'){
+    var m = startOfMonth(printOpts.month ? parseISO(printOpts.month) : today);
+    return { from: m, to: m, single: true };
+  }
+  if(printOpts.range === 'all'){
+    var all = state.events.slice().sort(sortByDate);
+    if(!all.length) return null;
+    return { from: startOfMonth(parseISO(all[0].start)),
+             to:   startOfMonth(parseISO(all[all.length-1].end || all[all.length-1].start)) };
+  }
+  var m = /^py(\d{4})$/.exec(printOpts.range);
+  if(m){
+    var y = +m[1];
+    return { from: new Date(y, 8, 1), to: new Date(y+1, 7, 1) };
+  }
+  var from = startOfMonth(today);
+  return { from: from, to: new Date(from.getFullYear(), from.getMonth()+11, 1) };
+}
+
+function printSheets(){
+  if(printOpts.who === 'each') return SECTIONS.map(function(s){ return s.id; });
+  return [printOpts.who];
+}
+
+/* Printing on iOS.
+
+   An app added to the Home Screen runs without any Safari chrome, and with no
+   chrome there is no print UI: window.print() there does nothing at all, throws
+   nothing, and logs nothing. That is exactly the "I press Print and nothing
+   happens" report, and it is not something the page can fix from inside the
+   installed app. What it can do is hand the job to Safari, where printing works,
+   by opening a link that carries the print choices with it.
+
+   The old code also waited 60ms before calling print(). That detaches the call
+   from the tap that caused it, and Safari is far stricter than Chrome about
+   acting on a stale user gesture. It is called straight from the handler now. */
+function printQuery(){
+  var q = ['print=1', 'who=' + encodeURIComponent(printOpts.who),
+           'range=' + encodeURIComponent(printOpts.range)];
+  if(printOpts.month) q.push('month=' + encodeURIComponent(printOpts.month));
+  if(printOpts.poster){ q.push('poster=1'); q.push('orient=' + printOpts.posterOrient); }
+  return location.origin + location.pathname + '?' + q.join('&');
+}
+
+/* A home screen app on iOS cannot print. This is a WebKit limitation, reported
+   on Apple's own developer forums since iOS 9 and still true: window.print()
+   inside a standalone web app either does nothing or opens a preview that stays
+   blank with the printer greyed out. There is no call the page can make to get
+   around it.
+
+   The first attempt at this handed the job to Safari with window.open(). That
+   does not escape either: iOS keeps a link that is inside the app's own scope
+   inside the app, so it landed back in the same place with the same dead button.
+
+   So the app stops pretending. It says what is wrong, tries the hand-off anyway
+   in case a future iOS allows it, and gives two things that definitely do work:
+   copy the link, and the system share sheet. Safari prints this perfectly. */
+function iosPrintHelp(){
+  var url = printQuery();
+  var b = $('prBody'); b.innerHTML = '';
+  $('prTitle').textContent = 'Printing from the home screen app';
+
+  b.appendChild(el('p','note','iPhone and iPad home screen apps cannot open a print dialog, which is a limitation of Safari itself rather than of this calendar. Open the same page in Safari and it prints normally.'));
+
+  var urlRow = el('div','urlrow');
+  var box = el('input'); box.type='text'; box.readOnly = true; box.className='urlbox'; box.value = url;
+  box.onclick = function(){ box.select(); };
+  urlRow.appendChild(box);
+  b.appendChild(urlRow);
+
+  var row = el('div','ctl-row'); row.style.marginTop='8px';
+
+  var open = el('button','btn','Try opening Safari');
+  open.onclick = function(){
+    var a = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  row.appendChild(open);
+
+  var copy = el('button','btn sec','Copy link');
+  copy.onclick = function(){
+    var done = function(){ copy.textContent = 'Copied'; setTimeout(function(){ copy.textContent='Copy link'; }, 1600); };
+    box.select();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(done, function(){ try{ document.execCommand('copy'); done(); }catch(e){} });
+    } else { try{ document.execCommand('copy'); done(); }catch(e){} }
+  };
+  row.appendChild(copy);
+
+  if(navigator.share){
+    var share = el('button','btn sec','Share…');
+    share.onclick = function(){
+      navigator.share({ title:'Clare Scout County calendar', url:url }).catch(function(){});
+    };
+    row.appendChild(share);
+  }
+  b.appendChild(row);
+
+  var steps = el('ul'); steps.className = 'installsteps';
+  ['Copy the link, open <b>Safari</b>, paste it in the address bar and press <b>Print</b> on the page.',
+   'Or print from a computer, which is easier for a full size A3 poster anyway.'
+  ].forEach(function(t){ var li = el('li'); li.innerHTML = t; steps.appendChild(li); });
+  b.appendChild(steps);
+
+  var foot = el('div','ctl-row'); foot.style.marginTop='6px';
+  var done = el('button','btn sec','Close');
+  done.onclick = function(){ close$('prScrim'); };
+  foot.appendChild(done);
+  b.appendChild(foot);
+}
+
+function doPrint(msg){
+  if(isIOS() && isStandalone()){ iosPrintHelp(); return false; }
+  try { window.print(); }
+  catch(e){
+    if(msg){ msg.className='err'; msg.textContent='This browser would not open a print dialog. Try Safari, Chrome, or a computer.'; }
+    return false;
+  }
+  return true;
+}
+
+/* Arriving from the link above: set the choices up, build the sheet, and put a
+   bar at the top so the next tap is a real user gesture in Safari. */
+function maybePrintView(){
+  var q;
+  try { q = new URLSearchParams(location.search); } catch(e){ return; }
+  if(q.get('print') !== '1') return;
+
+  printOpts.who    = q.get('who') || 'all';
+  printOpts.range  = q.get('range') || '12';
+  printOpts.month  = q.get('month') || null;
+  printOpts.poster = q.get('poster') === '1';
+  printOpts.posterOrient = q.get('orient') === 'landscape' ? 'landscape' : 'portrait';
+
+  var bar = el('div','printbar');
+  var txt = el('div','pbtxt');
+  txt.appendChild(el('b', null, 'Ready to print'));
+  txt.appendChild(el('span', null,
+    (printOpts.who === 'all' ? 'All sections' :
+     printOpts.who === 'each' ? 'Every section' :
+     (SEC_BY_ID[printOpts.who] ? SEC_BY_ID[printOpts.who].name : printOpts.who)) +
+    (printOpts.poster ? ' · A3 poster, ' + printOpts.posterOrient : '')));
+  bar.appendChild(txt);
+
+  /* Still inside the home screen app means the hand-off to Safari did not
+     escape, and a Print button here would be as dead as the one that sent us.
+     Offer the link instead of a button that cannot work. */
+  var stuck = isIOS() && isStandalone();
+
+  if(stuck){
+    var copy = el('button','btn','Copy link for Safari');
+    copy.onclick = function(){
+      var u = location.href;
+      var ok = function(){ copy.textContent = 'Copied, now paste it in Safari'; };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(u).then(ok, function(){});
+      }
+    };
+    bar.appendChild(copy);
+    bar.appendChild(el('p','pbnote','A home screen app on iPhone cannot open a print dialog. Paste this link into Safari and press Print there, or print from a computer.'));
+  } else {
+    var go = el('button','btn','Print');
+    go.onclick = function(){
+      if(!buildPrintout()){ toast('Nothing to print in that range'); return; }
+      try { window.print(); } catch(e){ toast('Use Share, then Print'); }
+    };
+    bar.appendChild(go);
+    bar.appendChild(el('p','pbnote','If nothing opens, use the Share button below, then Print or Save to Files.'));
+  }
+  document.body.insertBefore(bar, document.body.firstChild);
+  buildPrintout();
+}
+
+function setPaper(size){
+  var tag = document.getElementById('paperCss');
+  if(!tag){
+    tag = document.createElement('style');
+    tag.id = 'paperCss';
+    document.head.appendChild(tag);
+  }
+  tag.textContent = size ? '@media print{@page{size:' + size + ';margin:8mm}}' : '';
+}
+
+function buildPrintout(){
+  var host = $('printout'); host.innerHTML = '';
+  var range = printRange();
+  if(!range) return 0;
+
+  var stamp = new Date().toLocaleDateString('en-IE', {day:'numeric', month:'long', year:'numeric'});
+  var badge = document.querySelector('.mark img');
+  var total = 0;
+
+  /* Named @page rules are not reliable across browsers, so the paper size is
+     swapped wholesale for the poster instead. The user still has to pick A3 in
+     the print dialog on most printers; this at least gets the geometry right in
+     "Save as PDF", which is how most of these will actually be produced. */
+  setPaper(printOpts.poster && !range.single ? 'A3 ' + printOpts.posterOrient : '');
+  posterHidden = 0;
+
+  printSheets().forEach(function(who){
+    var list = state.events.filter(function(ev){
+      if(who !== 'all'){
+        var secs = secsOf(ev);
+        if(secs.indexOf(who) === -1) return false;
+      }
+      var s = startOfMonth(parseISO(ev.start));
+      return s <= range.to && startOfMonth(parseISO(ev.end || ev.start)) >= range.from;
+    }).sort(sortByDate);
+
+    if(printOpts.who === 'each' && !list.length) return;      // skip empty sections
+    total += list.length;
+
+    var sheet = el('div','psheet');
+
+    var head = el('div','phead');
+    if(badge){ var img = document.createElement('img'); img.src = badge.src; img.alt=''; head.appendChild(img); }
+    var titles = el('div');
+    titles.appendChild(el('h1', null, 'Clare Scout County'));
+    titles.appendChild(el('p', null, 'County Events Calendar'));
+    head.appendChild(titles);
+    var who2 = el('div','pwho', who === 'all' ? 'All Sections' : SEC_BY_ID[who].name);
+    who2.appendChild(el('small', null, monthLabelShort(range.from) + ' to ' + monthLabelShort(range.to)));
+    head.appendChild(who2);
+    sheet.appendChild(head);
+
+    /* The key goes on every sheet, not just the all-sections one. A Cubs sheet
+       still carries whole-county and joint events, and without a key their blue
+       and striped marks are unexplained. */
+    var key = el('div','pkey');
+    function keyItem(paint, label){
+      var item = el('span');
+      var sw = el('i'); sw.style.background = paint;
+      item.appendChild(sw); item.appendChild(document.createTextNode(label));
+      key.appendChild(item);
+    }
+    (who === 'all' ? SECTIONS : SECTIONS.filter(function(s){ return s.id === who; }))
+      .forEach(function(sec){ keyItem(sec.colour, sec.name); });
+    keyItem(stripePaint(SECTIONS.map(function(s){ return s.id; })), 'Whole county (all six)');
+    keyItem(stripePaint(SECTIONS.slice(1,3).map(function(s){ return s.id; })), 'Two or more sections');
+    sheet.appendChild(key);
+
+    if(printOpts.poster && !range.single){
+      sheet.className = 'psheet a3sheet';
+      var poster = el('div','poster');
+      var posterInner = el('div','posterScale ' + (printOpts.posterOrient === 'portrait' ? 'pport' : 'pland'));
+      poster.appendChild(posterInner);
+      var pc = new Date(range.from);
+      var pg = 0;
+      while(pc <= range.to && pg++ < 24){
+        posterInner.appendChild(printPosterMonth(pc, list));
+        pc = new Date(pc.getFullYear(), pc.getMonth()+1, 1);
+      }
+      sheet.appendChild(poster);
+      var pf = el('div','pfoot');
+      pf.appendChild(el('span', null, 'Printed ' + stamp +
+        (posterHidden ? ', ' + posterHidden + ' event' + (posterHidden===1?'':'s') +
+                        ' would not fit; print the A4 version for the full list' : '')));
+      pf.appendChild(el('span', null, addrForPrint()));
+      sheet.appendChild(pf);
+      host.appendChild(sheet);
+      return;
+    }
+
+    if(range.single){
+      sheet.appendChild(printBigMonth(range.from, list, who));
+    } else {
+      var months = el('div','pmonths');
+      var cur = new Date(range.from);
+      var guard = 0;
+      while(cur <= range.to && guard++ < 36){
+        months.appendChild(printMonth(cur, list));
+        cur = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+      }
+      sheet.appendChild(months);
+    }
+
+    if(range.single){
+      var f2b = el('div','pfoot');
+      f2b.appendChild(el('span', null, 'Printed ' + stamp));
+      f2b.appendChild(el('span', null, addrForPrint()));
+      sheet.appendChild(f2b);
+      host.appendChild(sheet);
+      return;
+    }
+
+    var listBox = el('div','plist');
+    listBox.appendChild(el('h3', null, 'Events'));
+    if(!list.length){
+      listBox.appendChild(el('p','pempty','Nothing on the calendar for this section in this period.'));
+    } else {
+      listBox.appendChild(printTable(list, who));
+    }
+    sheet.appendChild(listBox);
+
+    var foot = el('div','pfoot');
+    foot.appendChild(el('span', null, 'Printed ' + stamp));
+    foot.appendChild(el('span', null, siteAddress()));
+    sheet.appendChild(foot);
+
+    host.appendChild(sheet);
+  });
+  return total;
+}
+
+/* ------------------------------------------------- the ACPC handout ---- */
+function step(n, title, build){
+  var box = el('div','gstep');
+  var h = el('h4');
+  h.appendChild(el('i', null, String(n)));
+  h.appendChild(document.createTextNode(title));
+  box.appendChild(h);
+  build(box);
+  return box;
+}
+function para(box, html){
+  var pEl = el('p'); pEl.innerHTML = html; box.appendChild(pEl);
+}
+function bullets(box, items){
+  var ul = el('ul');
+  items.forEach(function(t){ var li = el('li'); li.innerHTML = t; ul.appendChild(li); });
+  box.appendChild(ul);
+}
+
+function buildGuides(pins){
+  var host = $('printout'); host.innerHTML = '';
+  var badge = document.querySelector('.mark img');
+  var stamp = new Date().toLocaleDateString('en-IE', {day:'numeric', month:'long', year:'numeric'});
+  var addr = siteAddress();
+
+  SECTIONS.forEach(function(sec){
+    var pin = (pins && pins[sec.id]) || '';
+    var sheet = el('div','psheet');
+
+    var head = el('div','phead');
+    if(badge){ var img = document.createElement('img'); img.src = badge.src; img.alt=''; head.appendChild(img); }
+    var t = el('div');
+    t.appendChild(el('h1', null, 'Clare Scout County'));
+    t.appendChild(el('p', null, 'County Events Calendar \u2014 a short guide for the ' + sec.name + ' ACPC'));
+    head.appendChild(t);
+    var who = el('div','pwho', sec.name);
+    who.appendChild(el('small', null, 'Assistant County Programme Commissioner'));
+    head.appendChild(who);
+    sheet.appendChild(head);
+
+    var urlBox = el('div','gurl');
+    urlBox.appendChild(el('b', null, addr));
+    urlBox.appendChild(el('span', null, 'Open this in any browser. Anyone can look at the calendar without signing in.'));
+    sheet.appendChild(urlBox);
+
+    var pinBox = el('div','gpin');
+    pinBox.appendChild(el('span','glab', 'Your ' + sec.name + ' PIN. It lets you manage ' + sec.name +
+      ' events and nothing else, so you cannot disturb another section by accident. Keep it to the people who need it.'));
+    pinBox.appendChild(el('span','gnum', pin));
+    sheet.appendChild(pinBox);
+
+    var cols = el('div','gcols');
+
+    cols.appendChild(step(1, 'Signing in', function(b){
+      para(b, 'Press <b>Admin</b> at the top right, choose <b>' + sec.name + '</b> from the list, then enter your PIN.');
+      para(b, 'If you pick the wrong section by mistake the PIN will simply be refused, so you cannot end up in someone else\u2019s section.');
+    }));
+
+    cols.appendChild(step(2, 'Adding an event', function(b){
+      bullets(b, [
+        'Press <b>+ New event</b>.',
+        'Only <b>Event name</b> and <b>Start date</b> are required. Everything else is optional.',
+        'Add an <b>End date</b> for a camp or a weekend and it draws as one bar across those days.',
+        'Put a booking form or kit list in the <b>Link</b> box and it becomes a link people can tap.',
+        'The section is fixed to ' + sec.name + ', so you do not need to set it.',
+        'Press <b>Publish to the calendar</b>. Nothing is live until you do.'
+      ]);
+      para(b, '<b>Copy</b> on an existing event makes another like it, which saves retyping last year\u2019s camp. If something is already on that day you get a heads-up, but you can still save.');
+      para(b, 'You can add several events over a few sittings and publish once. Your draft is kept in that browser until you do.');
+    }));
+
+    cols.appendChild(step(3, 'What you can change', function(b){
+      para(b, 'Your own ' + sec.name + ' events, and only those. Joint events and county-wide ones show greyed out and marked <b>County</b>, with no Edit or Delete. Ask ' + HELP_CONTACT.name + ' to change those.');
+    }));
+
+    cols.appendChild(step(4, 'Printing a calendar', function(b){
+      bullets(b, [
+        'Press <b>Print</b> at the top of the page. You do not need to be signed in.',
+        'Choose <b>' + sec.name + ' only</b>, then how far ahead.',
+        '<b>One month only</b> gives a big single month for the noticeboard. The other choices give a year planner.',
+        'To get a PDF instead of paper, choose <b>Save as PDF</b> where the printer is normally chosen.',
+        '<b>On an iPhone or iPad</b>, print from <b>Safari</b>, not from the home screen app. Apple does not allow a home screen app to open a print dialog. The app will offer you the link to paste into Safari.'
+      ]);
+    }));
+
+    cols.appendChild(step(5, 'Getting the events into your own calendar', function(b){
+      para(b, 'Choose <b>' + sec.name + '</b> in the section filter, then press <b>Add to calendar</b>.');
+      para(b, 'Take the <b>subscription link</b>. Add it once and new ' + sec.name +
+              ' events appear in your phone by themselves. The one-off download does not update, so it goes stale.');
+      bullets(b, [
+        '<b>Google Calendar:</b> Other calendars, the plus, then From URL.',
+        '<b>iPhone:</b> Settings, Calendar, Accounts, Add Account, Other, Add Subscribed Calendar.',
+        '<b>Outlook:</b> Add calendar, then Subscribe from web.'
+      ]);
+    }));
+
+    cols.appendChild(step(6, 'Putting it on your phone', function(b){
+      para(b, 'It can sit on your home screen like an app, with the county badge as its icon, and it still shows the last events it saw when you have no signal.');
+      bullets(b, [
+        '<b>iPhone or iPad:</b> open the address in <b>Safari</b>, tap the Share button, then <b>Add to Home Screen</b>.',
+        '<b>Android:</b> open it in Chrome, tap the three-dot menu, then <b>Add to Home screen</b>.',
+        '<b>Windows:</b> in Chrome or Edge, use the install icon at the right of the address bar.'
+      ]);
+    }));
+
+    var note = el('div','gstep');
+    var n = el('div','gnote');
+    n.innerHTML = 'Stuck, or need a joint or county-wide event added? Contact <b>' + HELP_CONTACT.name +
+                  '</b> on <b>' + HELP_CONTACT.phone + '</b> (' + HELP_CONTACT.how + ') with any questions. ' +
+                  'The PIN is there to stop accidents, not to keep secrets, so do not worry about it beyond keeping it to your own team.';
+    note.appendChild(n);
+    cols.appendChild(note);
+
+    sheet.appendChild(cols);
+
+    var foot = el('div','pfoot');
+    foot.appendChild(el('span', null, 'Clare Scout County \u00b7 ' + sec.name + ' \u00b7 prepared ' + stamp));
+    foot.appendChild(el('span', null, addr));
+    sheet.appendChild(foot);
+
+    host.appendChild(sheet);
+  });
+  return SECTIONS.length;
+}
+
+// County only: the handout carries each section's PIN, so it is fetched with
+// the county PIN rather than being sitting in the page for anyone to read.
+function printGuides(){
+  adminBusy('Building the section guides\u2026');
+  fetch(API+'?action=pins',{headers:{'x-admin-pin':admin.pin}})
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(res){
+      if(!res.ok){ importError((res.d && res.d.error) || 'Could not read the PINs'); return; }
+      buildGuides(res.d.pins || {});
+      close$('adScrim');
+      /* The PINs had to be fetched first, so the tap is long gone by now and no
+         browser will treat this as user-initiated. Nothing to be done about that
+         here beyond trying, and telling the truth if it is refused. */
+      try { window.print(); }
+      catch(e){ toast('Press Print in your browser menu to print the guides'); }
+      setTimeout(function(){ adminPanel(); }, 400);
+    })
+    .catch(function(){ importError('Could not reach the events service.'); });
+}
+
+function monthLabelShort(d){ return MONTHS[d.getMonth()].slice(0,3) + ' ' + d.getFullYear(); }
+
+/* One month sized for the A3 poster: same lane packing, but the bars carry the
+   event name rather than just marking the day. */
+/* A day cell on the poster holds three events. Anything beyond that is counted
+   so the sheet can say so rather than quietly losing it. */
+var posterHidden = 0;
+
+/* ---- how a printed bar is coloured -------------------------------------
+
+   The poster and the wall sheet write the event name inside the bar, so the
+   fill has to stay pale enough for black text. The identity therefore lives in
+   a solid mark down the left edge, painted as a background image rather than a
+   border, because a border cannot carry more than one colour.
+
+   One section  → that section's colour.
+   Two or more  → a hard-stop stripe of the sections involved, the same way the
+                  calendar on screen shows a joint event.
+   Whole county → falls out of that rule as a stripe of all six, which says
+                  "every section" without needing a key at all. County blue was
+                  the obvious alternative until it turned out to be the exact
+                  hex the Scouts already use (#1F409B), so it would have been
+                  indistinguishable from a Scouts-only event. */
+var PRINT_NEUTRAL = '#eef2f7';
+
+function isWholeCounty(secs){ return secs.length >= SECTIONS.length; }
+
+function solidPaint(c){ return 'linear-gradient(180deg,' + c + ' 0%,' + c + ' 100%)'; }
+
+function stripePaint(secs){
+  var n = secs.length, stops = [];
+  secs.forEach(function(id, i){
+    stops.push(SEC_BY_ID[id].colour + ' ' + (i*100/n).toFixed(2) + '% ' + ((i+1)*100/n).toFixed(2) + '%');
+  });
+  return 'linear-gradient(180deg,' + stops.join(',') + ')';
+}
+
+function printEdge(secs){
+  return secs.length === 1 ? solidPaint(SEC_BY_ID[secs[0]].colour) : stripePaint(secs);
+}
+
+/* The wash behind the name has to stay pale enough for black text, and there is
+   no single colour to wash with once more than one section is involved. */
+function printFill(secs){
+  return secs.length === 1 ? sectionTint(secs, '--chip-tint') : PRINT_NEUTRAL;
+}
+
+function paintPrintBar(bar, secs, clippedLeft, edge, gap){
+  bar.style.backgroundColor = printFill(secs);
+  if(clippedLeft) return;          /* the mark belongs at the real start, not on a continuation */
+  bar.style.backgroundImage  = printEdge(secs);
+  bar.style.backgroundRepeat = 'no-repeat';
+  bar.style.backgroundSize   = edge + ' 100%';
+  bar.style.paddingLeft      = 'calc(' + edge + ' + ' + (gap || '.45mm') + ')';
+}
+
+function printPosterMonth(monthDate, list){
+  /* Deliberately NOT 'pmonth': that class carries the A4 planner's own
+     '.pmonth h3{font-size:9pt}', which outspecifies .poh and, once the poster
+     started scaling by half, rendered every month heading at 4.5pt. .pomonth
+     already sets break-inside itself, which was the only reason for sharing. */
+  var box = el('div','pomonth');
+  box.appendChild(el('h3','poh', MONTHS[monthDate.getMonth()] + ' ' + monthDate.getFullYear()));
+
+  var dows = el('div','podows');
+  ['M','T','W','T','F','S','S'].forEach(function(d){ dows.appendChild(el('span',null,d)); });
+  box.appendChild(dows);
+
+  var first = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+  var offset = (first.getDay()+6)%7;
+  var gridStart = new Date(first); gridStart.setDate(1-offset);
+  var last = new Date(monthDate.getFullYear(), monthDate.getMonth()+1, 0);
+  var weeks = Math.ceil((offset + last.getDate())/7);
+  var monthStartISO = iso(first), monthEndISO = iso(last);
+
+  var weeksBox = el('div','poweeks');
+  for(var w=0; w<weeks; w++){
+    var weekStart = addDays(gridStart, w*7);
+    var wsISO = iso(weekStart), weISO = iso(addDays(weekStart, 6));
+
+    var week = el('div','poweek');
+    var bg = el('div','pobg');
+    for(var i=0;i<7;i++){
+      var d = addDays(weekStart, i);
+      bg.appendChild(el('i', d.getMonth()!==monthDate.getMonth() ? 'poout' : null));
+    }
+    week.appendChild(bg);
+
+    var wg = el('div','pogrid');
+    for(var i=0;i<7;i++){
+      var d = addDays(weekStart, i);
+      var n = el('span','ponum'+(d.getMonth()!==monthDate.getMonth()?' out':''), String(d.getDate()));
+      n.style.gridColumn = String(i+1);
+      wg.appendChild(n);
+    }
+
+    var items = list.filter(function(ev){
+      return ev.start <= weISO && (ev.end||ev.start) >= wsISO &&
+             ev.start <= monthEndISO && (ev.end||ev.start) >= monthStartISO;
+    }).map(function(ev){
+      var evEnd = ev.end || ev.start;
+      var a = ev.start > wsISO ? ev.start : wsISO;
+      if(a < monthStartISO) a = monthStartISO;
+      var bb = evEnd < weISO ? evEnd : weISO;
+      if(bb > monthEndISO) bb = monthEndISO;
+      if(a > bb) return null;
+      return { ev:ev, c1:dayGap(weekStart,a)+1, c2:dayGap(weekStart,bb)+1,
+               clipL: ev.start < a, clipR: evEnd > bb };
+    }).filter(Boolean).sort(function(a,b){
+      if(a.c1 !== b.c1) return a.c1 - b.c1;
+      return (b.c2-b.c1) - (a.c2-a.c1);
+    });
+
+    var lanes = [];
+    items.forEach(function(it){
+      var lane = 0;
+      while(lane < 3){
+        var taken = (lanes[lane]||[]).some(function(r){ return it.c1 <= r.c2 && it.c2 >= r.c1; });
+        if(!taken) break;
+        lane++;
+      }
+      if(lane >= 3){ posterHidden++; return; }   /* owned up to in the footer */
+      (lanes[lane] = lanes[lane] || []).push(it);
+
+      var bar = el('div','pobar'+(it.clipL?' cl':'')+(it.clipR?' cr':''));
+      paintPrintBar(bar, secsOf(it.ev), it.clipL, '1.4mm', '.9mm');   /* doubled: the poster is drawn at 2x */
+      bar.appendChild(el('span','pobartxt', it.ev.name));
+      bar.style.gridColumn = it.c1 + ' / span ' + (it.c2 - it.c1 + 1);
+      bar.style.gridRow = String(lane + 2);
+      wg.appendChild(bar);
+    });
+    if(lanes.length > 2) week.className = 'poweek tight';
+    else if(lanes.length <= 1) week.className = 'poweek roomy';
+
+    week.appendChild(wg);
+    weeksBox.appendChild(week);
+  }
+  box.appendChild(weeksBox);
+  return box;
+}
+function addrForPrint(){ return siteAddress(); }
+
+/* One month filling the page, with the event names written in, for pinning to
+   a noticeboard. No table underneath: it is all in the grid. */
+function printBigMonth(monthDate, list, who){
+  var box = el('div','bigmonth');
+  box.appendChild(el('h2','bigtitle', MONTHS[monthDate.getMonth()] + ' ' + monthDate.getFullYear()));
+
+  var dows = el('div','bigdows');
+  ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+    .forEach(function(d){ dows.appendChild(el('span',null,d)); });
+  box.appendChild(dows);
+
+  var first = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+  var offset = (first.getDay()+6)%7;
+  var gridStart = new Date(first); gridStart.setDate(1-offset);
+  var last = new Date(monthDate.getFullYear(), monthDate.getMonth()+1, 0);
+  var weeks = Math.ceil((offset + last.getDate())/7);
+  var monthStartISO = iso(first), monthEndISO = iso(last);
+
+  var weeksBox = el('div','bigweeks');
+  weeksBox.style.gridTemplateRows = 'repeat(' + weeks + ', 1fr)';
+
+  for(var w=0; w<weeks; w++){
+    var weekStart = addDays(gridStart, w*7);
+    var wsISO = iso(weekStart), weISO = iso(addDays(weekStart, 6));
+
+    var week = el('div','bigweek');
+    var bg = el('div','bigbg');
+    for(var i=0;i<7;i++){
+      var d = addDays(weekStart, i);
+      bg.appendChild(el('i', d.getMonth()!==monthDate.getMonth() ? 'bigout' : null));
+    }
+    week.appendChild(bg);
+
+    var wg = el('div','biggrid');
+    for(var i=0;i<7;i++){
+      var d = addDays(weekStart, i);
+      var n = el('span','bignum'+(d.getMonth()!==monthDate.getMonth()?' out':''), String(d.getDate()));
+      n.style.gridColumn = String(i+1);
+      wg.appendChild(n);
+    }
+
+    var items = list.filter(function(ev){
+      return ev.start <= weISO && (ev.end||ev.start) >= wsISO &&
+             ev.start <= monthEndISO && (ev.end||ev.start) >= monthStartISO;
+    }).map(function(ev){
+      var evEnd = ev.end || ev.start;
+      var a = ev.start > wsISO ? ev.start : wsISO;
+      if(a < monthStartISO) a = monthStartISO;
+      var bb = evEnd < weISO ? evEnd : weISO;
+      if(bb > monthEndISO) bb = monthEndISO;
+      if(a > bb) return null;
+      return { ev:ev, c1:dayGap(weekStart,a)+1, c2:dayGap(weekStart,bb)+1,
+               clipL: ev.start < a, clipR: evEnd > bb };
+    }).filter(Boolean).sort(function(a,b){
+      if(a.c1 !== b.c1) return a.c1 - b.c1;
+      return (b.c2-b.c1) - (a.c2-a.c1);
+    });
+
+    var lanes = [];
+    items.forEach(function(it){
+      var lane = 0;
+      while(lane < 5){
+        var taken = (lanes[lane]||[]).some(function(r){ return it.c1 <= r.c2 && it.c2 >= r.c1; });
+        if(!taken) break;
+        lane++;
+      }
+      if(lane >= 5) return;
+      (lanes[lane] = lanes[lane] || []).push(it);
+
+      var bar = el('div','bigbar'+(it.clipL?' cl':'')+(it.clipR?' cr':''));
+      paintPrintBar(bar, secsOf(it.ev), it.clipL, '1.2mm', '.45mm');
+      var t = el('span','bigbartxt', it.ev.name);
+      if(it.ev.time) t.appendChild(el('em', null, '  ' + it.ev.time));
+      bar.appendChild(t);
+      bar.style.gridColumn = it.c1 + ' / span ' + (it.c2 - it.c1 + 1);
+      bar.style.gridRow = String(lane + 2);
+      wg.appendChild(bar);
+    });
+
+    // a busy week gets one line per event rather than two, so nothing is clipped
+    if(lanes.length > 2) week.className = 'bigweek tight';
+
+    week.appendChild(wg);
+    weeksBox.appendChild(week);
+  }
+  box.appendChild(weeksBox);
+  return box;
+}
+
+var PRINT_LANES = 3;
+
+// Same lane packing as the on-screen calendar, drawn small enough for A4.
+function printMonth(monthDate, list){
+  var box = el('div','pmonth');
+  box.appendChild(el('h3', null, MONTHS[monthDate.getMonth()] + ' ' + monthDate.getFullYear()));
+
+  var dows = el('div','pdows');
+  ['M','T','W','T','F','S','S'].forEach(function(d){ dows.appendChild(el('span',null,d)); });
+  box.appendChild(dows);
+
+  var first = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+  var offset = (first.getDay()+6)%7;
+  var gridStart = new Date(first); gridStart.setDate(1-offset);
+  var last = new Date(monthDate.getFullYear(), monthDate.getMonth()+1, 0);
+  var weeks = Math.ceil((offset + last.getDate())/7);
+  var tISO = todayISO();
+  var monthStartISO = iso(first), monthEndISO = iso(last);
+
+  var weeksBox = el('div','pweeks');
+  for(var w=0; w<weeks; w++){
+    var weekStart = addDays(gridStart, w*7);
+    var wsISO = iso(weekStart), weISO = iso(addDays(weekStart, 6));
+
+    var week = el('div','pweek');
+    var bg = el('div','pwbg');
+    for(var i=0;i<7;i++){
+      var d = addDays(weekStart, i);
+      bg.appendChild(el('i', d.getMonth()!==monthDate.getMonth() ? 'pwout' : null));
+    }
+    week.appendChild(bg);
+
+    var wg = el('div','pwgrid');
+    for(var i=0;i<7;i++){
+      var d = addDays(weekStart, i), key = iso(d);
+      var n = el('span','pdnum'+(d.getMonth()!==monthDate.getMonth()?' pout':'')+(key===tISO?' ptoday':''),
+                 String(d.getDate()));
+      n.style.gridColumn = String(i+1);
+      wg.appendChild(n);
+    }
+
+    // Bars are clamped to this month as well as this week, so an event that
+    // runs over a month end draws in both months rather than bleeding into
+    // the greyed-out days of the neighbouring grid.
+    var items = list.filter(function(ev){
+      return ev.start <= weISO && (ev.end||ev.start) >= wsISO &&
+             ev.start <= monthEndISO && (ev.end||ev.start) >= monthStartISO;
+    }).map(function(ev){
+      var evEnd = ev.end || ev.start;
+      var a = ev.start > wsISO ? ev.start : wsISO;
+      if(a < monthStartISO) a = monthStartISO;
+      var b = evEnd < weISO ? evEnd : weISO;
+      if(b > monthEndISO) b = monthEndISO;
+      if(a > b) return null;
+      return { ev:ev, c1:dayGap(weekStart,a)+1, c2:dayGap(weekStart,b)+1,
+               clipL: ev.start < a, clipR: evEnd > b };
+    }).filter(Boolean).sort(function(a,b){
+      if(a.c1 !== b.c1) return a.c1 - b.c1;
+      return (b.c2-b.c1) - (a.c2-a.c1);
+    });
+
+    var lanes = [];
+    items.forEach(function(it){
+      var lane = 0;
+      while(lane < PRINT_LANES){
+        var taken = (lanes[lane]||[]).some(function(r){ return it.c1 <= r.c2 && it.c2 >= r.c1; });
+        if(!taken) break;
+        lane++;
+      }
+      if(lane >= PRINT_LANES) return;          // the table underneath still lists it
+      (lanes[lane] = lanes[lane] || []).push(it);
+
+      var bar = el('div','pbar'+(it.clipL?' pcl':'')+(it.clipR?' pcr':''));
+      bar.style.background = sectionPaint(secsOf(it.ev));
+      bar.style.gridColumn = it.c1 + ' / span ' + (it.c2 - it.c1 + 1);
+      bar.style.gridRow = String(lane + 2);
+      wg.appendChild(bar);
+    });
+
+    week.appendChild(wg);
+    weeksBox.appendChild(week);
+  }
+  box.appendChild(weeksBox);
+  return box;
+}
+
+function printTable(list, who){
+  var t = el('table','ptable');
+  var cg = el('colgroup');
+  ['20%','44%','36%'].forEach(function(w){ var c=el('col'); c.style.width=w; cg.appendChild(c); });
+  t.appendChild(cg);
+  var thead = el('thead'), hr = el('tr');
+  ['Date','Event','Where and who'].forEach(function(h){ hr.appendChild(el('th',null,h)); });
+  thead.appendChild(hr); t.appendChild(thead);
+
+  var tb = el('tbody');
+  list.forEach(function(ev){
+    var tr = el('tr');
+    var d = el('td','pw', fmtRangeShort(ev));
+    if(ev.time) d.appendChild(el('div','pmeta', ev.time));
+    tr.appendChild(d);
+
+    var n = el('td');
+    n.appendChild(el('div', null, ev.name + ' (' + catName(ev.category) + ')'));
+    if(who === 'all') n.appendChild(el('div','pmeta', sectionLabel(ev)));
+    if(ev.description) n.appendChild(el('div','pmeta', ev.description.slice(0,140)));
+    tr.appendChild(n);
+
+    var w = el('td');
+    if(ev.location) w.appendChild(el('div', null, ev.location));
+    var bits = [];
+    if(ev.host) bits.push(ev.host);
+    if(ev.contactName) bits.push(ev.contactName);
+    if(ev.contactEmail) bits.push(ev.contactEmail);
+    else if(ev.contactPhone) bits.push(ev.contactPhone);
+    if(bits.length) w.appendChild(el('div','pmeta', bits.join('  \u00b7  ')));
+    tr.appendChild(w);
+
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+  return t;
+}
+
+/* ---------------------------------------------------------------- ics */
+function icsDate(s, plusDays){
+  var d=parseISO(s); if(plusDays) d.setDate(d.getDate()+plusDays);
+  return iso(d).replace(/-/g,'');
+}
+function icsEscape(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); }
+function buildICS(list){
+  var out=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Clare Scout County//Events//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:Clare Scout County Events'];
+  list.forEach(function(ev){
+    var desc=[];
+    if(ev.description) desc.push(ev.description);
+    if(ev.host) desc.push('Hosted by: '+ev.host);
+    var c=[ev.contactName, ev.contactEmail, ev.contactPhone].filter(Boolean).join(' · ');
+    if(c) desc.push('Contact: '+c);
+    desc.push('Type: '+catName(ev.category));
+    desc.push('Sections: '+sectionLabel(ev));
+    if(ev.link) desc.push(ev.link);
+    out.push('BEGIN:VEVENT');
+    out.push('UID:'+ev.id+'@clare-scouting');
+    out.push('DTSTAMP:'+icsDate(todayISO())+'T000000Z');
+    out.push('DTSTART;VALUE=DATE:'+icsDate(ev.start));
+    out.push('DTEND;VALUE=DATE:'+icsDate(ev.end||ev.start, 1));
+    out.push('SUMMARY:'+icsEscape(ev.name));
+    if(ev.location) out.push('LOCATION:'+icsEscape(ev.location));
+    if(ev.link) out.push('URL:'+icsEscape(ev.link));
+    out.push('DESCRIPTION:'+icsEscape(desc.join('\n')));
+    /* Free, not busy. These are all-day markers on a reference calendar, and an
+       event that defaults to OPAQUE makes the subscriber look unavailable all
+       day to everyone who checks their free/busy. Downloaded events are real
+       editable entries, so anyone actually going can set their own to Busy. */
+    out.push('STATUS:CONFIRMED');
+    out.push('CLASS:PUBLIC');
+    out.push('TRANSP:TRANSPARENT');
+    out.push('X-MICROSOFT-CDO-ALLDAYEVENT:TRUE');
+    out.push('X-MICROSOFT-CDO-BUSYSTATUS:FREE');
+    out.push('X-MICROSOFT-CDO-INTENDEDSTATUS:FREE');
+    out.push('END:VEVENT');
+  });
+  out.push('END:VCALENDAR');
+  return out.map(fold).join('\r\n');
+}
+// RFC 5545 line folding: no content line longer than 75 octets.
+function fold(line){
+  if(line.length<=74) return line;
+  var parts=[line.slice(0,74)], rest=line.slice(74);
+  while(rest.length>73){ parts.push(' '+rest.slice(0,73)); rest=rest.slice(73); }
+  if(rest.length) parts.push(' '+rest);
+  return parts.join('\r\n');
+}
+function downloadBlob(name, blob){
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },200);
+}
+function download(name, text, mime){
+  var blob=new Blob([text],{type:mime||'text/plain;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },200);
+}
+
+/* ---------------------------------------------------------------- modal plumbing */
+function open$(id){ $(id).classList.add('on'); document.body.style.overflow='hidden'; }
+function close$(id){ $(id).classList.remove('on'); document.body.style.overflow=''; }
+document.addEventListener('click', function(e){
+  var c=e.target.getAttribute && e.target.getAttribute('data-close');
+  if(c) close$(c);
+  if(e.target.classList && e.target.classList.contains('scrim')) close$(e.target.id);
+});
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape'){ close$('evScrim'); close$('adScrim'); }
+});
+
+/* ---------------------------------------------------------------- admin */
+var admin = { pin:'', as:null, role:null, section:null, draft:null, editingId:null, downloaded:false };
+
+// A section PIN owns only events that are for that section alone. Joint and
+// county-wide events stay with the county PIN. The function enforces this too.
+function canEdit(ev){
+  if(admin.role === 'admin') return true;
+  if(admin.role !== 'section') return false;
+  var s = secsOf(ev);
+  return s.length === 1 && s[0] === admin.section;
+}
+function roleLabel(){
+  if(admin.role === 'admin') return 'County';
+  var sec = SEC_BY_ID[admin.section];
+  return sec ? sec.name : 'Section';
+}
+
+function openAdmin(){
+  var saved = null, savedAs = null;
+  try{
+    saved = sessionStorage.getItem('ccs_pin');
+    savedAs = sessionStorage.getItem('ccs_as');
+  }catch(e){}
+  open$('adScrim');
+  if(saved){
+    adminBusy('Checking your PIN…');
+    authenticate(saved, savedAs, function(ok){ if(!ok) adminPinScreen(); });
+  } else {
+    adminPinScreen();
+  }
+}
+
+function adminBusy(msg){
+  $('adTitle').textContent='Admin';
+  $('adBody').innerHTML='';
+  $('adBody').appendChild(el('p','note', msg));
+}
+
+function authenticate(pin, as, done){
+  fetch(API+'?action=auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pin:pin, as:as||''})})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d && d.ok){
+        admin.pin = pin; admin.role = d.role; admin.section = d.section || null;
+        admin.as = d.role === 'admin' ? 'admin' : d.section;
+        try{
+          sessionStorage.setItem('ccs_pin', pin);
+          sessionStorage.setItem('ccs_as', admin.as);
+        }catch(e){}
+        adminPanel();
+        done && done(true);
+      } else {
+        try{ sessionStorage.removeItem('ccs_pin'); sessionStorage.removeItem('ccs_as'); }catch(e){}
+        done && done(false);
+      }
+    })
+    .catch(function(){
+      adminPinScreen('Could not reach the events service. See the README.');
+      done && done(true);
+    });
+}
+
+var LOGIN_ROLES = [{id:'admin', name:'County', note:'full access, all sections'}].concat(
+  SECTIONS.map(function(x){ return {id:x.id, name:x.name, note:x.name + ' events only', colour:x.colour}; }));
+
+function roleById(id){
+  for(var i=0;i<LOGIN_ROLES.length;i++) if(LOGIN_ROLES[i].id===id) return LOGIN_ROLES[i];
+  return null;
+}
+
+// Step one: say who you are. Picking first means a mistyped digit is refused
+// rather than quietly signing you in to somebody else's section.
+function adminPinScreen(msg){
+  $('adTitle').textContent='Admin \u00b7 Sign in';
+  var b=$('adBody'); b.innerHTML='';
+  b.appendChild(el('p','note','Choose which section you are administering.'));
+
+  var grid=el('div','rolegrid');
+  LOGIN_ROLES.forEach(function(r){
+    var btn=el('button','rolebtn'+(r.id==='admin'?' county':'')); btn.type='button';
+    var sw=el('span','roleswatch');
+    sw.style.background = r.colour || 'var(--deep)';
+    btn.appendChild(sw);
+    var txt=el('span','roletxt');
+    txt.appendChild(el('strong', null, r.name));
+    txt.appendChild(el('small', null, r.note));
+    btn.appendChild(txt);
+    btn.onclick=function(){ adminPinEntry(r.id); };
+    grid.appendChild(btn);
+  });
+  b.appendChild(grid);
+  if(msg) b.appendChild(el('div','err',msg));
+}
+
+// Step two: the PIN, checked against the role that was chosen.
+function adminPinEntry(as, msg){
+  var role = roleById(as);
+  if(!role){ adminPinScreen(); return; }
+
+  $('adTitle').textContent='Admin \u00b7 '+role.name;
+  var b=$('adBody'); b.innerHTML='';
+
+  var who=el('div','whorow');
+  var sw=el('span','roleswatch'); sw.style.background = role.colour || 'var(--deep)';
+  who.appendChild(sw);
+  who.appendChild(el('span','whoname','Signing in as '+role.name));
+  var chg=el('button','linkbtn','Change');
+  chg.onclick=function(){ adminPinScreen(); };
+  who.appendChild(chg);
+  b.appendChild(who);
+
+  var row=el('div','pinbox');
+  var inp=el('input'); inp.type='password'; inp.inputMode='numeric'; inp.autocomplete='off'; inp.placeholder='\u2022\u2022\u2022\u2022';
+  var go=el('button','btn','Unlock');
+  row.appendChild(inp); row.appendChild(go);
+  b.appendChild(row);
+  if(msg) b.appendChild(el('div','err',msg));
+
+  var busy=false;
+  function submit(){
+    if(busy) return;
+    if(!inp.value){ adminPinEntry(as, 'Enter the PIN.'); return; }
+    busy=true; go.disabled=true; go.textContent='Checking\u2026';
+    authenticate(inp.value, as, function(ok){
+      if(!ok){ busy=false; adminPinEntry(as, 'That PIN is not right for '+role.name+'. Check you picked the right section.'); }
+    });
+  }
+  go.onclick=submit;
+  inp.onkeydown=function(e){ if(e.key==='Enter') submit(); };
+  setTimeout(function(){ inp.focus(); }, 60);
+}
+
+function signOut(backToPicker){
+  try{ sessionStorage.removeItem('ccs_pin'); sessionStorage.removeItem('ccs_as'); }catch(e){}
+  admin.pin=''; admin.as=null; admin.role=null; admin.section=null;
+  admin.draft=null; admin.downloaded=false; clearDraft();
+  if(backToPicker) adminPinScreen(); else close$('adScrim');
+}
+
+// Switching user throws away an unpublished draft, so say so first.
+function confirmSwitch(backToPicker){
+  if(!admin.draft || !draftDirty()){ signOut(backToPicker); return; }
+  var b=$('adBody'); b.innerHTML='';
+  $('adTitle').textContent='Admin \u00b7 Unpublished changes';
+  var box=el('div','steps');
+  box.appendChild(el('p','steps-head','You have changes that are not published.'));
+  box.appendChild(el('p','note',
+    (backToPicker ? 'Switching user' : 'Logging out') + ' now discards them. Publish first if you want to keep them.'));
+  b.appendChild(box);
+  var foot=el('div','ctl-row'); foot.style.marginTop='12px';
+  var back=el('button','btn','Back to my changes');
+  back.onclick=function(){ adminPanel(); };
+  var go=el('button','btn danger', backToPicker ? 'Discard and switch' : 'Discard and log out');
+  go.onclick=function(){ signOut(backToPicker); };
+  foot.appendChild(back); foot.appendChild(go);
+  b.appendChild(foot);
+}
+
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function saveDraft(){ try{ localStorage.setItem('ccs_draft', JSON.stringify(admin.draft)); }catch(e){} }
+function readDraft(){
+  try{
+    var d=JSON.parse(localStorage.getItem('ccs_draft'));
+    return Array.isArray(d) ? d.map(normalise) : null;
+  }catch(e){ return null; }
+}
+function clearDraft(){ try{ localStorage.removeItem('ccs_draft'); }catch(e){} }
+function sig(list){ return JSON.stringify(list.slice().sort(sortByDate)); }
+function draftDirty(){
+  var mine = function(l){ return l.filter(canEdit); };
+  return sig(mine(admin.draft)) !== sig(mine(state.events));
+}
+
+function adminPanel(){
+  if(!admin.draft){
+    var kept = readDraft();
+    admin.draft = kept || state.events.map(clone);
+  }
+  var isRoot = admin.role === 'admin';
+  $('adTitle').textContent = 'Admin · ' + roleLabel();
+  var b=$('adBody'); b.innerHTML='';
+
+  if(!isRoot){
+    var scope = el('p','scopenote');
+    scope.appendChild(el('strong', null, 'You are signed in for ' + roleLabel() + '.'));
+    scope.appendChild(document.createTextNode(
+      ' You can add, edit and delete ' + roleLabel() + ' events. Joint and county-wide events are shown greyed out and can only be changed with the county PIN.'));
+    b.appendChild(scope);
+  }
+
+  var bar=el('div','ctl-row'); bar.style.marginBottom='12px';
+  var addBtn=el('button','btn','+ New event');
+  addBtn.onclick=function(){ eventForm(null); };
+  var sp=el('span','spacer');
+  var exp=el('button','btn sec','Export to Excel');
+  exp.onclick=function(){
+    var list = isRoot ? admin.draft : admin.draft.filter(canEdit);
+    var name = 'clare-scout-county-events' + (isRoot ? '' : '-' + admin.section) + '.xlsx';
+    downloadBlob(name, buildXlsx(eventsToRows(list)));
+  };
+  var impLbl=el('label','btn sec','Import from Excel'); impLbl.style.cursor='pointer';
+  var imp=el('input'); imp.type='file'; imp.accept='.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv'; imp.style.display='none';
+  imp.onchange=function(){
+    var f=imp.files[0]; imp.value=''; if(!f) return;
+    importSpreadsheet(f);
+  };
+  impLbl.appendChild(imp);
+  var histBtn=el('button','btn sec','History');
+  histBtn.title='Who changed what, and put the calendar back if needed';
+  histBtn.onclick=function(){ historyPanel(); };
+  var switchBtn=el('button','btn sec','Switch user');
+  switchBtn.onclick=function(){ confirmSwitch(true); };
+  var lock=el('button','btn sec','Log out');
+  lock.onclick=function(){ confirmSwitch(false); };
+  var pinBtn=el('button','btn sec','PINs');
+  pinBtn.onclick=function(){ pinPanel(); };
+  var guideBtn=el('button','btn sec','Section guides');
+  guideBtn.title='One printable page per section, with their PIN and how to use the calendar';
+  guideBtn.onclick=function(){ printGuides(); };
+
+  bar.appendChild(addBtn); bar.appendChild(sp); bar.appendChild(exp); bar.appendChild(impLbl);
+  bar.appendChild(histBtn);
+  if(isRoot){ bar.appendChild(pinBtn); bar.appendChild(guideBtn); }
+  bar.appendChild(switchBtn); bar.appendChild(lock);
+  b.appendChild(bar);
+
+  var list=el('div','adminlist');
+  if(!admin.draft.length){
+    list.appendChild(el('div','arow','No events yet. Add the first one.'));
+  } else {
+    admin.draft.slice().sort(sortByDate).forEach(function(ev){
+      var mine = canEdit(ev);
+      var r=el('div','arow'+(mine?'':' locked'));
+      r.appendChild(el('span','when', fmtRangeShort(ev)+' '+String(parseISO(ev.start).getFullYear()).slice(2)));
+      var sw=el('span','secmini');
+      sw.style.background = sectionPaint(secsOf(ev));
+      sw.title = sectionLabel(ev);
+      r.appendChild(sw);
+      r.appendChild(el('span','nm', ev.name));
+      if(mine){
+        var ed=el('button',null,'Edit'); ed.onclick=function(){ eventForm(ev.id); };
+        var cp=el('button',null,'Copy'); cp.title='Make another event like this one';
+        cp.onclick=function(){ duplicateEvent(ev.id); };
+        var rm=el('button',null,'Delete'); rm.onclick=function(){
+          admin.draft=admin.draft.filter(function(x){ return x.id!==ev.id; }); adminPanel();
+        };
+        r.appendChild(ed); r.appendChild(cp); r.appendChild(rm);
+      } else {
+        r.appendChild(el('span','lockchip','County'));
+      }
+      list.appendChild(r);
+    });
+  }
+  b.appendChild(list);
+
+  var dirty = draftDirty();
+
+  var foot=el('div','ctl-row'); foot.style.marginTop='14px';
+  var save=el('button','btn','Publish to the calendar');
+  var status=el('span','note','');
+  save.disabled = !dirty;
+  save.onclick=function(){
+    save.disabled=true; save.textContent='Publishing…'; status.className='note'; status.textContent='';
+    fetch(API,{
+      method:'PUT',
+      headers:{'content-type':'application/json','x-admin-pin':admin.pin,'x-admin-as':admin.as||''},
+      body:JSON.stringify({events:admin.draft})
+    })
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+      .then(function(res){
+        save.textContent='Publish to the calendar';
+        if(!res.ok){
+          save.disabled=false;
+          status.className='err';
+          status.textContent=(res.d && res.d.error) || 'Save failed';
+          return;
+        }
+        state.events=res.d.events.map(normalise);
+        state.updatedAt=res.d.updatedAt;
+        admin.draft=state.events.map(clone);
+        clearDraft();
+        render(); adminPanel();
+        toast('Published. Everyone sees it now.');
+      })
+      .catch(function(){
+        save.disabled=false; save.textContent='Publish to the calendar';
+        status.className='err'; status.textContent='Could not reach the events service.';
+      });
+  };
+  var revert=el('button','btn sec','Discard changes');
+  revert.onclick=function(){ admin.draft=null; clearDraft(); adminPanel(); };
+  foot.appendChild(save);
+  if(dirty) foot.appendChild(revert);
+  foot.appendChild(status);
+  b.appendChild(foot);
+
+  var steps=el('div','steps');
+  if(!dirty){
+    steps.appendChild(el('p','note','This matches the live calendar. Everything here is published.'));
+  } else {
+    var n = admin.draft.length;
+    steps.appendChild(el('p','steps-head',
+      'Unpublished changes to ' + roleLabel() + ' events. The calendar still shows ' +
+      state.events.length + ' event' + (state.events.length===1?'':'s') + ', this draft has ' + n + '.'));
+    steps.appendChild(el('p','note','Press Publish and everyone sees them straight away. Your draft is kept in this browser until you do, so you can close this and come back.'));
+  }
+  b.appendChild(steps);
+
+  saveDraft();
+}
+
+function importSpreadsheet(file){
+  var isXlsx = /\.xlsx$/i.test(file.name);
+  $('adTitle').textContent='Admin \u00b7 Reading ' + file.name;
+  $('adBody').innerHTML='';
+  $('adBody').appendChild(el('p','note','Reading the spreadsheet\u2026'));
+
+  var reader = new FileReader();
+  reader.onload = function(){
+    var work = isXlsx ? parseXlsx(reader.result) : Promise.resolve(parseCsv(reader.result));
+    work.then(function(rows){
+      importReview(rowsToEvents(rows), file.name);
+    }).catch(function(err){
+      var msg = (err && err.message === 'nodeflate')
+        ? 'This browser cannot open .xlsx files. Save the sheet as CSV in Excel and import that instead.'
+        : 'Could not read that file. Make sure it is a .xlsx or .csv saved from a spreadsheet.';
+      importError(msg);
+    });
+  };
+  reader.onerror = function(){ importError('Could not read that file.'); };
+  if(isXlsx) reader.readAsArrayBuffer(file); else reader.readAsText(file);
+}
+
+function importError(msg){
+  $('adBody').innerHTML='';
+  $('adBody').appendChild(el('div','err', msg));
+  var foot=el('div','ctl-row'); foot.style.marginTop='12px';
+  var back=el('button','btn','Back');
+  back.onclick=function(){ adminPanel(); };
+  foot.appendChild(back);
+  $('adBody').appendChild(foot);
+}
+
+// Nothing is changed until this is confirmed, and a section PIN only ever
+// sees the rows it would actually be allowed to publish.
+function importReview(result, filename){
+  var isRoot = admin.role === 'admin';
+  var usable = isRoot ? result.events : result.events.filter(canEdit);
+  var skipped = result.events.length - usable.length;
+
+  $('adTitle').textContent='Admin \u00b7 Import';
+  var b=$('adBody'); b.innerHTML='';
+  b.appendChild(el('p','note', filename));
+
+  if(!usable.length){
+    b.appendChild(el('div','err', result.events.length
+      ? 'None of the ' + result.events.length + ' rows are ' + roleLabel() + ' events, so there is nothing you can import.'
+      : 'No usable rows found.'));
+  } else {
+    var box=el('div','steps');
+    box.appendChild(el('p','steps-head', 'Found ' + usable.length + ' event' + (usable.length===1?'':'s') + '.'));
+    var note = 'This replaces the ' + (isRoot ? 'whole list' : roleLabel() + ' events') + ' in your draft. Nothing goes live until you press Publish.';
+    if(skipped) note = skipped + ' row' + (skipped===1?' was':'s were') + ' for other sections and ' + (skipped===1?'was':'were') + ' left out. ' + note;
+    box.appendChild(el('p','note', note));
+    b.appendChild(box);
+
+    var prev=el('div','adminlist'); prev.style.marginTop='10px';
+    usable.slice(0,8).forEach(function(ev){
+      var r=el('div','arow');
+      r.appendChild(el('span','when', fmtRangeShort(ev)));
+      var sw=el('span','secmini'); sw.style.background=sectionPaint(secsOf(ev)); prevSw(r, sw);
+      r.appendChild(el('span','nm', ev.name));
+      prev.appendChild(r);
+    });
+    if(usable.length>8) prev.appendChild(el('div','arow','\u2026 and ' + (usable.length-8) + ' more'));
+    b.appendChild(prev);
+  }
+
+  if(result.errors.length){
+    var warn=el('div','importwarn');
+    warn.appendChild(el('p','steps-head', result.errors.length + ' row' + (result.errors.length===1?'':'s') + ' need a look:'));
+    var ul=el('ul');
+    result.errors.slice(0,10).forEach(function(e){ ul.appendChild(el('li',null,e)); });
+    if(result.errors.length>10) ul.appendChild(el('li',null,'\u2026 and ' + (result.errors.length-10) + ' more'));
+    warn.appendChild(ul);
+    b.appendChild(warn);
+  }
+
+  var foot=el('div','ctl-row'); foot.style.marginTop='12px';
+  if(usable.length){
+    var ok=el('button','btn','Use these ' + usable.length + ' event' + (usable.length===1?'':'s'));
+    ok.onclick=function(){
+      if(isRoot){
+        admin.draft = usable;
+      } else {
+        admin.draft = admin.draft.filter(function(ev){ return !canEdit(ev); }).concat(usable);
+      }
+      adminPanel();
+      toast('Imported. Press Publish to make it live.');
+    };
+    foot.appendChild(ok);
+  }
+  var cancel=el('button','btn sec','Cancel');
+  cancel.onclick=function(){ adminPanel(); };
+  foot.appendChild(cancel);
+  b.appendChild(foot);
+}
+function prevSw(row, sw){ row.appendChild(sw); }
+
+function fmtWhen(isoStamp){
+  var d = new Date(isoStamp);
+  return d.toLocaleDateString('en-IE',{day:'numeric',month:'short',year:'numeric'}) +
+         ', ' + d.toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit'});
+}
+function changeSummary(h){
+  var bits = [];
+  if(h.counts.added)   bits.push(h.counts.added + ' added');
+  if(h.counts.changed) bits.push(h.counts.changed + ' changed');
+  if(h.counts.removed) bits.push(h.counts.removed + ' removed');
+  return bits.length ? bits.join(', ') : 'no change';
+}
+
+/* Every publish snapshots the calendar as it then stood, so this doubles as
+   the record of who changed what and the way back from a bad one. */
+function historyPanel(msg){
+  var isRoot = admin.role === 'admin';
+  $('adTitle').textContent='Admin \u00b7 History';
+  var b=$('adBody'); b.innerHTML='';
+  b.appendChild(el('p','note','Every publish is recorded, with what changed and who did it. The last 20 are kept.'));
+  var loading=el('p','note','Loading\u2026'); b.appendChild(loading);
+
+  fetch(API+'?action=history',{headers:{'x-admin-pin':admin.pin}})
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(res){
+      b.innerHTML='';
+      b.appendChild(el('p','note','Every publish is recorded, with what changed and who did it. The last 20 are kept.'));
+      if(!res.ok){ b.appendChild(el('div','err',(res.d && res.d.error)||'Could not load the history')); return; }
+      var list = res.d.history || [];
+      if(msg) b.appendChild(el('div','ok', msg));
+
+      if(!list.length){
+        b.appendChild(el('p','note','Nothing recorded yet. The next publish will appear here.'));
+      } else {
+        var wrap=el('div','histlist');
+        list.forEach(function(h, i){
+          var row=el('div','histrow');
+          var head=el('div','histhead');
+          head.appendChild(el('span','histwho', h.by));
+          head.appendChild(el('span','histwhen', fmtWhen(h.at)));
+          if(i===0) head.appendChild(el('span','histnow','current'));
+          row.appendChild(head);
+
+          row.appendChild(el('div','histsum', changeSummary(h) + '  \u00b7  ' + h.total + ' event' + (h.total===1?'':'s') + ' after'));
+
+          var detail=[];
+          if(h.added.length)   detail.push('Added: ' + h.added.join(', '));
+          if(h.removed.length) detail.push('Removed: ' + h.removed.join(', '));
+          if(h.changed.length) detail.push('Changed: ' + h.changed.join(', '));
+          if(h.note) detail.push(h.note);
+          if(detail.length) row.appendChild(el('div','histdetail', detail.join('  \u00b7  ')));
+
+          if(isRoot && i > 0){
+            var rb=el('button','histbtn','Restore this');
+            rb.onclick=function(){ confirmRestore(h); };
+            row.appendChild(rb);
+          }
+          wrap.appendChild(row);
+        });
+        b.appendChild(wrap);
+      }
+
+      if(!isRoot){
+        b.appendChild(el('p','note','Restoring a previous version needs the county PIN.'));
+      }
+      var foot=el('div','ctl-row'); foot.style.marginTop='12px';
+      var back=el('button','btn sec','Back to events');
+      back.onclick=function(){ adminPanel(); };
+      foot.appendChild(back);
+      b.appendChild(foot);
+    })
+    .catch(function(){
+      b.innerHTML='';
+      b.appendChild(el('div','err','Could not reach the events service.'));
+    });
+}
+
+function confirmRestore(h){
+  $('adTitle').textContent='Admin \u00b7 Restore';
+  var b=$('adBody'); b.innerHTML='';
+  var box=el('div','steps');
+  box.appendChild(el('p','steps-head','Put the calendar back to how it was on ' + fmtWhen(h.at) + '?'));
+  box.appendChild(el('p','note','That version had ' + h.total + ' event' + (h.total===1?'':'s') +
+    '. Everything published since then is replaced. The restore is itself recorded, so you can undo it the same way.'));
+  b.appendChild(box);
+
+  var foot=el('div','ctl-row'); foot.style.marginTop='12px';
+  var go=el('button','btn danger','Restore that version');
+  go.onclick=function(){
+    go.disabled=true; go.textContent='Restoring\u2026';
+    fetch(API+'?action=history',{method:'PUT',
+      headers:{'content-type':'application/json','x-admin-pin':admin.pin},
+      body:JSON.stringify({id:h.id})})
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res){
+        if(!res.ok){ go.disabled=false; go.textContent='Restore that version';
+          b.appendChild(el('div','err',(res.d && res.d.error)||'Could not restore')); return; }
+        state.events = (res.d.events||[]).map(normalise);
+        state.updatedAt = res.d.updatedAt;
+        admin.draft = state.events.map(clone);
+        clearDraft(); render();
+        historyPanel('Restored. The calendar is back to how it was on ' + fmtWhen(h.at) + '.');
+        toast('Calendar restored');
+      })
+      .catch(function(){
+        go.disabled=false; go.textContent='Restore that version';
+        b.appendChild(el('div','err','Could not reach the events service.'));
+      });
+  };
+  var cancel=el('button','btn sec','Cancel');
+  cancel.onclick=function(){ historyPanel(); };
+  foot.appendChild(go); foot.appendChild(cancel);
+  b.appendChild(foot);
+}
+
+function pinPanel(msg, saved){
+  $('adTitle').textContent='Admin · PINs';
+  var b=$('adBody'); b.innerHTML='';
+  b.appendChild(el('p','note','Each section PIN can only add, edit and delete that section\u2019s own events. The county PIN can change everything, including these PINs.'));
+
+  var busy=el('p','note','Loading…'); b.appendChild(busy);
+
+  fetch(API+'?action=pins',{headers:{'x-admin-pin':admin.pin}})
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(res){
+      b.innerHTML='';
+      b.appendChild(el('p','note','Each section PIN can only add, edit and delete that section\u2019s own events. The county PIN can change everything, including these PINs.'));
+      if(!res.ok){ b.appendChild(el('div','err',(res.d && res.d.error)||'Could not load the PINs')); return; }
+
+      var pins = res.d.pins || {};
+      var inputs = {};
+      var rows = [{id:'admin', name:'County (full access)', colour:'var(--deep)'}].concat(
+        SECTIONS.map(function(x){ return {id:x.id, name:x.name, colour:x.colour}; }));
+
+      var wrap=el('div','pinlist');
+      rows.forEach(function(row){
+        var r=el('div','pinrow');
+        var sw=el('span','secmini'); sw.style.background=row.colour; r.appendChild(sw);
+        r.appendChild(el('span','pinname', row.name));
+        var i=el('input'); i.type='text'; i.inputMode='numeric'; i.autocomplete='off';
+        i.value = pins[row.id] || ''; i.maxLength=8; i.className='pininput';
+        i.oninput=function(){ i.value = i.value.replace(/\D/g,'').slice(0,8); };
+        inputs[row.id]=i; r.appendChild(i);
+        wrap.appendChild(r);
+      });
+      b.appendChild(wrap);
+
+      var err=el('div','err', msg||''); b.appendChild(err);
+      if(saved) b.appendChild(el('div','ok','PINs saved.'));
+
+      var foot=el('div','ctl-row'); foot.style.marginTop='12px';
+      var save=el('button','btn','Save PINs');
+      save.onclick=function(){
+        var next={}, seen={};
+        for(var k in inputs){
+          var v=inputs[k].value.trim();
+          if(!/^\d{4,8}$/.test(v)){ err.textContent='Every PIN must be 4 to 8 digits.'; return; }
+          if(seen[v]){ err.textContent='Every PIN must be different.'; return; }
+          seen[v]=1; next[k]=v;
+        }
+        err.textContent='';
+        save.disabled=true; save.textContent='Saving…';
+        fetch(API+'?action=pins',{method:'PUT',headers:{'content-type':'application/json','x-admin-pin':admin.pin},body:JSON.stringify({pins:next})})
+          .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+          .then(function(res2){
+            save.disabled=false; save.textContent='Save PINs';
+            if(!res2.ok){ err.textContent=(res2.d && res2.d.error)||'Could not save'; return; }
+            // if the county PIN changed, keep this session signed in on the new one
+            admin.pin = next.admin;
+            try{ sessionStorage.setItem('ccs_pin', next.admin); }catch(e){}
+            pinPanel('', true);
+            toast('PINs updated');
+          })
+          .catch(function(){
+            save.disabled=false; save.textContent='Save PINs';
+            err.textContent='Could not reach the events service.';
+          });
+      };
+      var back=el('button','btn sec','Back to events');
+      back.onclick=function(){ adminPanel(); };
+      foot.appendChild(save); foot.appendChild(back);
+      b.appendChild(foot);
+      b.appendChild(el('p','note','PINs are an entry barrier, not security. Anyone with a PIN can edit that section\u2019s events.'));
+    })
+    .catch(function(){
+      b.innerHTML='';
+      b.appendChild(el('div','err','Could not reach the events service.'));
+    });
+}
+
+function normalise(raw){
+  return {
+    id: raw.id || ('ev_'+Math.random().toString(36).slice(2,10)),
+    name: raw.name||'', start: raw.start||todayISO(), end: raw.end||'',
+    time: raw.time||'',
+    category: ['training','county','national'].indexOf(raw.category)>-1 ? raw.category : 'county',
+    sections: Array.isArray(raw.sections)&&raw.sections.length ? raw.sections.filter(function(s){return SEC_BY_ID[s];}) : ALL_SECTION_IDS.slice(),
+    description: raw.description||'', host: raw.host||'', location: raw.location||'',
+    link: raw.link||'',
+    contactName: raw.contactName||'', contactEmail: raw.contactEmail||'', contactPhone: raw.contactPhone||''
+  };
+}
+
+// Anything else for the same section overlapping these dates. Advisory only:
+// double-booking is sometimes deliberate, so it warns rather than blocks.
+function findClashes(draftEvent, ignoreId){
+  var secs = secsOf(draftEvent);
+  var aStart = draftEvent.start, aEnd = draftEvent.end || draftEvent.start;
+  return (admin.draft || []).filter(function(ev){
+    if(ev.id === ignoreId) return false;
+    var bStart = ev.start, bEnd = ev.end || ev.start;
+    if(aStart > bEnd || aEnd < bStart) return false;
+    return secsOf(ev).some(function(x){ return secs.indexOf(x) > -1; });
+  });
+}
+
+function duplicateEvent(id){
+  var src = admin.draft.filter(function(x){ return x.id===id; })[0];
+  if(!src) return;
+  var copy = clone(src);
+  copy.id = 'ev_' + Math.random().toString(36).slice(2,10);
+  copy.name = src.name + ' (copy)';
+  admin.draft = admin.draft.concat([copy]);
+  adminPanel();
+  eventForm(copy.id);
+  toast('Copied. Change the date and name, then Publish.');
+}
+
+function eventForm(id){
+  var ev = id ? admin.draft.filter(function(x){return x.id===id;})[0] : null;
+  var m = ev ? JSON.parse(JSON.stringify(ev)) : normalise({});
+  $('adTitle').textContent = id ? 'Edit event' : 'New event';
+  var b=$('adBody'); b.innerHTML='';
+
+  function field(label, node){
+    var f=el('div','field'); f.appendChild(el('label',null,label)); f.appendChild(node); return f;
+  }
+  function text(val, ph, type){
+    var i=el('input'); i.type=type||'text'; i.value=val||''; if(ph) i.placeholder=ph; return i;
+  }
+
+  var fName=text(m.name,'e.g. County Cub Adventure Day');
+  var fStart=text(m.start,'',"date");
+  var fEnd=text(m.end,'',"date");
+  var fTime=text(m.time,'e.g. 10:00 – 16:00');
+  var fLoc=text(m.location,'e.g. Lees Road, Ennis');
+  var fLink=text(m.link,'e.g. a booking form or kit list');
+  var fHost=text(m.host,'e.g. Clare County Team / 1st Ennis');
+  var fCName=text(m.contactName,'e.g. Craig Hill');
+  var fCEmail=text(m.contactEmail,'name@example.ie','email');
+  var fCPhone=text(m.contactPhone,'087 …','tel');
+  var fDesc=el('textarea'); fDesc.value=m.description||''; fDesc.placeholder='What it is, what to bring, booking details…';
+
+  var catSel=el('select');
+  CATEGORIES.forEach(function(c){
+    var o=el('option',null,c.name); o.value=c.id; if(m.category===c.id) o.selected=true; catSel.appendChild(o);
+  });
+
+  var checksWrap=el('div','checks');
+  var boxes={};
+  var lockSections = admin.role === 'section';
+  if(lockSections && !id){ m.sections = [admin.section]; }
+  var allLab=el('label','check');
+  var allBox=el('input'); allBox.type='checkbox';
+  allBox.checked = m.sections.length===SECTIONS.length;
+  allLab.appendChild(allBox); allLab.appendChild(document.createTextNode('All Sections'));
+  allBox.onchange=function(){
+    SECTIONS.forEach(function(s){ boxes[s.id].checked=allBox.checked; boxes[s.id].parentNode.classList.toggle('on', allBox.checked); });
+    allLab.classList.toggle('on', allBox.checked);
+  };
+  allLab.classList.toggle('on', allBox.checked);
+  if(!lockSections) checksWrap.appendChild(allLab);
+  SECTIONS.forEach(function(s){
+    var lab=el('label','check');
+    var cb=el('input'); cb.type='checkbox'; cb.checked = m.sections.indexOf(s.id)>-1;
+    if(lockSections){
+      cb.checked = (s.id === admin.section);
+      cb.disabled = true;
+      lab.classList.add('fixed');
+      if(s.id !== admin.section) lab.style.display='none';
+    }
+    lab.classList.toggle('on', cb.checked);
+    var d=el('span','secdot'); d.style.background=s.colour;
+    lab.appendChild(cb); lab.appendChild(d); lab.appendChild(document.createTextNode(s.name));
+    cb.onchange=function(){
+      lab.classList.toggle('on', cb.checked);
+      var all=SECTIONS.every(function(x){ return boxes[x.id].checked; });
+      allBox.checked=all; allLab.classList.toggle('on', all);
+      if(typeof checkClash === 'function') checkClash();
+    };
+    boxes[s.id]=cb; checksWrap.appendChild(lab);
+  });
+
+  b.appendChild(field('Event name *', fName));
+  var row1=el('div','two');
+  row1.appendChild(field('Start date *', fStart));
+  row1.appendChild(field('End date (same as the start for one day)', fEnd));
+  b.appendChild(row1);
+  var row2=el('div','two');
+  row2.appendChild(field('Type', catSel));
+  row2.appendChild(field('Time (optional)', fTime));
+  b.appendChild(row2);
+  var secField = field('Sections', checksWrap);
+  if(lockSections){
+    secField.appendChild(el('p','note','Fixed to ' + roleLabel() + '. Joint and county-wide events need the county PIN.'));
+  }
+  b.appendChild(secField);
+  b.appendChild(field('Location / venue', fLoc));
+  b.appendChild(field('Link (booking form, kit list, anything online)', fLink));
+  b.appendChild(field('Description', fDesc));
+  b.appendChild(field('Hosted by', fHost));
+  var row3=el('div','three');
+  row3.appendChild(field('Contact name', fCName));
+  row3.appendChild(field('Contact email', fCEmail));
+  row3.appendChild(field('Contact phone', fCPhone));
+  b.appendChild(row3);
+
+  var err=el('div','err','');
+  b.appendChild(err);
+
+  var clash=el('div','clashwarn');
+  b.appendChild(clash);
+  function checkClash(){
+    var secs = lockSections ? [admin.section]
+             : SECTIONS.filter(function(x){ return boxes[x.id].checked; }).map(function(x){ return x.id; });
+    if(!fStart.value || !secs.length){ clash.className='clashwarn'; clash.textContent=''; return; }
+    var hits = findClashes({start:fStart.value, end:fEnd.value||'', sections:secs}, id);
+    if(!hits.length){ clash.className='clashwarn'; clash.textContent=''; return; }
+    clash.className='clashwarn on';
+    clash.innerHTML = '';
+    clash.appendChild(el('b', null, 'Already something on:'));
+    var ul=el('ul');
+    hits.slice(0,4).forEach(function(ev){
+      ul.appendChild(el('li', null, ev.name + '  \u00b7  ' + fmtRangeShort(ev) + '  \u00b7  ' + sectionLabel(ev)));
+    });
+    if(hits.length>4) ul.appendChild(el('li', null, '\u2026 and ' + (hits.length-4) + ' more'));
+    clash.appendChild(ul);
+    clash.appendChild(el('span','note','That may well be fine. This is only a heads-up.'));
+  }
+  /* The end date follows the start until it is deliberately moved past it.
+     A native date picker opens on whatever the field already holds, so an empty
+     end field meant scrolling from today to next May every time an event was
+     added. Mirroring the start opens it in the right month, one tap from done.
+     min stops the picker offering dates before the start at all. */
+  var lastStart = fStart.value;
+  function syncEnd(){
+    fEnd.min = fStart.value || '';
+    if(!fStart.value) return;
+    if(!fEnd.value || fEnd.value === lastStart || fEnd.value < fStart.value){
+      fEnd.value = fStart.value;
+    }
+    lastStart = fStart.value;
+  }
+  syncEnd();
+
+  fStart.addEventListener('input',  syncEnd);
+  fStart.addEventListener('change', function(){ syncEnd(); checkClash(); });
+  fEnd.addEventListener('change', checkClash);
+  setTimeout(checkClash, 0);
+
+  var foot=el('div','ctl-row'); foot.style.marginTop='6px';
+  var ok=el('button','btn', id ? 'Update event' : 'Add event');
+  ok.onclick=function(){
+    var name=fName.value.trim();
+    if(!name){ err.textContent='Give the event a name.'; return; }
+    if(!fStart.value){ err.textContent='Pick a start date.'; return; }
+    if(fEnd.value && fEnd.value < fStart.value){ err.textContent='The end date is before the start date.'; return; }
+    var secs=SECTIONS.filter(function(s){ return boxes[s.id].checked; }).map(function(s){ return s.id; });
+    if(!secs.length){ err.textContent='Choose at least one section.'; return; }
+    var out={
+      /* A one-day event is still stored with a blank end, exactly as before,
+         so nothing downstream sees a change from the mirroring above. */
+      id: m.id, name:name, start:fStart.value,
+      end: (fEnd.value && fEnd.value !== fStart.value) ? fEnd.value : '',
+      time:fTime.value.trim(), category:catSel.value, sections:secs,
+      description:fDesc.value.trim(), host:fHost.value.trim(), location:fLoc.value.trim(),
+      link:fLink.value.trim(),
+      contactName:fCName.value.trim(), contactEmail:fCEmail.value.trim(), contactPhone:fCPhone.value.trim()
+    };
+    out = normalise(out);
+    if(id){ admin.draft = admin.draft.map(function(x){ return x.id===id ? out : x; }); }
+    else { admin.draft = admin.draft.concat([out]); }
+    adminPanel();
+  };
+  var cancel=el('button','btn sec','Cancel');
+  cancel.onclick=function(){ adminPanel(); };
+  foot.appendChild(ok); foot.appendChild(cancel);
+  b.appendChild(foot);
+  setTimeout(function(){ fName.focus(); },60);
+}
+
+/* ------------------------------------------------------- from the county */
+/* Section leads see county events that touch their sections and decide
+   whether we are going. Nothing here is public until it is approved, and
+   nothing is ever written back to the county. Sign-in is the same personal
+   code as the rota, so nobody carries a second credential. */
+var TOKEN_KEY = 'rota-token';
+var county = { token:null, me:null, items:[], syncedAt:null, busy:false, err:'' };
+try { county.token = localStorage.getItem(TOKEN_KEY); } catch(e){}
+
+function countyBtn(){ return $('btnCounty'); }
+function setCountyBadge(){
+  var b = countyBtn(); if(!b) return;
+  var n = county.items.filter(function(x){ return x.status==='pending' || x.changed || x.gone; }).length;
+  b.textContent = n ? ('County (' + n + ')') : 'County';
+  b.classList.toggle('has-news', !!n);
+}
+function rota(method, q, body){
+  var h = { 'Content-Type':'application/json' };
+  if(county.token) h['x-rota-token'] = county.token;
+  return fetch(ROTA + q, { method:method, headers:h, body: body?JSON.stringify(body):undefined, cache:'no-store' })
+    .then(function(r){
+      return r.json().catch(function(){ return { error:'The server gave an unexpected reply.' }; })
+        .then(function(j){
+          if(r.status===401){ county.token=null; try{ localStorage.removeItem(TOKEN_KEY); }catch(e){} }
+          if(!r.ok) throw new Error(j.error || ('Error '+r.status));
+          return j;
+        });
+    });
+}
+function loadCounty(){
+  if(!county.token){ setCountyBadge(); return Promise.resolve(); }
+  return rota('GET', '?sections=' + ALL_SECTION_IDS.join(','))
+    .then(function(d){ county.me=d.me; county.items=d.county||[]; county.syncedAt=d.countySyncedAt||null; setCountyBadge(); })
+    .catch(function(){ county.items=[]; setCountyBadge(); });
+}
+function openCounty(){
+  $('adTitle').textContent = 'From the county';
+  open$('adScrim');
+  renderCounty();
+  if(county.token) loadCounty().then(renderCounty);
+}
+function countySignIn(){
+  var code = $('cSignInCode').value.trim();
+  if(!code) return;
+  county.err=''; county.busy=true; renderCounty();
+  rota('POST', '?a=login', { code:code })
+    .then(function(d){ county.token=d.token; try{ localStorage.setItem(TOKEN_KEY, d.token); }catch(e){} return loadCounty(); })
+    .catch(function(e){ county.err=e.message; })
+    .then(function(){ county.busy=false; renderCounty(); });
+}
+function countySync(){
+  county.err=''; county.busy=true; renderCounty();
+  rota('POST', '?a=county-sync')
+    .then(function(d){
+      var bits=[];
+      if(d.added) bits.push(d.added+' new');
+      if(d.changed) bits.push(d.changed+' changed');
+      if(d.gone) bits.push(d.gone+' withdrawn');
+      toast(bits.length ? ('County: '+bits.join(', ')) : 'County: nothing new');
+      return loadCounty();
+    })
+    .catch(function(e){ county.err=e.message; })
+    .then(function(){ county.busy=false; renderCounty(); });
+}
+function countyDecide(id, decision){
+  county.err=''; county.busy=true; renderCounty();
+  rota('POST', '?a=county-decide', { id:id, decision:decision })
+    .then(function(){ return loadCounty(); })
+    .then(function(){ load(); })
+    .catch(function(e){ county.err=e.message; })
+    .then(function(){ county.busy=false; renderCounty(); });
+}
+function countySignOut(){
+  county.token=null; county.me=null; county.items=[];
+  try{ localStorage.removeItem(TOKEN_KEY); }catch(e){}
+  setCountyBadge(); renderCounty();
+}
+function countyRow(it){
+  var ev = it.event, wrap = el('div','crow');
+  var when = el('div','cwhen', fmtRangeShort({ start:ev.start, end:ev.end||ev.start }));
+  var main = el('div','cmain');
+  main.appendChild(el('div','cname', ev.name));
+  var secs = (ev.sections||[]).filter(function(s){ return SEC_BY_ID[s]; })
+    .map(function(s){ return SEC_BY_ID[s].name; }).join(', ');
+  var meta = [secs || 'Whole group', ev.location||'', ev.time||''].filter(Boolean).join(' · ');
+  main.appendChild(el('div','cmeta', meta));
+  if(it.gone) main.appendChild(el('div','cflag', 'Withdrawn at the county'));
+  else if(it.changed) main.appendChild(el('div','cflag', 'Changed at the county'));
+  if(it.by) main.appendChild(el('div','cmeta', (it.status==='approved'?'Approved by ':'Decided by ') + it.by));
+  var acts = el('div','cacts');
+  function btn(label, decision, cls){
+    var b = el('button', 'btn ' + (cls||'sec'), label);
+    b.disabled = county.busy;
+    b.onclick = function(){ countyDecide(it.id, decision); };
+    return b;
+  }
+  if(it.status === 'pending'){ acts.appendChild(btn('We are going','approve','')); acts.appendChild(btn('Not this time','decline')); }
+  else if(it.status === 'approved'){ acts.appendChild(el('span','cstate ok','On our calendar')); acts.appendChild(btn('Take it off','decline')); }
+  else { acts.appendChild(el('span','cstate no','Not going')); acts.appendChild(btn('Change my mind','approve')); }
+  wrap.appendChild(when); wrap.appendChild(main); wrap.appendChild(acts);
+  return wrap;
+}
+function renderCounty(){
+  var b = $('adBody'); b.innerHTML='';
+  if(county.err){ var e1=el('div','cerr', county.err); b.appendChild(e1); }
+  if(!county.token){
+    b.appendChild(el('p','note','County events appear here for the sections you lead. Sign in with the code the group secretary gave you, the same one the rota uses.'));
+    var row = el('div','ctl-row');
+    var inp = el('input'); inp.id='cSignInCode'; inp.type='text'; inp.placeholder='XXXX-XXXX'; inp.autocapitalize='characters'; inp.spellcheck=false;
+    inp.onkeydown = function(ev){ if(ev.key==='Enter') countySignIn(); };
+    var go = el('button','btn','Sign in'); go.onclick=countySignIn; go.disabled=county.busy;
+    row.appendChild(inp); row.appendChild(go); b.appendChild(row);
+    return;
+  }
+  var head = el('div','ctl-row');
+  head.appendChild(el('span','note', 'Signed in as ' + (county.me?county.me.name:'') + (county.syncedAt ? ' · checked ' + fmtLong(county.syncedAt.slice(0,10)) : '')));
+  head.appendChild(el('span','spacer'));
+  var sync = el('button','btn sec', county.busy ? 'Checking…' : 'Check the county'); sync.onclick=countySync; sync.disabled=county.busy;
+  var out = el('button','linkbtn','Sign out'); out.onclick=countySignOut;
+  head.appendChild(sync); head.appendChild(out);
+  b.appendChild(head);
+
+  if(county.me && !county.me.lead && !county.me.secretary){
+    b.appendChild(el('p','note','Only section leads decide what the group goes to. Ask your section lead or the secretary.'));
+    return;
+  }
+  var order = { pending:0, approved:1, declined:2 };
+  var items = county.items.slice().sort(function(x,y){
+    var a = (x.gone||x.changed)?-1:order[x.status], c = (y.gone||y.changed)?-1:order[y.status];
+    return a-c || String(x.event.start).localeCompare(String(y.event.start));
+  });
+  if(!items.length){
+    b.appendChild(el('p','note','Nothing from the county yet. Press "Check the county" to look now.'));
+    return;
+  }
+  var groups = [['Waiting on you', function(i){ return i.status==='pending'||i.changed||i.gone; }],
+                ['We are going',   function(i){ return i.status==='approved' && !i.changed && !i.gone; }],
+                ['Not going',      function(i){ return i.status==='declined' && !i.changed && !i.gone; }]];
+  groups.forEach(function(g){
+    var list = items.filter(g[1]);
+    if(!list.length) return;
+    b.appendChild(el('h3','chead', g[0]));
+    var box = el('div','clist');
+    list.forEach(function(it){ box.appendChild(countyRow(it)); });
+    b.appendChild(box);
+  });
+}
+
+/* ---------------------------------------------------------------- wiring */
+$('prev').onclick=function(){ state.cursor=new Date(state.cursor.getFullYear(), state.cursor.getMonth()-1, 1); render(); };
+$('next').onclick=function(){ state.cursor=new Date(state.cursor.getFullYear(), state.cursor.getMonth()+1, 1); render(); };
+$('today').onclick=function(){ state.cursor=startOfMonth(new Date()); render(); };
+$('viewCal').onclick=function(){ state.view='cal'; render(); };
+$('viewTbl').onclick=function(){ state.view='tbl'; render(); };
+$('rangeUpcoming').onclick=function(){ state.range='upcoming'; render(); };
+$('rangeAll').onclick=function(){ state.range='all'; render(); };
+$('btnCounty').onclick=openCounty;
+$('btnPrint').onclick=openPrint;
+$('btnInstall').onclick=openInstall;
+window.addEventListener('online', function(){ load(); });
+$('evIcs').onclick=function(){
+  if(!currentEvent){ toast('Open a single event to add it'); return; }
+  download(currentEvent.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.ics', buildICS([currentEvent]), 'text/calendar;charset=utf-8');
+};
+$('btnIcsAll').onclick=openSubscribe;
+
+/* ---------------------------------------------------------------- boot */
+// If this month has nothing on, open on the next month that does.
+function jumpToFirstUpcoming(){
+  var cur=state.cursor, t=todayISO();
+  var thisMonth = state.events.some(function(ev){
+    return daysBetween(ev.start, ev.end).some(function(d){
+      var p=parseISO(d); return p.getMonth()===cur.getMonth() && p.getFullYear()===cur.getFullYear();
+    });
+  });
+  if(thisMonth) return;
+  var next = state.events.filter(function(ev){ return (ev.end||ev.start) >= t; }).sort(sortByDate)[0];
+  if(next) state.cursor = startOfMonth(parseISO(next.start));
+}
+
+/* The app stores an event as {date,endDate,title,section,location,time,details,
+   kitId,countyId}. The calendar below was written for the county's shape, so
+   one adapter here lets every renderer, the poster and the ics work untouched. */
+function fromContent(e, i){
+  return {
+    id: e.countyId || ('ev' + i),
+    name: e.title || '',
+    start: e.date,
+    end: e.endDate || e.date,
+    time: e.time || '',
+    category: e.countyId ? 'county' : 'group',
+    sections: e.section ? [e.section] : ALL_SECTION_IDS.slice(),
+    description: e.details || '',
+    host: '',
+    location: e.location || '',
+    link: '',
+    kitId: e.kitId || '',
+    contactName:'', contactEmail:'', contactPhone:''
+  };
+}
+
+function load(){
+  fetch(API, {cache:'no-store'})
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    })
+    .then(function(d){
+      state.stale = d.offlineCopy === true;
+      state.events = (d.events||[]).map(fromContent).map(normalise);
+      state.updatedAt = d.updatedAt || null;
+      $('offlineBar').classList.toggle('on', !!state.stale);
+      jumpToFirstUpcoming();
+      render();
+      maybePrintView();     // only does anything for the ?print=1 link
+    })
+    .catch(function(){
+      state.events=[]; state.apiDown=true; render();
+    });
+  loadCounty();
+}
+
+buildControls();
+render();
+load();
+
+})();
+</script>
+</body>
+</html>
