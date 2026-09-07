@@ -17,8 +17,9 @@ const rota = createHandler((() => { const s = memoryStore(); return () => s; })(
 const port = Number(process.argv[2]) || 8899;
 const contentFile = process.argv[3] || "content.json";
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript",
-  ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml",
-  ".pdf": "application/pdf", ".webmanifest": "application/manifest+json" };
+  ".css": "text/css", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml",
+  ".ico": "image/x-icon", ".txt": "text/plain", ".pdf": "application/pdf",
+  ".webmanifest": "application/manifest+json" };
 
 createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);

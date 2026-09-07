@@ -22,7 +22,7 @@ What's inside
 - netlify/src/rota.mjs            the leaders' rota function source (edit this)
 - netlify/functions/*.mjs         built from those: npm run build:function
 - tools/test-function.mjs, tools/test-rota.mjs   offline tests: npm run test:function
-- lab/rota.html                   the leaders' volunteer rota; needs a personal code
+- lab/rota.html, lab/roster.html  the leaders' rota and the secretary's roster; need a personal code
 - tools/apply-update.mjs          applies updates.json to content.json the same way admin does
 - netlify.toml
 
@@ -55,15 +55,17 @@ Getting new lists/content from Claude without retyping
   before overwriting a change Claude made.
 
 Leaders' area (volunteer rota)
-- /lab/rota.html. Not linked from the app. Shared data, private, in Netlify
-  Blobs; nothing in it is published.
-- First time: open the page, expand "First time setting this up?", enter your
-  name and the admin password. That creates the first lead and shows a code.
-- Leads add Scouters, tick which sections each can cover, and hand out codes.
-  A code signs a phone in for three months. "New code" cancels the old one;
-  removing a person signs them out at once.
-- Everyone can see the rota and tick themselves in. Only leads can tick
-  others, change the adults needed, or mark a week as no meeting.
+- Two pages, not linked from the app. Shared data, private, in Netlify Blobs;
+  nothing in it is published.
+- /lab/roster.html is the secretary's. First time: expand "First time setting
+  this up?", enter your name and the admin password. That creates the
+  secretary and shows a code. The secretary adds Scouters, ticks which
+  sections each can cover, marks section leads, and hands out codes. A code
+  signs a phone in for three months. "New code" cancels the old one; removing
+  a person signs them out at once.
+- /lab/rota.html is for everyone with a code. Section leads set the adults
+  needed, tick anyone in their sections and mark weeks off; everyone else
+  ticks themselves in. The roster shows there read-only.
 
 Note on the repo
 - It is public, and so is the site. Reverting a commit does not unpublish

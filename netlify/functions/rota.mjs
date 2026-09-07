@@ -889,7 +889,7 @@ function readToken(sec, token) {
 }
 var rosterFallback = () => ({ people: [] });
 var sectionFallback = () => ({ required: 2, slots: {} });
-var pub = (p) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead });
+var pub = (p) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary });
 var isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
 var isSlotId = (s) => typeof s === "string" && /^[me]:\d{4}-\d{2}-\d{2}(:.{1,140})?$/.test(s);
 var cleanName = (n) => String(n || "").trim().replace(/\s+/g, " ").slice(0, 60);
@@ -921,9 +921,10 @@ function createHandler(storeFactory) {
           person = doc.people.find((p) => p.name.toLowerCase() === name.toLowerCase());
           if (person) {
             person.lead = true;
+            person.secretary = true;
             person.codeHash = codeHash(sec, code);
           } else {
-            person = { id: randomBytes(4).toString("hex"), name, sections: [], lead: true, codeHash: codeHash(sec, code), createdAt: (/* @__PURE__ */ new Date()).toISOString() };
+            person = { id: randomBytes(4).toString("hex"), name, sections: [], lead: true, secretary: true, codeHash: codeHash(sec, code), createdAt: (/* @__PURE__ */ new Date()).toISOString() };
             doc.people.push(person);
           }
           return doc;
@@ -946,6 +947,8 @@ function createHandler(storeFactory) {
       const roster = await readDoc(store, "roster", rosterFallback);
       const me = roster.doc.people.find((p) => p.id === t.id);
       if (!me) return fail(401, "Please sign in.");
+      const hasSecretary = roster.doc.people.some((p) => p.secretary);
+      const canManage = !!me.secretary || !hasSecretary && !!me.lead;
       if (req.method === "GET") {
         const keys = (url.searchParams.get("sections") || "").split(",").map((s) => s.trim()).filter(isKey);
         const sections = {};
@@ -953,7 +956,9 @@ function createHandler(storeFactory) {
           const { doc } = await readDoc(store, "section/" + k, sectionFallback);
           sections[k] = { required: doc.required, slots: doc.slots, updatedAt: doc.updatedAt || null };
         }
-        return json(200, { me: pub(me), people: roster.doc.people.map(pub), sections });
+        const mine = new Set(me.sections || []);
+        const visible = me.lead || canManage ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
+        return json(200, { me: pub(me), people: visible.map(pub), sections });
       }
       if (req.method !== "POST") return fail(405, "Method not allowed.");
       const b = await body(req);
@@ -980,8 +985,8 @@ function createHandler(storeFactory) {
         });
         return json(200, { section: doc });
       }
-      if (!me.lead) return fail(403, "Only a section lead can do that.");
       if (a === "required") {
+        if (!me.lead) return fail(403, "Only a section lead can change that.");
         if (!isKey(b.section)) return fail(400, "Bad section.");
         const n = Math.round(Number(b.required));
         if (!(n >= 1 && n <= 9)) return fail(400, "Required must be 1 to 9.");
@@ -992,6 +997,7 @@ function createHandler(storeFactory) {
         });
         return json(200, { section: doc });
       }
+      if (!canManage) return fail(403, "Only the secretary can change the roster.");
       if (a === "person") {
         const name = cleanName(b.name);
         if (!name) return fail(400, "A name is needed.");
@@ -999,7 +1005,7 @@ function createHandler(storeFactory) {
         let person;
         await update(store, "roster", rosterFallback, (d) => {
           if (d.people.some((p) => p.name.toLowerCase() === name.toLowerCase())) return false;
-          person = { id: randomBytes(4).toString("hex"), name, sections: cleanSections(b.sections), lead: !!b.lead, codeHash: codeHash(sec, code), createdAt: (/* @__PURE__ */ new Date()).toISOString() };
+          person = { id: randomBytes(4).toString("hex"), name, sections: cleanSections(b.sections), lead: !!b.lead, secretary: !!b.secretary, codeHash: codeHash(sec, code), createdAt: (/* @__PURE__ */ new Date()).toISOString() };
           d.people.push(person);
           return d;
         });
@@ -1009,9 +1015,9 @@ function createHandler(storeFactory) {
       if (a === "person-update" || a === "person-remove" || a === "recode") {
         const target = roster.doc.people.find((p) => p.id === b.id);
         if (!target) return fail(404, "No such person.");
-        const leads = roster.doc.people.filter((p) => p.lead).length;
-        const losingLead = target.lead && (a === "person-remove" || a === "person-update" && "lead" in b && !b.lead);
-        if (losingLead && leads <= 1) return fail(409, "Keep at least one lead.");
+        const secretaries = roster.doc.people.filter((p) => p.secretary).length;
+        const losingSecretary = target.secretary && (a === "person-remove" || a === "person-update" && "secretary" in b && !b.secretary);
+        if (losingSecretary && secretaries <= 1) return fail(409, "Keep at least one secretary.");
         if (a === "recode") {
           const code = newCode();
           await update(store, "roster", rosterFallback, (d) => {
@@ -1033,6 +1039,7 @@ function createHandler(storeFactory) {
             }
             if ("sections" in b) person.sections = cleanSections(b.sections);
             if ("lead" in b) person.lead = !!b.lead;
+            if ("secretary" in b) person.secretary = !!b.secretary;
             return d;
           });
           return json(200, { person: pub(person) });

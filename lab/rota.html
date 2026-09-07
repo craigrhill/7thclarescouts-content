@@ -7,78 +7,7 @@
 <title>Volunteer rota: 7th Clare Scouts leaders</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-/* Palette copied from index.html. This page is not linked from the app and
-   not cached by sw.js. Everything it shows comes from the rota function and
-   needs a personal code; nothing here is public. */
-:root{
-  --stone-50:#F4F1EA;--stone-100:#E8E4DA;--stone-200:#D3CFC4;--stone-400:#9A968C;--stone-600:#5E5C55;--stone-800:#2F3134;--ink:#1E2124;
-  --sea-700:#1B4A63;--sea-500:#2E6F8E;--sea-300:#8FB7C9;--sea-100:#DCEAF0;
-  --orange:#F07800;--orange-dark:#C96300;--orange-soft:#FDE8D3;--gorse:#E3A92B;
-  --radius:16px;--shadow:0 8px 24px rgba(30,33,36,.08),0 1px 2px rgba(30,33,36,.06);
-  --serif:"Fraunces",Georgia,serif;--sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--stone-50);line-height:1.55;-webkit-font-smoothing:antialiased}
-h1,h2,h3{font-family:var(--serif);font-weight:700;line-height:1.15;margin:0 0 .4em;letter-spacing:-.01em}
-h1{font-size:1.7rem}h2{font-size:1.25rem}
-p{margin:0 0 .9em}
-.wrap{width:min(920px,100% - 2rem);margin:0 auto}
-.appbar{background:var(--sea-700);color:#fff;padding:.9rem 0 .8rem}
-.appbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:1rem}
-.brand{font-family:var(--serif);font-weight:700;font-size:1.1rem}
-.brand small{display:block;font-family:var(--sans);font-weight:500;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;opacity:.8}
-.pill{font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;background:var(--gorse);color:var(--ink);padding:.3em .7em;border-radius:999px;white-space:nowrap}
-.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:1rem 1.1rem;margin-bottom:.9rem;border:1px solid rgba(0,0,0,.03)}
-.banner{background:var(--orange-soft);border-left:4px solid var(--orange);padding:.8rem 1rem;border-radius:12px;margin:1rem 0;font-size:.92rem}
-.banner.err{background:#FBE9EC;border-color:#B0306A}
-.chips{display:flex;gap:.5rem;flex-wrap:wrap;margin:.8rem 0 1rem}
-.chip{border:1px solid var(--stone-200);background:#fff;border-radius:999px;padding:.4em 1em;font-weight:500;cursor:pointer;font:inherit}
-.chip.on{background:var(--sea-700);color:#fff;border-color:var(--sea-700)}
-.row{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
-.row label{font-weight:500}
-input[type=number]{width:4.5rem;font:inherit;padding:.35em .5em;border:1px solid var(--stone-200);border-radius:8px}
-input[type=text],input[type=password]{flex:1;min-width:10rem;font:inherit;padding:.55em .7em;border:1px solid var(--stone-200);border-radius:10px}
-.btn{font:inherit;font-weight:600;border:0;border-radius:999px;padding:.55em 1.1em;background:var(--sea-100);color:var(--sea-700);cursor:pointer}
-.btn.primary{background:var(--sea-700);color:#fff}
-.btn.quiet{background:none;color:var(--stone-600);padding:.4em .6em}
-.gaps{display:grid;gap:.4rem}
-.gap{display:flex;justify-content:space-between;gap:.6rem;padding:.5rem .7rem;border-radius:10px;background:#FBE9EC;color:#7A1F2E;font-weight:500}
-.gap.ok{background:#E9F1E4;color:#33532A}
-.count{font-variant-numeric:tabular-nums;white-space:nowrap}
-.slot{border-top:1px solid var(--stone-100);padding:.8rem 0}
-.slot:first-of-type{border-top:0}
-.slot-head{display:flex;justify-content:space-between;align-items:baseline;gap:.6rem}
-.slot-head .when{font-weight:600}
-.slot-head .sub{color:var(--stone-600);font-size:.88rem}
-.status{font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.2em .6em;border-radius:999px;white-space:nowrap}
-.status.gap{background:#FBE9EC;color:#7A1F2E}.status.ok{background:#E9F1E4;color:#33532A}.status.off{background:var(--stone-100);color:var(--stone-600)}
-.who{display:flex;flex-wrap:wrap;gap:.45rem .9rem;margin-top:.5rem}
-.who label{display:inline-flex;align-items:center;gap:.35rem;font-size:.95rem}
-.who label.me{font-weight:600}
-.who label.locked{color:var(--stone-600)}
-.who input{width:18px;height:18px;accent-color:var(--sea-700)}
-.slot-foot{display:flex;flex-wrap:wrap;align-items:center;gap:.2rem 1rem;margin-top:.45rem;font-size:.85rem;color:var(--stone-600)}
-.need{display:inline-flex;align-items:center;gap:.45rem}
-.need input{width:3.4rem;padding:.25em .4em}
-.custom{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--orange-dark);background:var(--orange-soft);padding:.15em .5em;border-radius:999px}
-.person{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .8rem;padding:.6rem 0;border-top:1px solid var(--stone-100)}
-.person:first-child{border-top:0}
-.person .nm{font-weight:600;min-width:9rem}
-.person .nm small{display:block;font-weight:500;font-size:.75rem;color:var(--orange-dark);letter-spacing:.06em;text-transform:uppercase}
-.secs{display:flex;flex-wrap:wrap;gap:.35rem}
-.secs label{display:inline-flex;align-items:center;gap:.3rem;font-size:.85rem;border:1px solid var(--stone-200);border-radius:999px;padding:.2em .65em;background:#fff;cursor:pointer}
-.secs input{accent-color:var(--sea-700);margin:0}
-.tools{margin-left:auto;display:flex;gap:.2rem}
-.add{display:grid;gap:.55rem;margin-top:.8rem}
-.code{font:700 1.6rem/1.2 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;background:var(--stone-50);padding:.6rem .9rem;border-radius:10px;display:inline-block;margin:.3rem 0}
-.muted{color:var(--stone-600)}.small{font-size:.88rem}
-.empty{color:var(--stone-400);font-style:italic;padding:.6rem 0}
-.msg{font-size:.9rem;margin:.5rem 0 0}.msg.err{color:#7A1F2E}
-details summary{cursor:pointer;font-weight:500;color:var(--sea-700)}
-footer{padding:1.5rem 0 3rem;font-size:.85rem;color:var(--stone-600)}
-[hidden]{display:none!important}
-</style>
+<link rel="stylesheet" href="rota.css">
 </head>
 <body>
 <header class="appbar"><div class="wrap">
@@ -90,29 +19,19 @@ footer{padding:1.5rem 0 3rem;font-size:.85rem;color:var(--stone-600)}
 
   <section id="gate" hidden>
     <h1>Sign in</h1>
-    <p class="muted">Enter the code your section lead gave you. It signs this phone in for three months.</p>
+    <p class="muted">Enter the code the group secretary gave you. It signs this phone in for three months.</p>
     <div class="card">
-      <div class="row"><input type="text" id="code" placeholder="XXXX-XXXX" autocapitalize="characters" autocomplete="one-time-code" spellcheck="false"><button class="btn primary" onclick="signIn()">Sign in</button></div>
+      <div class="row"><input type="text" id="code" placeholder="XXXX-XXXX" autocapitalize="characters" autocomplete="one-time-code" spellcheck="false"><button class="btn primary" onclick="signIn($('code').value, 'gateMsg', load)">Sign in</button></div>
       <p class="msg" id="gateMsg"></p>
     </div>
-    <details class="card">
-      <summary>First time setting this up?</summary>
-      <p class="small muted" style="margin-top:.6rem">The admin password (the one for the leader editor) creates the first lead and gives you a code. Do this once.</p>
-      <div class="add">
-        <input type="text" id="bootName" placeholder="Your name">
-        <input type="password" id="bootPw" placeholder="Admin password" autocomplete="current-password">
-        <div><button class="btn" onclick="bootstrap()">Create the first lead</button></div>
-      </div>
-      <p class="msg" id="bootMsg"></p>
-    </details>
+    <p class="small muted">No code? Ask the group secretary, who keeps the roster.</p>
   </section>
 
   <section id="app" hidden>
     <div class="row" style="justify-content:space-between;margin:.9rem 0 .2rem">
       <span class="small muted">Signed in as <b id="meName"></b><span id="meRole"></span></span>
-      <button class="btn quiet" onclick="signOut()">Sign out</button>
+      <span><a id="rosterLink" class="btn quiet" href="roster.html" hidden>Roster</a><button class="btn quiet" onclick="signOut()">Sign out</button></span>
     </div>
-    <div id="codeBox" class="banner" hidden></div>
 
     <h1>Who is covering what</h1>
     <p class="muted">Meetings for the next eight weeks and the section's events. Tick yourself in for the nights you can do. Anything below the number needed shows as a gap.</p>
@@ -126,43 +45,25 @@ footer{padding:1.5rem 0 3rem;font-size:.85rem;color:var(--stone-600)}
     <div class="card"><h2>Gaps</h2><div class="gaps" id="gaps"></div></div>
     <div class="card"><h2>Upcoming</h2><div id="slots"></div></div>
 
-    <div class="card" id="peopleCard">
-      <h2>Scouters</h2>
+    <div class="card">
+      <h2 id="peopleTitle">Scouters</h2>
       <p class="small muted" id="peopleNote"></p>
       <div id="people"></div>
-      <div class="add" id="addForm">
-        <input type="text" id="newName" placeholder="Name" autocomplete="off">
-        <div class="secs" id="newSecs"></div>
-        <label class="small"><input type="checkbox" id="newLead"> Section lead (can manage people and numbers)</label>
-        <div><button class="btn" onclick="addPerson()">Add and get a code</button></div>
-      </div>
     </div>
   </section>
 </main>
 <footer class="wrap">Nothing on this page is public. Codes are personal: do not share yours.</footer>
 
+<script src="rota-lib.js"></script>
 <script>
-const API = "/.netlify/functions/rota", TK = "rota-token", SK = "rota-section";
+const SK = "rota-section";
 const DAYS = { sunday:0, monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6 };
-const $ = id => document.getElementById(id);
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let C = null, D = null, token = null;
-try { token = localStorage.getItem(TK); } catch {}
-
-async function api(method, q, body, extra = {}) {
-  const h = { "Content-Type": "application/json", ...extra }; if (token) h["x-rota-token"] = token;
-  const r = await fetch(API + q, { method, headers: h, body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
-  const j = await r.json().catch(() => ({ error: "The server gave an unexpected reply." }));
-  if (r.status === 401 && token && q !== "?a=login") { signOut("Your sign-in has expired or been removed. Sign in again."); throw new Error(j.error || "Please sign in."); }
-  if (!r.ok) throw new Error(j.error || ("Error " + r.status));
-  return j;
-}
+let C = null, D = null;
 function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
 function keys(){ return C.settings.sections.map(x => x.key); }
 function sec(){ let k = null; try { k = localStorage.getItem(SK); } catch {} return keys().includes(k) ? k : keys()[0]; }
 function sectionName(k){ return (C.settings.sections.find(x => x.key === k) || {}).name || k; }
 function iso(d){ return d.toISOString().slice(0, 10); }
-function fmt(s){ return new Date(s + "T12:00:00").toLocaleDateString("en-IE", { weekday: "short", day: "numeric", month: "short" }); }
 function upcoming(k){
   const section = C.settings.sections.find(x => x.key === k) || {};
   const today = new Date(); today.setHours(12, 0, 0, 0);
@@ -181,7 +82,8 @@ const needOf = (k, id) => { const s = slotOf(k, id); return s.need > 0 ? s.need 
 
 function render(){
   const k = sec(), me = D.me, lead = !!me.lead, sect = D.sections[k] || { required: 2, slots: {} };
-  $("meName").textContent = me.name; $("meRole").textContent = lead ? ", section lead" : "";
+  $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
+  $("rosterLink").hidden = !me.secretary;
   $("chips").innerHTML = C.settings.sections.map(x => `<button class="chip ${x.key === k ? "on" : ""}" onclick="pick('${esc(x.key)}')">${esc(x.name)}</button>`).join("");
   $("req").value = sect.required; $("req").disabled = !lead;
   $("reqNote").textContent = lead ? "Applies to every meeting and event unless you change the number on that one below." : "Only a section lead can change this.";
@@ -198,19 +100,18 @@ function render(){
       return `<label class="${p.id === me.id ? "me" : ""} ${can ? "" : "locked"}"><input type="checkbox" ${on ? "checked" : ""} ${can ? "" : "disabled"} onchange="tick('${esc(k)}','${esc(x.id)}','${esc(p.id)}',this.checked)">${esc(p.name)}${p.id === me.id ? " (you)" : ""}</label>`; }).join("");
     return `<div class="slot">
       <div class="slot-head"><div><span class="when">${esc(fmt(x.date))}</span> <span class="sub">${esc(x.title)}${x.sub ? ", " + esc(x.sub) : ""}</span></div>${status}</div>
-      ${s.off ? "" : `<div class="who">${boxes || `<span class="empty">No Scouters listed for ${esc(sectionName(k))} yet.</span>`}</div>`}
+      ${s.off ? "" : `<div class="who">${boxes || `<span class="empty">No Scouters on the roster for ${esc(sectionName(k))} yet.</span>`}</div>`}
       <div class="slot-foot">
         ${s.off ? "" : lead ? `<label class="need">Adults needed <input type="number" min="1" max="9" value="${kk}" onchange="setNeed('${esc(k)}','${esc(x.id)}',this.value)">${custom ? `<span class="custom">changed</span>` : ""}</label>` : `<span>${kk} adult${kk === 1 ? "" : "s"} needed${custom ? " (set for this one)" : ""}</span>`}
         ${x.kind === "meeting" && lead ? `<label><input type="checkbox" ${s.off ? "checked" : ""} onchange="setOff('${esc(k)}','${esc(x.id)}',this.checked)"> No meeting this week</label>` : ""}
       </div>
     </div>`;
   }).join("") || `<div class="empty">Nothing coming up.</div>`;
-  $("addForm").hidden = !lead;
-  $("peopleNote").textContent = lead ? "Tick the sections each person can cover. New code gives someone a fresh code and cancels their old one." : "Your sections: " + ((me.sections || []).map(sectionName).join(", ") || "none yet") + ". Ask a section lead to change them.";
-  $("people").innerHTML = lead ? ((D.people || []).map(p => `<div class="person"><span class="nm">${esc(p.name)}${p.lead ? "<small>lead</small>" : ""}</span><span class="secs">${C.settings.sections.map(x => `<label><input type="checkbox" ${(p.sections || []).includes(x.key) ? "checked" : ""} onchange="setSections('${esc(p.id)}','${esc(x.key)}',this.checked)">${esc(x.name)}</label>`).join("")}</span><span class="tools"><label class="small" style="display:inline-flex;align-items:center;gap:.3rem"><input type="checkbox" ${p.lead ? "checked" : ""} onchange="setLead('${esc(p.id)}',this.checked)"> lead</label><button class="btn quiet" onclick="recode('${esc(p.id)}')">New code</button><button class="btn quiet" title="Remove" onclick="removePerson('${esc(p.id)}')">&#x2715;</button></span></div>`).join("") || `<div class="empty">Nobody yet. Add the first Scouter below.</div>`) : "";
-  if (lead) $("newSecs").innerHTML = C.settings.sections.map(x => `<label><input type="checkbox" ${x.key === k ? "checked" : ""} data-key="${esc(x.key)}">${esc(x.name)}</label>`).join("");
+  // The roster is the secretary's. Here it is read-only: who can cover this section.
+  $("peopleTitle").textContent = "Scouters for " + sectionName(k);
+  $("peopleNote").textContent = lead ? "From the roster the secretary keeps. To add someone or change their sections, ask the secretary." : "Your sections: " + ((me.sections || []).map(sectionName).join(", ") || "none yet") + ". To change them, ask the secretary.";
+  $("people").innerHTML = lead ? (names.map(p => `<div class="person"><span class="nm">${esc(p.name)}${p.lead ? "<small>lead</small>" : ""}</span><span class="small muted">${(p.sections || []).map(sectionName).join(", ")}</span></div>`).join("") || `<div class="empty">Nobody on the roster for ${esc(sectionName(k))} yet.</div>`) : "";
 }
-
 async function load(){ showErr(""); D = await api("GET", "?sections=" + keys().join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
 async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); } }
 function pick(k){ try { localStorage.setItem(SK, k); } catch {} render(); }
@@ -219,34 +120,10 @@ const tick = (k, id, pid, on) => guarded(async () => putSection(k, (await api("P
 const setNeed = (k, id, v) => guarded(async () => putSection(k, (await api("POST", "?a=slot", { section: k, id, need: Number(v) })).section));
 const setOff = (k, id, off) => guarded(async () => putSection(k, (await api("POST", "?a=slot", { section: k, id, off })).section));
 $("req").addEventListener("change", () => guarded(async () => putSection(sec(), (await api("POST", "?a=required", { section: sec(), required: Number($("req").value) })).section)));
-function showCode(name, code){ $("codeBox").innerHTML = `<b>Code for ${esc(name)}</b><br><span class="code" id="codeText">${esc(code)}</span><br><span class="small">Send it to them now. It is shown only once; use New code if it is lost.</span> <button class="btn" onclick="copyCode()">Copy</button> <button class="btn quiet" onclick="$('codeBox').hidden=true">Close</button>`; $("codeBox").hidden = false; $("codeBox").scrollIntoView({ block: "center" }); }
-async function copyCode(){ try { await navigator.clipboard.writeText($("codeText").textContent); } catch {} }
-const addPerson = () => guarded(async () => {
-  const name = $("newName").value.trim(); if (!name) return;
-  const sections = [...$("newSecs").querySelectorAll("input:checked")].map(i => i.dataset.key);
-  const r = await api("POST", "?a=person", { name, sections, lead: $("newLead").checked });
-  $("newName").value = ""; $("newLead").checked = false; await load(); showCode(r.person.name, r.code);
-});
-const setSections = (id, key, on) => guarded(async () => { const p = personById(id); const sections = on ? [...new Set([...(p.sections || []), key])] : (p.sections || []).filter(x => x !== key); await api("POST", "?a=person-update", { id, sections }); await load(); });
-const setLead = (id, lead) => guarded(async () => { await api("POST", "?a=person-update", { id, lead }); await load(); });
-const recode = (id) => guarded(async () => { const p = personById(id); if (!confirm("Give " + p.name + " a new code? Their old code will stop working.")) { render(); return; } const r = await api("POST", "?a=recode", { id }); showCode(p.name, r.code); });
-const removePerson = (id) => guarded(async () => { const p = personById(id); if (!confirm("Remove " + p.name + " from the rota? Their ticks are removed too.")) return; await api("POST", "?a=person-remove", { id, sections: keys() }); await load(); });
-
-async function signIn(code){
-  code = code || $("code").value; $("gateMsg").textContent = ""; $("gateMsg").className = "msg";
-  try { const r = await api("POST", "?a=login", { code }); token = r.token; try { localStorage.setItem(TK, token); } catch {} $("code").value = ""; await load(); }
-  catch (e) { $("gateMsg").textContent = e.message; $("gateMsg").className = "msg err"; }
-}
-async function bootstrap(){
-  $("bootMsg").textContent = ""; $("bootMsg").className = "msg";
-  try { const r = await api("POST", "?a=bootstrap", { name: $("bootName").value }, { "x-admin-password": $("bootPw").value }); $("bootPw").value = ""; await signIn(r.code); showCode(r.person.name, r.code); }
-  catch (e) { $("bootMsg").textContent = e.message; $("bootMsg").className = "msg err"; }
-}
-function signOut(msg){ token = null; D = null; try { localStorage.removeItem(TK); } catch {} $("app").hidden = true; $("gate").hidden = false; $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
-
+function signOut(msg){ setToken(null); D = null; $("app").hidden = true; $("gate").hidden = false; $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
+onUnauthorized = signOut;
 async function boot(){
-  try { const r = await fetch("/.netlify/functions/content", { cache: "no-store" }); const c = await r.json(); if (!c || !c.settings) throw 0; C = c; }
-  catch { C = { settings: { sections: [{ key: "scouts", name: "Scouts", day: "Thursday", time: "6:00 to 7:30 pm" }] }, events: [] }; }
+  C = await loadContent();
   if (token) { try { await load(); return; } catch (e) { if (token) showErr(e.message); } }
   $("gate").hidden = false;
 }

@@ -2,13 +2,19 @@
 //
 // Volunteer rota for the leaders' area. Everything lives in the private Netlify
 // Blobs store "rota" and nothing here is ever published. Access is by personal
-// code: a section lead issues a code to each Scouter, the code proves who they
-// are, and a signed token keeps them signed in for TOKEN_DAYS. Leads manage
-// people, numbers and anyone's ticks; everyone else may tick only themselves.
+// code, which proves who someone is; a signed token then keeps them signed in
+// for TOKEN_DAYS. Three roles, held as flags on a person:
+//   secretary  maintains the roster: people, the sections each can cover,
+//              codes. Done once, on lab/roster.html.
+//   lead       runs coverage for a section: adults needed, anyone's ticks,
+//              weeks off. On lab/rota.html.
+//   (neither)  sees the rota and ticks only themselves.
+// While no secretary exists yet (a roster created before the role did), leads
+// hold the secretary's powers, so nobody is locked out by the change.
 //
 // Keys in the store:
 //   secret          HMAC key, generated on first use, never leaves the server
-//   roster          { people: [{ id, name, sections, lead, codeHash }] }
+//   roster          { people: [{ id, name, sections, lead, secretary, codeHash }] }
 //   section/<key>   { required, slots: { <slotId>: { who: [personId], off, need } } }
 //
 // Every write is read-modify-write guarded by the document's etag, retried on
@@ -17,14 +23,14 @@
 // API (all JSON; auth by the x-rota-token header):
 //   OPTIONS                                         204
 //   GET    ?sections=a,b                            { me, people, sections }
-//   POST   ?a=bootstrap  x-admin-password  {name}   { person, code }   first lead
+//   POST   ?a=bootstrap  x-admin-password  {name}   { person, code }   first secretary
 //   POST   ?a=login                        {code}   { token, me }
 //   POST   ?a=slot     {section,id,add?,remove?,off?,need?}   { section }
 //   POST   ?a=required {section,required}                     { section }   lead
-//   POST   ?a=person   {name,sections,lead}                   { person, code }   lead
-//   POST   ?a=person-update {id,name?,sections?,lead?}        { person }   lead
-//   POST   ?a=person-remove {id,sections}                     { people }   lead
-//   POST   ?a=recode   {id}                                   { code }   lead
+//   POST   ?a=person   {name,sections,lead,secretary}         { person, code }   secretary
+//   POST   ?a=person-update {id,name?,sections?,lead?,secretary?}  { person }   secretary
+//   POST   ?a=person-remove {id,sections}                     { people }   secretary
+//   POST   ?a=recode   {id}                                   { code }   secretary
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { getStore } from "@netlify/blobs";
 
@@ -107,7 +113,7 @@ function readToken(sec, token) {
 // ---- shapes and validation ----
 const rosterFallback = () => ({ people: [] });
 const sectionFallback = () => ({ required: 2, slots: {} });
-const pub = (p) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead });
+const pub = (p) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary });
 const isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
 const isSlotId = (s) => typeof s === "string" && /^[me]:\d{4}-\d{2}-\d{2}(:.{1,140})?$/.test(s);
 const cleanName = (n) => String(n || "").trim().replace(/\s+/g, " ").slice(0, 60);
@@ -131,8 +137,8 @@ export function createHandler(storeFactory) {
         const code = newCode(); let person;
         await update(store, "roster", rosterFallback, (doc) => {
           person = doc.people.find((p) => p.name.toLowerCase() === name.toLowerCase());
-          if (person) { person.lead = true; person.codeHash = codeHash(sec, code); }
-          else { person = { id: randomBytes(4).toString("hex"), name, sections: [], lead: true, codeHash: codeHash(sec, code), createdAt: new Date().toISOString() }; doc.people.push(person); }
+          if (person) { person.lead = true; person.secretary = true; person.codeHash = codeHash(sec, code); }
+          else { person = { id: randomBytes(4).toString("hex"), name, sections: [], lead: true, secretary: true, codeHash: codeHash(sec, code), createdAt: new Date().toISOString() }; doc.people.push(person); }
           return doc;
         });
         return json(200, { person: pub(person), code });
@@ -151,12 +157,17 @@ export function createHandler(storeFactory) {
       const roster = await readDoc(store, "roster", rosterFallback);
       const me = roster.doc.people.find((p) => p.id === t.id);
       if (!me) return fail(401, "Please sign in.");
+      const hasSecretary = roster.doc.people.some((p) => p.secretary);
+      const canManage = !!me.secretary || (!hasSecretary && !!me.lead);
 
       if (req.method === "GET") {
         const keys = (url.searchParams.get("sections") || "").split(",").map((s) => s.trim()).filter(isKey);
         const sections = {};
         for (const k of keys) { const { doc } = await readDoc(store, "section/" + k, sectionFallback); sections[k] = { required: doc.required, slots: doc.slots, updatedAt: doc.updatedAt || null }; }
-        return json(200, { me: pub(me), people: roster.doc.people.map(pub), sections });
+        // Leads and the secretary see everyone. Others see the people who share a section with them, which is all coverage needs.
+        const mine = new Set(me.sections || []);
+        const visible = (me.lead || canManage) ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
+        return json(200, { me: pub(me), people: visible.map(pub), sections });
       }
       if (req.method !== "POST") return fail(405, "Method not allowed.");
       const b = await body(req);
@@ -181,21 +192,22 @@ export function createHandler(storeFactory) {
         return json(200, { section: doc });
       }
 
-      if (!me.lead) return fail(403, "Only a section lead can do that.");
-
       if (a === "required") {
+        if (!me.lead) return fail(403, "Only a section lead can change that.");
         if (!isKey(b.section)) return fail(400, "Bad section.");
         const n = Math.round(Number(b.required));
         if (!(n >= 1 && n <= 9)) return fail(400, "Required must be 1 to 9.");
         const doc = await update(store, "section/" + b.section, sectionFallback, (d) => { d.required = n; for (const s of Object.values(d.slots)) if (s.need === n) delete s.need; return d; });
         return json(200, { section: doc });
       }
+      if (!canManage) return fail(403, "Only the secretary can change the roster.");
+
       if (a === "person") {
         const name = cleanName(b.name); if (!name) return fail(400, "A name is needed.");
         const code = newCode(); let person;
         await update(store, "roster", rosterFallback, (d) => {
           if (d.people.some((p) => p.name.toLowerCase() === name.toLowerCase())) return false;
-          person = { id: randomBytes(4).toString("hex"), name, sections: cleanSections(b.sections), lead: !!b.lead, codeHash: codeHash(sec, code), createdAt: new Date().toISOString() };
+          person = { id: randomBytes(4).toString("hex"), name, sections: cleanSections(b.sections), lead: !!b.lead, secretary: !!b.secretary, codeHash: codeHash(sec, code), createdAt: new Date().toISOString() };
           d.people.push(person); return d;
         });
         if (!person) return fail(409, "Someone with that name is already on the list.");
@@ -204,9 +216,10 @@ export function createHandler(storeFactory) {
       if (a === "person-update" || a === "person-remove" || a === "recode") {
         const target = roster.doc.people.find((p) => p.id === b.id);
         if (!target) return fail(404, "No such person.");
-        const leads = roster.doc.people.filter((p) => p.lead).length;
-        const losingLead = target.lead && (a === "person-remove" || (a === "person-update" && "lead" in b && !b.lead));
-        if (losingLead && leads <= 1) return fail(409, "Keep at least one lead.");
+        // The roster must always have someone who can maintain it.
+        const secretaries = roster.doc.people.filter((p) => p.secretary).length;
+        const losingSecretary = target.secretary && (a === "person-remove" || (a === "person-update" && "secretary" in b && !b.secretary));
+        if (losingSecretary && secretaries <= 1) return fail(409, "Keep at least one secretary.");
         if (a === "recode") {
           const code = newCode();
           await update(store, "roster", rosterFallback, (d) => { const p = d.people.find((x) => x.id === b.id); if (!p) return false; p.codeHash = codeHash(sec, code); return d; });
@@ -219,6 +232,7 @@ export function createHandler(storeFactory) {
             if ("name" in b) { const n = cleanName(b.name); if (n) person.name = n; }
             if ("sections" in b) person.sections = cleanSections(b.sections);
             if ("lead" in b) person.lead = !!b.lead;
+            if ("secretary" in b) person.secretary = !!b.secretary;
             return d;
           });
           return json(200, { person: pub(person) });

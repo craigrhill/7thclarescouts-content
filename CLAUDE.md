@@ -80,8 +80,10 @@ warning fires correctly for leaders.
     lab/                experiments. Public on the site but not linked from
                         the app, not cached by sw.js, noindexed, and never
                         read by content.json. Delete a file to remove it.
-    lab/rota.html       the leaders' rota client (see below); useless
-                        without a personal code
+    lab/rota.html       the rota: coverage per section (see below)
+    lab/roster.html     the secretary's roster: people, sections, codes
+    lab/rota-lib.js     sign-in, API calls and helpers shared by both
+    lab/rota.css        styles shared by both
     docs/Sionnach_Tips.pdf
 
 Tabs: Home, Calendar, Kit, Sections, More. Home is personalised per phone via
@@ -95,20 +97,33 @@ Poulnabrone dolmen silhouette.
 
 Shared, private data behind a personal code. Nothing in it is published.
 
-    lab/rota.html  ->  netlify/functions/rota  ->  Netlify Blobs store "rota"
+    lab/roster.html (secretary)  \
+                                  ->  netlify/functions/rota  ->  Blobs store "rota"
+    lab/rota.html (leads, all)   /
 
 Store keys: `secret` (HMAC key, generated on first use, never leaves the
-server), `roster` (people with `id`, `name`, `sections`, `lead`, `codeHash`),
-`section/<key>` (`required` and `slots`, each slot `who` as person ids, `off`,
-optional `need`). Every write is guarded by the document's etag and retried on
-conflict, so concurrent edits do not overwrite each other.
+server), `roster` (people with `id`, `name`, `sections`, `lead`, `secretary`,
+`codeHash`), `section/<key>` (`required` and `slots`, each slot `who` as
+person ids, `off`, optional `need`). Every write is guarded by the document's
+etag and retried on conflict, so concurrent edits do not overwrite each other.
 
-Access: a section lead issues each Scouter a code (`XXXX-XXXX`). Logging in
-with it returns a 90-day signed token; removing a person revokes their token
-at once. Leads manage people, numbers and anyone's ticks; everyone else may
-tick only themselves. The first lead is created with the admin password
-(`?a=bootstrap`), the same password admin.html uses. The API is documented at
-the top of `netlify/src/rota.mjs`.
+Roles are flags on a person, and the function enforces them, not the pages:
+
+* **secretary** keeps the roster on `roster.html`: who is on it, which
+  sections each can cover, codes. Done once, by the group secretary. The
+  roster always keeps at least one secretary.
+* **lead** runs coverage on `rota.html`: adults needed per section and per
+  meeting, anyone's ticks, weeks off. Leads see the roster there read-only.
+* neither: sees the rota, ticks only themselves, and sees only people who
+  share a section with them.
+
+While no secretary exists (a roster from before the role did), leads hold the
+secretary's powers so nobody is locked out. The first secretary is created
+with the admin password on `roster.html` (`?a=bootstrap`); running it again
+with an existing name makes that person secretary and issues a new code.
+A code (`XXXX-XXXX`) signs a phone in for 90 days; removing a person revokes
+their token at once. The API is documented at the top of
+`netlify/src/rota.mjs`.
 
 Local preview: `npm run serve` runs the real rota handler against an
 in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
