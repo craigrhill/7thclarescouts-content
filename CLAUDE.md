@@ -68,6 +68,9 @@ warning fires correctly for leaders.
     sw.js               service worker, VERSION gates the caches
     netlify/functions/content.mjs   prebundled from content.src.js (not in repo)
     tools/apply-update.mjs          ports admin's mergeContent, --dry-run
+    tools/serve.mjs                 local preview, stands in for the
+                                    content function so the app loads
+                                    content.json instead of defaults.js
     docs/Sionnach_Tips.pdf
 
 Tabs: Home, Calendar, Kit, Sections, More. Home is personalised per phone via
@@ -86,8 +89,13 @@ Poulnabrone dolmen silhouette.
   bundled `@netlify/blobs` vendor code; the real handler is at the bottom under
   the `content.src.js` banner. The source is not in the repo, so changing the
   API means editing bundled output. Extracting it is worth doing.
-* **`tools/apply-update.mjs` duplicates `mergeContent` from `admin.html`.**
-  Change one and change the other.
+* **Two functions are duplicated across files.** `mergeContent` lives in both
+  `admin.html` and `tools/apply-update.mjs`. `mergeBuiltInKits` lives in both
+  `index.html` and `admin.html`. Change one copy and change the other.
+* **`knownKitIds` is a ledger, not a setting.** It records every built-in kit
+  list admin has already offered, so a list a leader deleted on purpose is not
+  auto-added back on the next load. Admin writes it on every save. Do not hand
+  edit it to force a list back; delete the id instead.
 * **This repo is public and so is the site.** Reverting a commit does not
   unpublish anything already fetched, cached or indexed. Treat names, contact
   details and photos of young people as one-way, and confirm with Craig before

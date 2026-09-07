@@ -616,6 +616,22 @@ let toastT; function toast(m){ $("toast").textContent = m; $("toast").classList.
 
 /* ---------- data & PWA ---------- */
 function renderAll(){ $("updatedAt").textContent = C.updatedAt ? "Updated " + fmt(C.updatedAt.slice(0,10)) : ""; route(); }
+/* Built-in kit lists are merged into saved content at read time, so a release
+   that adds a list shows up without a leader having to apply an update. Saved
+   lists always win: a list is only appended when its id is absent from the
+   saved content AND absent from knownKitIds, the ledger admin writes on save of
+   every built-in id it has already offered. That ledger is what stops a list a
+   leader deleted on purpose from reappearing on the next load. */
+function mergeBuiltInKits(saved, known){
+  const defs = window.DEFAULT_KITS || [];
+  const list = (Array.isArray(saved) && saved.length)
+    ? saved.map(k => { const d = defs.find(x => x.id === k.id); return (d && !(k.docs && k.docs.length)) ? {...k, docs: d.docs} : k; })
+    : defs.map(k => ({...k}));
+  const have = new Set(list.map(k => k.id));
+  const seen = new Set(Array.isArray(known) ? known : []);
+  defs.forEach(d => { if (!have.has(d.id) && !seen.has(d.id)) list.push({...d}); });
+  return list;
+}
 async function load(){
   renderAll();
   try {
@@ -623,7 +639,7 @@ async function load(){
     if (!r.ok) throw 0;
     const c = await r.json();
     if (c && c.settings) { C = c;
-      if (Array.isArray(c.kits) && c.kits.length) KITS = c.kits.map(k => { const d = window.DEFAULT_KITS.find(x => x.id === k.id); return (d && !(k.docs && k.docs.length)) ? {...k, docs: d.docs} : k; });
+      KITS = mergeBuiltInKits(c.kits, c.knownKitIds);
       renderAll(); }
     $("offline").classList.remove("on");
   } catch (e) { if (!navigator.onLine) $("offline").classList.add("on"); }
