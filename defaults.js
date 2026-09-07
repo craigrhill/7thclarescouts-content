@@ -36,8 +36,8 @@ window.DEFAULT_CONTENT = {
     intro: "Every young person works through the same nine Adventure Skills, from stage 1 to stage 9, whichever section they are in. You start at stage 1 no matter your age, keep the highest stage badge you have earned on your sleeve, and replace it when you move up. Most Scouts settle on two or three skills they really enjoy rather than trying all nine.",
     stages: "As a rough guide, Beavers usually reach stages 1 to 2, Cubs stages 2 to 4, Scouts stages 3 to 6 and Ventures stages 5 to 9, but the stages are not tied to sections and a keen Cub can be ahead of a new Scout.",
     placement: [
-      { area: "Right chest (as you wear it)", items: ["Scouting Ireland badge"] },
-      { area: "Left chest", items: ["World Scout badge (purple circle)"] },
+      { area: "Right chest (as you wear it)", items: ["World Scout badge (purple circle)"] },
+      { area: "Left chest", items: ["Scouting Ireland membership badge (navy circle)"] },
       { area: "Left sleeve, top to bottom", items: ["7th Clare group badge", "Clare County badge", "Section badge (Beaver, Cub, Scout, Venture)"] },
       { area: "Right sleeve, top to bottom", items: ["Adventure Skills stage badges (highest stage only, one per skill)", "Special Interest badges below them"] },
       { area: "Progress badges", items: ["[PLACEHOLDER] Confirm with your section leader where the section's progress badges (Bree, Ruarc, Conn for Beavers; Turas, Taisteal, Tagann for Cubs) are worn"] }
