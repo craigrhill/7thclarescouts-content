@@ -191,5 +191,79 @@ ok("a private event can be removed", r.j.events.length, 0);
   delete process.env.GITHUB_REPO; delete process.env.GITHUB_TOKEN; globalThis.fetch = realFetch;
   ok("a concurrent save is retried, and neither event is lost", [r.status, puts, doc.events.map(e => e.title)], [200, 2, ["Theirs", "Ours"]]); }
 
+// ---- one-way sync from the county calendar ----
+{
+  const realFetch = globalThis.fetch;
+  let feed = [
+    { id: "c1", name: "Chill Camp", start: "2030-10-02", end: "2030-10-03", sections: ["scouts"], location: "Ruan", time: "18:00", description: "County camp.", host: "County Team", link: "https://example.test/book" },
+    { id: "c2", name: "Cub Fun Day", start: "2030-11-05", sections: ["cubs"] },
+    { id: "c3", name: "Rover Ball", start: "2030-12-01", sections: ["rovers"] },
+    { id: "c4", name: "County Planning Meeting", start: "2030-09-09", sections: ["cubs", "scouts", "rovers"] },
+  ];
+  let feedFails = false;
+  globalThis.fetch = async () => feedFails ? new Response("nope", { status: 500 }) : new Response(JSON.stringify({ events: feed }), { status: 200 });
+
+  r = await call("POST", "?a=county-sync", { token: cubsLead });
+  ok("sync pulls the county events we care about", [r.status, r.j.added], [200, 3]);
+  r = await call("GET", "?sections=scouts,cubs", { token: m2 });
+  ok("a Rovers-only event is ignored", r.j.county.some(x => x.id === "c3"), false);
+  ok("the rest arrive pending", r.j.county.map(x => x.id).sort(), ["c1", "c2", "c4"]);
+  ok("nothing is on the group calendar yet", (await contentStore.get("content", { type: "json" })).events.some(e => e.countyId), false);
+
+  r = await call("GET", "?sections=scouts,cubs", { token: cubsLead });
+  ok("a lead sees only what touches their sections", r.j.county.map(x => x.id).sort(), ["c2", "c4"]);
+  r = await call("POST", "?a=county-decide", { token: cubsLead, body: { id: "c1", decision: "approve" } });
+  ok("and cannot decide for a section that is not theirs", r.status, 403);
+
+  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c1", decision: "approve" } });
+  ok("the Scouts lead approves the camp", [r.status, r.j.status], [200, "approved"]);
+  { const e = (await contentStore.get("content", { type: "json" })).events.find(x => x.countyId === "c1");
+    ok("it lands on the group calendar in the app's own shape", e, { date: "2030-10-02", title: "Chill Camp", endDate: "2030-10-03", section: "scouts", location: "Ruan", time: "18:00", details: "County camp.\n\nHosted by County Team\n\nhttps://example.test/book", countyId: "c1" }); }
+
+  r = await call("POST", "?a=county-decide", { token: cubsLead, body: { id: "c4", decision: "approve" } });
+  { const e = (await contentStore.get("content", { type: "json" })).events.find(x => x.countyId === "c4");
+    ok("a multi-section event is approved by any of its leads and goes to the whole group", [r.status, "section" in e], [200, false]); }
+
+  r = await call("POST", "?a=county-decide", { token: cubsLead, body: { id: "c2", decision: "decline" } });
+  ok("declining keeps it off the calendar", [r.j.status, (await contentStore.get("content", { type: "json" })).events.some(e => e.countyId === "c2")], ["declined", false]);
+  r = await call("POST", "?a=county-sync", { token: cubsLead });
+  ok("a later sync does not offer a declined event again", r.j.added, 0);
+  r = await call("GET", "?sections=cubs", { token: cubsLead });
+  ok("it stays visible as declined, so it can be changed later", r.j.county.find(x => x.id === "c2").status, "declined");
+
+  feed = feed.map(e => e.id === "c1" ? { ...e, location: "Tulla", start: "2030-10-09", end: "2030-10-10" } : e);
+  r = await call("POST", "?a=county-sync", { token: m2 });
+  ok("the county moving an approved event is followed without asking again", [r.j.changed, r.j.followed], [1, 1]);
+  { const e = (await contentStore.get("content", { type: "json" })).events.find(x => x.countyId === "c1");
+    ok("and the group calendar shows the new date and place", [e.date, e.endDate, e.location], ["2030-10-09", "2030-10-10", "Tulla"]); }
+
+  feed = feed.filter(e => e.id !== "c1");
+  r = await call("POST", "?a=county-sync", { token: m2 });
+  ok("an event dropped by the county is flagged, not silently deleted", r.j.gone, 1);
+  r = await call("GET", "?sections=scouts", { token: m2 });
+  ok("the flag is visible to the lead", r.j.county.find(x => x.id === "c1").gone, true);
+  ok("and it is still on the calendar until someone decides", (await contentStore.get("content", { type: "json" })).events.some(e => e.countyId === "c1"), true);
+  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c1", decision: "decline" } });
+  ok("declining a dropped event takes it off", (await contentStore.get("content", { type: "json" })).events.some(e => e.countyId === "c1"), false);
+
+  r = await call("POST", "?a=person", { token: m2, body: { name: "Plain Helper", sections: ["scouts"] } });
+  const plain = (await call("POST", "?a=login", { body: { code: r.j.code } })).j.token;
+  r = await call("POST", "?a=county-decide", { token: plain, body: { id: "c4", decision: "decline" } });
+  ok("someone who is not a lead cannot decide at all", r.status, 403);
+  r = await call("GET", "?sections=scouts", { token: plain });
+  ok("and is not shown the county list", r.j.county.length, 0);
+  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "nope", decision: "approve" } });
+  ok("an unknown county event is 404", r.status, 404);
+  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c4", decision: "sideways" } });
+  ok("an unknown decision is refused", r.status, 400);
+  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c4", decision: "reset" } });
+  ok("reset puts it back to pending and off the calendar", [r.j.status, (await contentStore.get("content", { type: "json" })).events.some(e => e.countyId === "c4")], ["pending", false]);
+
+  feedFails = true;
+  r = await call("POST", "?a=county-sync", { token: m2 });
+  ok("a county feed that is down says so plainly", [r.status, /did not answer/.test(r.j.error)], [502, true]);
+  globalThis.fetch = realFetch;
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

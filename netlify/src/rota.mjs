@@ -128,6 +128,43 @@ async function withContentEvents(storeFactory, fn) {
   }
 }
 
+// ---- one-way sync from the county calendar ----
+// We read the county's public feed and never write back to it. Each county
+// event is held here by its own id with a decision: pending until a section
+// lead approves it, approved once it has been copied onto the group calendar,
+// declined if we are not going. Only sections the group actually runs count,
+// so a Rovers-only county event never appears.
+const COUNTY_FEED = process.env.COUNTY_FEED || "https://calendar.countyclarescouts.ie/api/events";
+const countyFallback = () => ({ items: {}, syncedAt: null });
+
+// A county event, in the shape the group calendar and the app already use.
+function fromCounty(ce, ourSections) {
+  const mine = (ce.sections || []).filter((s) => ourSections.includes(s));
+  const e = { date: ce.start, title: oneLine(ce.name, 120) };
+  if (ce.end && ce.end !== ce.start) e.endDate = ce.end;
+  if (mine.length === 1) e.section = mine[0];          // several sections means whole group
+  const location = oneLine(ce.location, 120); if (location) e.location = location;
+  const time = oneLine(ce.time, 60); if (time) e.time = time;
+  const bits = [ce.description, ce.host ? "Hosted by " + ce.host : "", ce.link].filter(Boolean);
+  if (bits.length) e.details = bits.join("\n\n").trim().slice(0, 2000);
+  e.countyId = ce.id;
+  return e;
+}
+// What a lead needs to see to decide, plus enough to spot a change.
+const countyStamp = (ce) => JSON.stringify([ce.start, ce.end, ce.name, ce.time, ce.location, ce.description, ce.host, ce.link, (ce.sections || []).slice().sort()]);
+const relevant = (ce, ourSections) => {
+  const secs = ce.sections || [];
+  return secs.length === 0 || secs.some((s) => ourSections.includes(s));
+};
+async function fetchCounty() {
+  const r = await fetch(COUNTY_FEED + (COUNTY_FEED.includes("?") ? "&" : "?") + "t=" + Date.now(), { headers: { Accept: "application/json" } });
+  if (!r.ok) throw new Error("The county calendar did not answer (" + r.status + ").");
+  const j = await r.json();
+  const list = Array.isArray(j) ? j : j.events;
+  if (!Array.isArray(list)) throw new Error("The county calendar sent something unexpected.");
+  return list.filter((e) => e && e.id && e.start && e.name);
+}
+
 // ---- store access with optimistic concurrency ----
 async function readDoc(store, key, fallback) {
   const r = await store.getWithMetadata(key, { type: "json", consistency: "strong" });
@@ -260,9 +297,63 @@ export function createHandler(storeFactory) {
         const mine = new Set(me.sections || []);
         const visible = (me.lead || canManage) ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
         const { doc: ev } = await readDoc(store, "events", eventsFallback);
-        return json(200, { me: pub(me, canManage), people: visible.map((p) => pub(p, canManage)), sections, events: ev.events || [] });
+        const { doc: cd } = await readDoc(store, "county", countyFallback);
+        const ourSections = new Set(keys);
+        const county = Object.entries(cd.items || {})
+          .filter(([, it]) => {
+            if (canManage) return true;
+            if (!me.lead) return false;
+            const evs = (it.event.sections || []).filter((x) => ourSections.has(x));
+            return evs.length === 0 || evs.some((x) => mine.has(x));
+          })
+          .map(([id, it]) => ({ id, status: it.status, changed: !!it.changed, gone: !!it.gone, by: it.by || null, event: it.event }));
+        return json(200, { me: pub(me, canManage), people: visible.map((p) => pub(p, canManage)), sections, events: ev.events || [], county, countySyncedAt: cd.syncedAt || null });
       }
       if (req.method !== "POST") return fail(405, "Method not allowed.");
+      if (a === "county-sync") {
+        let content;
+        try { content = (await readContent(storeFactory)).doc; }
+        catch (e) { return fail(503, String(e.message || e)); }
+        const ourSections = (content.settings.sections || []).map((x) => x.key);
+        let feed;
+        try { feed = await fetchCounty(); } catch (e) { return fail(502, String(e.message || e)); }
+
+        const seen = new Set();
+        let added = 0, changed = 0, gone = 0;
+        const doc = await update(store, "county", countyFallback, (d) => {
+          for (const ce of feed) {
+            if (!relevant(ce, ourSections)) continue;
+            seen.add(ce.id);
+            const stamp = countyStamp(ce), was = d.items[ce.id];
+            if (!was) { d.items[ce.id] = { status: "pending", stamp, event: ce, at: new Date().toISOString() }; added++; }
+            else if (was.stamp !== stamp) { was.stamp = stamp; was.event = ce; was.changed = true; delete was.gone; changed++; }
+          }
+          for (const [id, it] of Object.entries(d.items)) {
+            if (!seen.has(id) && !it.gone) { it.gone = true; gone++; }
+            else if (seen.has(id) && it.gone) delete it.gone;
+          }
+          d.syncedAt = new Date().toISOString();
+          return d;
+        });
+        // An approved event whose county details moved is updated in place, so
+        // the group calendar follows the county without needing approval again.
+        const following = Object.values(doc.items).filter((it) => it.status === "approved" && it.changed);
+        if (following.length) {
+          await withContentEvents(storeFactory, (cdoc) => {
+            const list = Array.isArray(cdoc.events) ? [...cdoc.events] : [];
+            for (const it of following) {
+              const i = list.findIndex((e) => e.countyId === it.event.id);
+              const next = fromCounty(it.event, ourSections);
+              if (i >= 0) list[i] = next; else list.push(next);
+            }
+            list.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
+            return { events: list };
+          });
+          await update(store, "county", countyFallback, (d) => { for (const it of following) if (d.items[it.event.id]) delete d.items[it.event.id].changed; return d; });
+        }
+        return json(200, { added, changed, gone, followed: following.length, syncedAt: doc.syncedAt });
+      }
+
       const b = await body(req);
       if (!b) return fail(400, "Body must be JSON.");
 
@@ -293,6 +384,38 @@ export function createHandler(storeFactory) {
         const doc = await update(store, "section/" + b.section, sectionFallback, (d) => { d.required = n; for (const s of Object.values(d.slots)) if (s.need === n) delete s.need; return d; });
         return json(200, { section: doc });
       }
+      if (a === "county-decide") {
+        const decision = String(b.decision || "");
+        if (!["approve", "decline", "reset"].includes(decision)) return fail(400, "Unknown decision.");
+        let content;
+        try { content = (await readContent(storeFactory)).doc; }
+        catch (e) { return fail(503, String(e.message || e)); }
+        const ourSections = (content.settings.sections || []).map((x) => x.key);
+        const { doc: cdoc } = await readDoc(store, "county", countyFallback);
+        const item = cdoc.items[b.id];
+        if (!item) return fail(404, "No such county event.");
+        // A lead may decide for their own sections; the secretary for anything.
+        const evSections = (item.event.sections || []).filter((s) => ourSections.includes(s));
+        const mine = (me.sections || []);
+        const allowed = canManage || (me.lead && (evSections.length === 0 || evSections.some((s) => mine.includes(s))));
+        if (!allowed) return fail(403, "That is not one of your sections.");
+
+        const status = decision === "reset" ? "pending" : decision === "approve" ? "approved" : "declined";
+        await update(store, "county", countyFallback, (d) => {
+          const it = d.items[b.id]; if (!it) return false;
+          it.status = status; it.by = me.name; it.at = new Date().toISOString(); delete it.changed;
+          return d;
+        });
+        // Approved events go on the group calendar; anything else comes off it.
+        await withContentEvents(storeFactory, (doc) => {
+          const list = (Array.isArray(doc.events) ? doc.events : []).filter((e) => e.countyId !== b.id);
+          if (status === "approved") list.push(fromCounty(item.event, ourSections));
+          list.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
+          return { events: list };
+        });
+        return json(200, { id: b.id, status });
+      }
+
       if (!canManage) return fail(403, "Only the secretary can do that.");
 
       if (a === "event" || a === "event-update" || a === "event-remove") {
