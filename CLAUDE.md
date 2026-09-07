@@ -66,7 +66,11 @@ warning fires correctly for leaders.
     updates.json        patch shipped with a release, applied from admin
     content.json        live content, source of truth
     sw.js               service worker, VERSION gates the caches
-    netlify/functions/content.mjs   prebundled from content.src.js (not in repo)
+    netlify/src/content.mjs         the content function, edit this one
+    netlify/functions/content.mjs   built from it by `npm run build:function`;
+                                    self-contained so zip drops still work
+    tools/test-function.mjs         offline smoke test of the built function;
+                                    pass two bundles to prove equivalence
     tools/apply-update.mjs          ports admin's mergeContent, --dry-run
     tools/serve.mjs                 local preview, stands in for the
                                     content function so the app loads
@@ -85,10 +89,13 @@ Poulnabrone dolmen silhouette.
 * **The shell cache is cache-first.** `sw.js` does `return cached || net`, so a
   broken `index.html` that gets cached is served once more before a fix lands.
   Bumping `VERSION` purges old caches on activate.
-* **`content.mjs` is a build artifact.** Roughly 810 of its 894 lines are
-  bundled `@netlify/blobs` vendor code; the real handler is at the bottom under
-  the `content.src.js` banner. The source is not in the repo, so changing the
-  API means editing bundled output. Extracting it is worth doing.
+* **`netlify/functions/content.mjs` is a build artifact. Never edit it.** Edit
+  `netlify/src/content.mjs`, run `npm run build:function`, then
+  `npm run test:function`, and commit both files together. Roughly 805 of
+  its lines are bundled `@netlify/blobs` vendor code, which is deliberate: it
+  keeps the deployed function self-contained so the zip-drop fallback works.
+  `@netlify/blobs` is pinned exactly in package.json; bumping it changes the
+  vendor code, so re-run the equivalence check before committing.
 * **Two functions are duplicated across files.** `mergeContent` lives in both
   `admin.html` and `tools/apply-update.mjs`. `mergeBuiltInKits` lives in both
   `index.html` and `admin.html`. Change one copy and change the other.

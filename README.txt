@@ -18,7 +18,9 @@ What's inside
 - content.json          the live content, source of truth
 - manifest.webmanifest, icon-192.png, icon-512.png, sw.js   PWA: installable, works offline with last-saved content
 - logo.png              group logo
-- netlify/functions/content.mjs   pre-bundled Netlify Function
+- netlify/src/content.mjs         the Netlify Function source (edit this)
+- netlify/functions/content.mjs   built from it: npm run build:function
+- tools/test-function.mjs         smoke test for the function: npm run test:function
 - tools/apply-update.mjs          applies updates.json to content.json the same way admin does
 - netlify.toml
 

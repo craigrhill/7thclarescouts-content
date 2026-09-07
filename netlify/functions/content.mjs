@@ -1,3 +1,6 @@
+// netlify/src/content.mjs
+import { createHash } from "node:crypto";
+
 // node_modules/@netlify/runtime-utils/dist/main.js
 var getString = (input) => typeof input === "string" ? input : JSON.stringify(input);
 var base64Decode = globalThis.Buffer ? (input) => Buffer.from(input, "base64").toString() : (input) => atob(input);
@@ -805,8 +808,7 @@ var getStore = (input, options) => {
   );
 };
 
-// content.src.js
-import { createHash } from "node:crypto";
+// netlify/src/content.mjs
 var BUILT_IN_HASH = "e5aea01f131ba1b26c0c87bb21822cc93e73039466bf15f6cae3a1b77ac1235d";
 var STORE = "site-content";
 var KEY = "content";
@@ -847,7 +849,7 @@ async function ghWrite(g, data, message) {
   const r = await fetch(g.url, { method: "PUT", headers: { ...ghHeaders(g.token), "Content-Type": "application/json" }, body: JSON.stringify(body) });
   if (!r.ok) throw new Error(`GitHub write failed: ${r.status} ${await r.text()}`);
 }
-var content_src_default = async (req) => {
+var content_default = async (req) => {
   if (req.method === "OPTIONS") return new Response("", { status: 204, headers });
   const g = gh();
   if (req.method === "GET") {
@@ -890,5 +892,5 @@ var content_src_default = async (req) => {
   return json(405, { error: "Method not allowed." });
 };
 export {
-  content_src_default as default
+  content_default as default
 };
