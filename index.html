@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>7th Clare Scouts</title>
+<meta name="description" content="7th Clare Scout Group, Ballyvaughan: events, notices, kit lists, sections and how to join.">
+<meta name="theme-color" content="#1B4A63">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="7th Clare">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --stone-50:#F4F1EA;--stone-100:#E8E4DA;--stone-200:#D3CFC4;--stone-400:#9A968C;--stone-600:#5E5C55;--stone-800:#2F3134;--ink:#1E2124;
+  --sea-700:#1B4A63;--sea-500:#2E6F8E;--sea-300:#8FB7C9;--sea-100:#DCEAF0;
+  --orange:#F07800;--orange-dark:#C96300;--orange-soft:#FDE8D3;--cranesbill:#B0306A;--gentian:#2F55A8;--gorse:#E3A92B;--moss:#5C7A4A;
+  --radius:16px;--shadow:0 8px 24px rgba(30,33,36,.08),0 1px 2px rgba(30,33,36,.06);
+  --serif:"Fraunces",Georgia,serif;--sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --nav-h:64px;--tab-h:calc(60px + env(safe-area-inset-bottom));
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--stone-50);line-height:1.55;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:700;line-height:1.15;margin:0 0 .4em;letter-spacing:-.01em}
+h1{font-size:1.7rem}h2{font-size:1.35rem}h3{font-size:1.1rem}
+p{margin:0 0 .9em}
+a{color:var(--sea-700)}
+img{max-width:100%;display:block}
+button{font:inherit}
+.wrap{width:min(920px,100% - 2rem);margin:0 auto}
+.eyebrow{font-size:.74rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--orange-dark);margin-bottom:.4em}
+.muted{color:var(--stone-600)}
+.small{font-size:.88rem}
+
+/* App bar */
+.appbar{position:sticky;top:0;z-index:40;background:var(--sea-700);color:#fff;padding-top:env(safe-area-inset-top)}
+.appbar .wrap{display:flex;align-items:center;justify-content:space-between;height:var(--nav-h);gap:1rem}
+.brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;color:#fff;font-family:var(--serif);font-weight:700;font-size:1.1rem;line-height:1.1}
+.brand img{width:40px;height:37px;border-radius:7px;background:#fff}
+.brand small{display:block;font-family:var(--sans);font-weight:500;font-size:.68rem;color:var(--sea-300);letter-spacing:.06em;text-transform:uppercase;margin-top:.15em}
+.topnav{display:none;gap:.2rem}
+.topnav a{color:rgba(255,255,255,.85);text-decoration:none;padding:.5em .9em;border-radius:999px;font-weight:500;font-size:.95rem}
+.topnav a.on{background:rgba(255,255,255,.14);color:#fff}
+.topnav a:hover{color:#fff}
+.iconbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12);color:#fff;flex:none}
+.iconbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media (min-width:821px){.iconbtn{margin-left:.5rem}}
+.appbar .wrap{gap:.6rem}
+.my-chips{display:flex;gap:.45rem;overflow-x:auto;padding:.1rem 0 .8rem;scrollbar-width:none}
+.my-chips::-webkit-scrollbar{display:none}
+.my-chips .chip.on{background:var(--orange);border-color:var(--orange);color:#fff}
+.meet{display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
+.meet .when{font-family:var(--serif);font-weight:700;font-size:1.25rem;line-height:1.2}
+.meet .where{color:var(--stone-600);font-size:.92rem;margin-top:.15rem}
+.picker{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:.8rem 0}
+.pick{border:2px solid var(--stone-200);border-radius:14px;padding:.8rem .9rem;background:#fff;cursor:pointer;text-align:left;font:inherit}
+.pick strong{display:block;font-family:var(--serif);font-size:1.05rem}
+.pick small{color:var(--stone-600)}
+.pick.on{border-color:var(--orange);background:var(--orange-soft)}
+.pick.beavers.on{border-color:var(--orange)}.pick.cubs.on{border-color:var(--moss)}.pick.scouts.on{border-color:var(--gentian)}.pick.ventures.on{border-color:var(--cranesbill)}
+
+/* Tab bar (mobile) */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border-top:1px solid var(--stone-200);display:grid;grid-template-columns:repeat(5,1fr);height:var(--tab-h);padding-bottom:env(safe-area-inset-bottom)}
+.tabbar a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:var(--stone-600);font-size:.68rem;font-weight:600;letter-spacing:.02em}
+.tabbar a svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar a.on{color:var(--orange-dark)}
+.tabbar a.on svg{stroke:var(--orange)}
+main{padding:1rem 0 calc(var(--tab-h) + 1.5rem);min-height:calc(100vh - var(--nav-h))}
+@media (min-width:821px){
+  .tabbar{display:none}
+  .topnav{display:flex}
+  main{padding-bottom:3rem}
+  h1{font-size:2.1rem}
+}
+
+/* Views */
+.view{display:none;animation:fade .18s ease}
+.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.page-head{margin:.6rem 0 1rem}
+.page-head p{color:var(--stone-600);margin:0}
+
+/* Cards */
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem 1.15rem;margin-bottom:.9rem;border:1px solid rgba(0,0,0,.03)}
+.card.tap{cursor:pointer;transition:transform .12s}
+.card.tap:active{transform:scale(.99)}
+.card h2{font-size:1.15rem;margin-bottom:.5em}
+.card-row{display:flex;align-items:center;gap:.9rem}
+.card-row .grow{flex:1;min-width:0}
+.chev{color:var(--stone-400);flex:none}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;margin:1.2rem 0 .6rem}
+.sec-head h2{font-size:1.15rem;margin:0}
+.sec-head a{font-size:.88rem;font-weight:600;text-decoration:none}
+.notice{background:var(--sea-100);border-left:5px solid var(--sea-500);border-radius:12px;padding:.85rem 1rem;margin-bottom:.7rem}
+.notice strong{display:block;font-family:var(--serif);font-size:1.05rem}
+.notice p{margin:0;color:var(--stone-800);font-size:.95rem}
+.join{background:linear-gradient(135deg,var(--orange),#FF9A3C);color:#fff;border:0}
+.join h2{color:#fff}.join p{color:rgba(255,255,255,.92)}
+.join .btn{background:#fff;color:var(--orange-dark)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.45em;padding:.65em 1.15em;border-radius:999px;font-weight:600;text-decoration:none;border:1px solid var(--stone-200);background:#fff;color:var(--sea-700);cursor:pointer;font-size:.92rem;line-height:1.2}
+.btn.primary{background:var(--sea-700);color:#fff;border-color:var(--sea-700)}
+.btn.orange{background:var(--orange);color:#fff;border-color:var(--orange)}
+.btn.block{width:100%}
+.btn-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem}
+.chips{display:flex;gap:.45rem;overflow-x:auto;padding:.2rem 0 .6rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--stone-200);background:#fff;border-radius:999px;padding:.4em .95em;font-size:.85rem;font-weight:600;color:var(--stone-800);cursor:pointer}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tag{display:inline-block;font-size:.66rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.15em .55em;border-radius:999px;background:var(--stone-100);color:var(--stone-600);vertical-align:middle}
+.tag.beavers{background:#FDE8D3;color:#8A4A00}.tag.cubs{background:#E3ECDC;color:#3B5530}.tag.scouts{background:#DDE4F5;color:#23407F}.tag.ventures{background:#F5DCE8;color:#7E1F4B}.tag.group{background:var(--sea-100);color:var(--sea-700)}.tag.county{background:#EEE8F7;color:#4E3A8C}
+
+/* Events */
+.month{font-size:.74rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--stone-400);margin:1.2rem 0 .5rem}
+.event{display:grid;grid-template-columns:56px 1fr auto;gap:.8rem;align-items:center;background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:.75rem .9rem;margin-bottom:.55rem;cursor:pointer;border:1px solid rgba(0,0,0,.03)}
+.event:active{transform:scale(.99)}
+.date{background:var(--stone-50);border-radius:10px;text-align:center;padding:.35rem 0;line-height:1.05;border:1px solid var(--stone-100)}
+.date b{display:block;font-size:1.35rem;font-family:var(--serif)}
+.date small{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:var(--stone-600)}
+.event h4{font-family:var(--sans);font-size:.98rem;margin:0 0 .15em;font-weight:600}
+.event .sub{font-size:.82rem;color:var(--stone-600);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.event.past{opacity:.6}
+.empty{color:var(--stone-400);font-style:italic;padding:1rem 0;text-align:center}
+
+/* Sheet (detail) */
+.sheet-bg{position:fixed;inset:0;background:rgba(30,33,36,.45);z-index:60;display:none;align-items:flex-end;justify-content:center}
+.sheet-bg.on{display:flex}
+.sheet{background:#fff;width:min(560px,100%);max-height:88vh;overflow:auto;border-radius:22px 22px 0 0;padding:1rem 1.2rem calc(1.2rem + env(safe-area-inset-bottom));animation:up .22s ease;box-shadow:0 -10px 40px rgba(0,0,0,.2)}
+@media (min-width:821px){.sheet-bg{align-items:center}.sheet{border-radius:22px;max-height:80vh}}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.handle{width:40px;height:4px;border-radius:2px;background:var(--stone-200);margin:0 auto .9rem}
+.sheet h2{font-size:1.35rem}
+.kv{display:grid;grid-template-columns:22px 1fr;gap:.5rem .6rem;align-items:start;color:var(--stone-600);font-size:.95rem;margin:.6rem 0 1rem}
+.kv svg{width:20px;height:20px;stroke:var(--sea-500);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;margin-top:.1em}
+
+/* Sections */
+.section-card{border-top:5px solid var(--sea-500)}
+.section-card.beavers{border-top-color:var(--orange)}.section-card.cubs{border-top-color:var(--moss)}.section-card.scouts{border-top-color:var(--gentian)}.section-card.ventures{border-top-color:var(--cranesbill)}
+.age{font-size:.74rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--stone-400)}
+.steps{counter-reset:s;display:grid;gap:.9rem;margin:.5rem 0}
+.step{display:grid;grid-template-columns:36px 1fr;gap:.8rem;align-items:start}
+.step::before{counter-increment:s;content:counter(s);width:36px;height:36px;border-radius:50%;background:var(--orange);color:#fff;display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:1.05rem}
+.step h3{font-size:1rem;margin:.25em 0 .15em}.step p{margin:0;color:var(--stone-600);font-size:.93rem}
+.placeholder{background:#FFF6D6;border:1px dashed var(--gorse);color:#6B4F00;border-radius:8px;padding:.1em .45em;font-size:.85em}
+
+/* Contact */
+.mapcard{border-radius:14px;overflow:hidden;border:1px solid var(--stone-200);background:var(--stone-50);margin-bottom:.8rem}
+.mapcard iframe{display:block;width:100%;height:190px;border:0}
+.mapbar{display:flex;justify-content:space-between;align-items:center;gap:.6rem;padding:.6rem .85rem;font-size:.9rem}
+.mapbar small{display:block;color:var(--stone-600);font-weight:400}
+.mapbar strong{display:block}
+
+/* Kit */
+.kit-toolbar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:0 0 .9rem}
+.progress{font-size:.9rem;color:var(--stone-600)}.progress b{color:var(--ink)}
+.bar{height:6px;border-radius:3px;background:var(--stone-100);overflow:hidden;margin:.4rem 0 1rem}
+.bar i{display:block;height:100%;background:var(--orange);transition:width .2s}
+.groups{columns:2;column-gap:1.6rem}.group{break-inside:avoid;margin-bottom:1rem}
+@media (max-width:700px){.groups{columns:1}}
+.group h3{font-size:1rem;margin-bottom:.3em;padding-bottom:.25em;border-bottom:2px solid var(--stone-100)}
+.item{display:grid;grid-template-columns:24px 1fr;gap:.55rem;align-items:start;padding:.4rem 0;border-bottom:1px solid var(--stone-100)}
+.item:last-child{border-bottom:0}
+.item input{width:20px;height:20px;margin:.15em 0 0;accent-color:var(--orange);cursor:pointer}
+.item label{cursor:pointer}.item .n{font-weight:600}
+.item .note{display:block;font-size:.86rem;color:var(--stone-600)}
+.item.done .n{text-decoration:line-through;color:var(--stone-400)}
+.must{display:inline-block;font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.1em .5em;border-radius:999px;background:var(--orange-soft);color:var(--orange-dark);margin-left:.4em;vertical-align:middle}
+ul.plain{margin:0;padding-left:1.15em;color:var(--stone-600)}ul.plain li{margin:.3em 0}
+.back{display:inline-flex;align-items:center;gap:.3em;text-decoration:none;font-weight:600;font-size:.9rem;margin-bottom:.6rem}
+.print-foot{display:none}
+.toast{position:fixed;left:50%;bottom:calc(var(--tab-h) + 1rem);transform:translateX(-50%);background:var(--ink);color:#fff;padding:.6em 1.1em;border-radius:999px;font-size:.9rem;z-index:70;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+@media (min-width:821px){.toast{bottom:1.5rem}}
+.offline{background:var(--gorse);color:#3a2a00;font-size:.85rem;text-align:center;padding:.4em;display:none}
+.offline.on{display:block}
+.install{display:none}
+.install.on{display:block}
+
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff;font-size:10.5pt}
+  .appbar,.tabbar,.kit-toolbar,.bar,.back,.toast,.card.tips,.card.docs,.view:not(#v-kit),.iconbtn,.kit-legend,.offline{display:none!important}
+  main{padding:0}.wrap{width:100%}
+  .card{box-shadow:none;border:0;padding:0;margin:0 0 .7rem;break-inside:avoid}
+  .card.items{break-inside:auto}
+  .print-head{display:block!important;border-bottom:2px solid var(--ink);padding-bottom:.3rem;margin-bottom:.5rem}
+  .print-head h1{font-size:18pt;margin:0}
+  .groups{columns:2;column-gap:1.4rem}
+  .group h3{font-size:10.5pt;border-bottom:1px solid #999}
+  .item{padding:.1rem 0;border-bottom:0;grid-template-columns:16px 1fr;gap:.4rem}
+  .item input{width:12px;height:12px}
+  .item .note{font-size:8.5pt;color:#555}
+  .item.done .n{text-decoration:none;color:var(--ink)}
+  .must{border:1px solid #999;background:none;color:#333}
+  .card.dont ul{columns:2}
+  .print-foot{display:block!important;margin-top:.8rem;font-size:8.5pt;color:#555;border-top:1px solid #999;padding-top:.3rem}
+}
+.print-head{display:none}
+.menu a{display:flex;align-items:center;gap:.9rem;background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:.9rem 1rem;margin-bottom:.55rem;text-decoration:none;color:var(--ink);border:1px solid rgba(0,0,0,.03)}
+.menu a svg{width:22px;height:22px;stroke:var(--sea-500);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.menu a .grow{flex:1}.menu a small{display:block;color:var(--stone-600);font-weight:400}
+.menu a strong{font-weight:600}
+.person{display:flex;align-items:center;gap:.8rem;padding:.6rem 0;border-bottom:1px solid var(--stone-100)}
+.person:last-child{border-bottom:0}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--sea-100);color:var(--sea-700);display:grid;place-items:center;font-family:var(--serif);font-weight:700;flex:none}
+.person .role{font-size:.85rem;color:var(--stone-600)}
+.goal{display:flex;justify-content:space-between;font-size:.85rem;color:var(--stone-600);margin-top:.5rem}
+.goal b{color:var(--ink)}
+.sponsors{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.7rem}
+.sponsor{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:.9rem;text-align:center;text-decoration:none;color:var(--ink);font-weight:600;font-size:.9rem;display:flex;flex-direction:column;align-items:center;gap:.5rem;justify-content:center;min-height:90px}
+.sponsor img{max-height:48px;width:auto}
+.necker-card{display:grid;grid-template-columns:150px 1fr;gap:1rem;align-items:center;background:linear-gradient(135deg,#fff,var(--stone-50))}
+.necker svg{width:100%;height:auto;display:block}
+@media (max-width:480px){.necker-card{grid-template-columns:1fr}.necker{max-width:220px;margin:0 auto}}
+.hero-card{background:var(--sea-700);color:#fff;border:0}
+.hero-card h2,.hero-card p{color:#fff}.hero-card p{opacity:.9}
+</style>
+</head>
+<body>
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="#home"><img src="logo.png" alt=""><span>7th Clare Scouts<small>Ballyvaughan · The Burren</small></span></a>
+    <nav class="topnav" id="topnav">
+      <a href="#home" data-tab="home">Home</a><a href="#calendar" data-tab="calendar">Calendar</a><a href="#kit" data-tab="kit">Kit</a><a href="#sections" data-tab="sections">Sections</a><a href="#more" data-tab="more">More</a>
+    </nav>
+    <a class="iconbtn" href="#more/contact" aria-label="Contact"><svg viewBox="0 0 24 24"><path d="M12 22s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></a>
+  </div>
+</header>
+<div class="offline" id="offline">You're offline. Showing the last saved content.</div>
+
+<main class="wrap">
+  <!-- HOME -->
+  <section class="view" id="v-home">
+    <div id="homeBody"></div>
+  </section>
+
+  <!-- CALENDAR -->
+  <section class="view" id="v-calendar">
+    <div class="page-head"><h1>Calendar</h1><p>Every event, every section. Tap one for details.</p></div>
+    <div id="calBody"></div>
+  </section>
+
+  <!-- KIT -->
+  <section class="view" id="v-kit">
+    <div id="kitIndex">
+      <div class="page-head"><h1>Kit lists</h1><p>Tick things off as you pack. Ticks save on this phone, so each Scout can use their own.</p></div>
+      <div id="kitCards"></div>
+    </div>
+    <div id="kitDetail" style="display:none"></div>
+  </section>
+
+  <!-- SECTIONS -->
+  <section class="view" id="v-sections">
+    <div id="secIndex">
+      <div class="page-head"><h1>Sections</h1><p>Tap a section for meeting details and its calendar.</p></div>
+      <div id="sectionCards"></div>
+    </div>
+    <div id="secDetail" style="display:none"></div>
+  </section>
+
+  <!-- MORE -->
+  <section class="view" id="v-more">
+    <div id="moreIndex">
+      <div class="page-head"><h1>More</h1></div>
+      <div id="moreMenu"></div>
+      <p class="small muted" style="text-align:center;margin-top:2rem">Part of <a href="https://www.scouts.ie" target="_blank" rel="noopener">Scouting Ireland</a> · <a href="admin.html">Leaders</a> · <span id="updatedAt"></span></p>
+    </div>
+    <div id="moreDetail" style="display:none"></div>
+  </section>
+</main>
+
+<nav class="tabbar" id="tabbar">
+  <a href="#home" data-tab="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Home</a>
+  <a href="#calendar" data-tab="calendar"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Calendar</a>
+  <a href="#kit" data-tab="kit"><svg viewBox="0 0 24 24"><path d="M6 8h12l1 12H5z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M9 13l2 2 4-4"/></svg>Kit</a>
+  <a href="#sections" data-tab="sections"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 18a4 4 0 0 1 7 0"/></svg>Sections</a>
+  <a href="#more" data-tab="more"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More</a>
+</nav>
+
+<div class="sheet-bg" id="sheetBg" onclick="if(event.target===this)closeSheet()"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="defaults.js"></script>
+<script src="kit-defaults.js"></script>
+<script>
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ph = s => esc(s).replace(/\[PLACEHOLDER\]\s*/g, '<span class="placeholder">placeholder</span> ');
+const paras = s => String(s||"").split(/\n\s*\n/).map(p=>`<p>${ph(p)}</p>`).join("");
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS_L = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const D = s => new Date(s+"T00:00:00");
+const fmt = s => { const d = D(s); return isNaN(d) ? esc(s) : `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
+const fmtShort = s => { const d = D(s); return `${d.getDate()} ${MONTHS[d.getMonth()]}`; };
+const today = () => { const t = new Date(); t.setHours(0,0,0,0); return t; };
+const ICON = {
+  cal:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>',
+  clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  pin:'<svg viewBox="0 0 24 24"><path d="M12 22s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+  mail:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+  phone:'<svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>',
+  users:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 18a4 4 0 0 1 7 0"/></svg>',
+  chev:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>'
+};
+let C = window.DEFAULT_CONTENT, KITS = window.DEFAULT_KITS;
+let eventFilter = "all", showPast = false;
+
+/* ---------- routing ---------- */
+const TABS = ["home","calendar","kit","sections","more"];
+function route(){
+  const h = location.hash.replace(/^#/,"") || "home";
+  const [tab, ...rest] = h.split("/");
+  let t = TABS.includes(tab) ? tab : "home";
+  let sub = rest[0];
+  if (tab === "events") { t = "calendar"; sub = null; }
+  if (tab === "contact") { t = "more"; sub = "contact"; }
+  if (tab === "fundraising") { t = "more"; sub = "fundraising"; }
+  if (tab === "more" && sub === "calendar") { t = "calendar"; sub = null; }
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + t));
+  document.querySelectorAll("[data-tab]").forEach(a => a.classList.toggle("on", a.dataset.tab === t));
+  closeSheet();
+  if (t === "home") renderHome();
+  if (t === "calendar") renderCalendar();
+  if (t === "kit") { sub ? showKit(sub) : showKitIndex(); }
+  if (t === "sections") { sub ? showSection(sub) : showSectionIndex(); }
+  if (t === "more") { sub ? showMore(sub) : showMoreIndex(); }
+  if (tab === "events" && rest[0]) openEvent(rest[0]);
+  window.scrollTo({top:0});
+  document.title = (t === "home" ? "" : t[0].toUpperCase() + t.slice(1) + " · ") + "7th Clare Scouts";
+}
+window.addEventListener("hashchange", route);
+
+/* ---------- events ---------- */
+function eventsSorted(){ return (C.events||[]).map((e,i)=>({...e,_i:i})).sort((a,b)=>a.date.localeCompare(b.date)); }
+function isPast(e){ return D(e.endDate||e.date) < today(); }
+function matches(e){ if (eventFilter === "all") return true; if (eventFilter === "county") return /county/i.test(e.title); return (e.section||"group") === eventFilter; }
+function eventCard(e){
+  const d = D(e.date), range = e.endDate && e.endDate !== e.date ? `${fmtShort(e.date)} to ${fmtShort(e.endDate)}` : DAYS[d.getDay()];
+  const sub = [range, e.location].filter(Boolean).join(" · ");
+  return `<div class="event ${isPast(e)?"past":""}" onclick="location.hash='events/${e._i}'">
+    <div class="date"><b>${d.getDate()}</b><small>${MONTHS[d.getMonth()]}</small></div>
+    <div style="min-width:0"><h4>${esc(e.title)} <span class="tag ${esc(e.section||"group")}">${esc(e.section||"group")}</span></h4><p class="sub">${esc(sub)}</p></div>
+    <span class="chev">${ICON.chev}</span></div>`;
+}
+function eventListHtml(list){
+  if (!list.length) return `<div class="empty">Nothing listed yet.</div>`;
+  let out = "", lastM = "";
+  list.forEach(e => { const d = D(e.date), m = `${MONTHS_L[d.getMonth()]} ${d.getFullYear()}`; if (m !== lastM) { out += `<div class="month">${m}</div>`; lastM = m; } out += eventCard(e); });
+  return out;
+}
+function renderCalendar(){
+  const secs = [["all","All"],["group","Group"],["beavers","Beavers"],["cubs","Cubs"],["scouts","Scouts"],["ventures","Ventures"]];
+  let list = eventsSorted().filter(matches); if (!showPast) list = list.filter(e => !isPast(e));
+  $("calBody").innerHTML = `<div class="chips">${secs.map(([k,l]) => `<button class="chip ${eventFilter===k?"on":""}" onclick="eventFilter='${k}';renderCalendar()">${l}</button>`).join("")}</div>
+    ${eventListHtml(list)}<p style="text-align:center;margin-top:1rem"><button class="btn" onclick="showPast=!showPast;renderCalendar()">${showPast?"Hide past events":"Show past events"}</button></p>`;
+}
+function sectionEvents(key){ return eventsSorted().filter(e => !isPast(e) && ((e.section||"group") === key || (e.section||"group") === "group")); }
+function openEvent(i){
+  const e = (C.events||[])[+i]; if (!e) return;
+  const when = e.endDate && e.endDate !== e.date ? `${fmt(e.date)} to ${fmt(e.endDate)}` : fmt(e.date);
+  const ics = makeIcs(e);
+  openSheet(`<div class="handle"></div><span class="tag ${esc(e.section||"group")}">${esc(e.section||"group")}</span><h2 style="margin-top:.5rem">${esc(e.title)}</h2>
+    <div class="kv">${ICON.cal}<span>${when}</span>${e.time?`${ICON.clock}<span>${esc(e.time)}</span>`:""}${e.location?`${ICON.pin}<span>${esc(e.location)}</span>`:""}</div>
+    ${e.details?`<p>${ph(e.details)}</p>`:""}
+    ${e.kitId && KITS.find(k=>k.id===e.kitId) ? `<a class="btn orange block" href="#kit/${esc(e.kitId)}" style="margin-bottom:.4rem" onclick="closeSheet()">Kit list for this event</a>` : ""}
+    <div class="btn-row"><a class="btn" href="${ics}" download="${esc(e.title.replace(/[^\w]+/g,"-"))}.ics">Add to calendar</a><button class="btn" onclick="share('${esc(e.title)}','events/${i}')">Share</button><button class="btn primary" onclick="closeSheet()">Done</button></div>`);
+}
+function makeIcs(e){
+  const s = e.date.replace(/-/g,""), end = D(e.endDate||e.date); end.setDate(end.getDate()+1);
+  const en = end.toISOString().slice(0,10).replace(/-/g,"");
+  const body = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//7th Clare Scouts//EN","BEGIN:VEVENT",`UID:7thclare-${s}-${e._i||0}@7thclarescouts.ie`,`DTSTART;VALUE=DATE:${s}`,`DTEND;VALUE=DATE:${en}`,`SUMMARY:${e.title}`,`DESCRIPTION:${(e.details||"").replace(/\n/g,"\\n")}`,e.location?`LOCATION:${e.location}`:"","END:VEVENT","END:VCALENDAR"].filter(Boolean).join("\r\n");
+  return "data:text/calendar;charset=utf-8," + encodeURIComponent(body);
+}
+
+/* ---------- home ---------- */
+const NECKER = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="7th Clare neckerchief, orange with a black border">  <defs>    <linearGradient id="or" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF8A1F"/><stop offset="1" stop-color="#E86E00"/></linearGradient>    <linearGradient id="sh" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".18"/><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient>    <filter id="soft" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#1E2124" flood-opacity=".22"/></filter>  </defs>  <!-- rolled top edge -->  <g filter="url(#soft)">    <path d="M20 60 Q200 30 380 60 L380 82 Q200 56 20 82 Z" fill="#1E2124"/>    <!-- main triangle with black border -->    <path d="M28 72 Q200 44 372 72 L200 268 Z" fill="#1E2124"/>    <path d="M52 82 Q200 58 348 82 L200 244 Z" fill="url(#or)"/>    <path d="M52 82 Q200 58 348 82 L200 244 Z" fill="url(#sh)"/>    <!-- fold highlight -->    <path d="M200 244 L200 70" stroke="#fff" stroke-opacity=".18" stroke-width="3"/>  </g>  <!-- woggle -->  <g transform="translate(200 46)">    <rect x="-22" y="-14" width="44" height="30" rx="8" fill="#5B3A1E"/>    <rect x="-22" y="-14" width="44" height="30" rx="8" fill="none" stroke="#2E1A0A" stroke-width="3"/>    <path d="M-12 -4 h24 M-12 6 h24" stroke="#8A5A32" stroke-width="3" stroke-linecap="round"/>  </g></svg>`;
+const SECTION_KEYS = ["beavers","cubs","scouts","ventures"];
+function getMy(){ try { const v = JSON.parse(localStorage.getItem("my-sections")||"null"); return Array.isArray(v) ? v.filter(k=>SECTION_KEYS.includes(k)) : null; } catch { return null; } }
+function setMy(arr){ try { localStorage.setItem("my-sections", JSON.stringify(arr)); } catch {} }
+let focus = (()=>{ try { return localStorage.getItem("my-focus") || "all"; } catch { return "all"; } })();
+function setFocus(k){ focus = k; try { localStorage.setItem("my-focus", k); } catch {} renderHome(); }
+let picking = null;
+function togglePick(k){ picking = picking || []; picking = picking.includes(k) ? picking.filter(x=>x!==k) : [...picking, k]; renderHome(); }
+function savePick(){ setMy(picking||[]); focus = (picking||[]).length === 1 ? picking[0] : "all"; try { localStorage.setItem("my-focus", focus); } catch {} picking = null; toast("Home set up"); renderHome(); }
+function startPick(){ picking = (getMy()||[]).slice(); renderHome(); window.scrollTo({top:0}); }
+function toggleMySection(k){ const my = getMy()||[]; const next = my.includes(k) ? my.filter(x=>x!==k) : [...my,k]; setMy(next); if (!next.includes(focus)) focus = next.length===1 ? next[0] : "all"; try { localStorage.setItem("my-focus", focus); } catch {} showSection(k); toast(next.includes(k) ? "Added to your Home" : "Removed from your Home"); }
+
+function sectionName(k){ const x = (C.settings.sections||[]).find(z=>z.key===k); return x ? x.name : k; }
+function noticesHtml(){ return (C.notices||[]).map(n => `<div class="notice"><strong>${esc(n.title)}</strong><p>${ph(n.body)}</p></div>`).join(""); }
+function newsHtml(){ const news = (C.news||[]).slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
+  return news.length ? `<div class="sec-head"><h2>News</h2></div>` + news.map(n => `<div class="card"><div class="eyebrow" style="color:var(--stone-400)">${fmt(n.date)}</div><h3>${esc(n.title)}</h3><p style="margin:0" class="muted">${ph(n.body)}</p></div>`).join("") : ""; }
+function installHtml(){ return `<div class="card install" id="installCard"><div class="card-row"><div class="grow"><strong>Add to your home screen</strong><div class="small muted">Get the app icon and read events and kit lists offline.</div></div><button class="btn primary" id="installBtn" onclick="doInstall()">Install</button></div></div>`; }
+function pickerHtml(first){
+  const my = picking || [];
+  return `<div class="card"><div class="eyebrow">${first?"Welcome":"Your sections"}</div><h2 style="margin-bottom:.2em">${first?"Which sections are you in?":"Update your sections"}</h2><p class="muted small" style="margin:0">Pick every section your family is in. Home will show their meeting times, events and kit first. You can change this any time.</p>
+    <div class="picker">${(C.settings.sections||[]).map(x => `<button class="pick ${esc(x.key)} ${my.includes(x.key)?"on":""}" onclick="togglePick('${esc(x.key)}')"><strong>${esc(x.name)}</strong><small>${esc(x.ages)}</small></button>`).join("")}</div>
+    <div class="btn-row"><button class="btn orange" onclick="savePick()">${my.length?"Save":"Skip for now"}</button>${first?"":`<button class="btn" onclick="picking=null;renderHome()">Cancel</button>`}</div>
+    ${first?`<p class="small muted" style="margin:.9rem 0 0">Not a member yet? <a href="#more/join">Find out how to join</a>.</p>`:""}</div>`;
+}
+function contextCard(keys){
+  // kit list for an event inside 3 weeks, else an active campaign
+  const soon = new Date(); soon.setDate(soon.getDate()+21);
+  const ev = eventsSorted().find(e => !isPast(e) && e.kitId && KITS.find(k=>k.id===e.kitId) && D(e.date) <= soon && (keys==="all" || keys.includes(e.section||"group") || (e.section||"group")==="group"));
+  if (ev) { const k = KITS.find(x=>x.id===ev.kitId), all = k.groups.flatMap(g=>g.items), t = loadTicks(k.id), done = all.filter(it=>t[itemKey(k,it)]).length;
+    return `<div class="card tap" onclick="location.hash='kit/${esc(k.id)}'" style="border-left:5px solid var(--orange)"><div class="card-row"><div class="grow"><div class="eyebrow">Packing for ${esc(ev.title)} · ${fmtShort(ev.date)}</div><h2 style="margin:0 0 .2em">${esc(k.title)} kit list</h2><div class="small" style="color:var(--orange-dark);font-weight:600">${done} of ${all.length} packed</div></div><span class="chev">${ICON.chev}</span></div></div>`; }
+  const f = C.fundraising||{}; const c = (f.campaigns||[]).find(c => c.title && (+c.goal||0) > (+c.raised||0));
+  if (c) { const g = +c.goal||0, r = +c.raised||0, pct = g?Math.min(100,Math.round(r/g*100)):0;
+    return `<div class="card tap" onclick="location.hash='more/fundraising'"><div class="card-row"><div class="grow"><div class="eyebrow">Fundraising</div><h2 style="margin:0 0 .3em">${ph(c.title)}</h2><div class="bar" style="margin:.3rem 0 .2rem"><i style="width:${pct}%"></i></div><div class="goal"><span><b>€${r.toLocaleString()}</b> raised</span><span>Goal €${g.toLocaleString()}</span></div></div><span class="chev">${ICON.chev}</span></div></div>`; }
+  return "";
+}
+function renderHome(){
+  const my = getMy();
+  let html = installHtml();
+  if (picking !== null || my === null) { html += pickerHtml(my === null) + noticesHtml(); if (my === null) { const next = eventsSorted().filter(e=>!isPast(e)).slice(0,3); html += `<div class="sec-head"><h2>Coming up</h2><a href="#calendar">Calendar</a></div>` + (next.length?next.map(eventCard).join(""):`<div class="empty">No upcoming events yet.</div>`) + newsHtml(); } $("homeBody").innerHTML = html; return; }
+  const keys = my.length ? my : [];
+  if (!keys.includes(focus) && focus !== "all") focus = "all";
+  const shown = focus === "all" ? keys : [focus];
+  if (keys.length > 1) html += `<div class="my-chips"><button class="chip ${focus==="all"?"on":""}" onclick="setFocus('all')">All</button>${keys.map(k=>`<button class="chip ${focus===k?"on":""}" onclick="setFocus('${k}')">${esc(sectionName(k))}</button>`).join("")}</div>`;
+  html += noticesHtml();
+  // meeting cards
+  shown.forEach(k => { const x = (C.settings.sections||[]).find(z=>z.key===k); if (!x) return; const v = (C.settings.venues||[]).find(v=>v.name===x.venue); const dir = v ? (v.link || `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(v.query)}`) : "";
+    html += `<div class="card section-card ${esc(k)}"><div class="meet"><div><div class="eyebrow">${esc(x.name)} meets</div><div class="when">${ph(x.day)}, ${ph(x.time)}</div><div class="where">${ph(x.venue||"")}</div></div><div style="display:grid;gap:.4rem">${dir?`<a class="btn primary" href="${esc(dir)}" target="_blank" rel="noopener">Directions</a>`:""}<a class="btn" href="#sections/${esc(k)}">Section</a></div></div></div>`; });
+  if (!keys.length) html += `<div class="card"><p class="muted" style="margin:0">No sections chosen. <a href="#" onclick="startPick();return false">Pick your sections</a> to personalise Home.</p></div>`;
+  // events
+  const list = eventsSorted().filter(e => !isPast(e) && (!keys.length || shown.includes(e.section||"group") || (e.section||"group")==="group")).slice(0,4);
+  html += `<div class="sec-head"><h2>Next up${focus!=="all"?" for "+esc(sectionName(focus)):""}</h2><a href="#calendar">Full calendar</a></div>` + (list.length ? list.map(eventCard).join("") : `<div class="empty">Nothing coming up for ${focus==="all"?"your sections":esc(sectionName(focus))} yet.</div>`);
+  html += contextCard(focus==="all" ? (keys.length?keys:"all") : [focus]);
+  html += newsHtml();
+  html += `<p class="small muted" style="text-align:center;margin-top:1.5rem"><a href="#" onclick="startPick();return false">Change my sections</a></p>`;
+  $("homeBody").innerHTML = html;
+  if (deferredInstall && !localStorage.getItem("install-dismissed")) $("installCard").classList.add("on");
+}
+
+/* ---------- sections & contact ---------- */
+function showSectionIndex(){
+  $("secDetail").style.display = "none"; $("secIndex").style.display = "block";
+  $("sectionCards").innerHTML = (C.settings.sections||[]).map(x => { const n = sectionEvents(x.key).length;
+    return `<div class="card tap section-card ${esc(x.key)}" onclick="location.hash='sections/${esc(x.key)}'"><div class="card-row"><div class="grow">
+    <div class="age">${esc(x.ages)}</div><h2 style="margin:.1em 0 .3em">${esc(x.name)}</h2>
+    <div class="small muted">${ph(x.day)} · ${ph(x.time)} · ${ph(x.venue||"")}</div>
+    <div class="small" style="margin-top:.35em;color:var(--orange-dark);font-weight:600">${n} upcoming event${n===1?"":"s"}</div></div><span class="chev">${ICON.chev}</span></div></div>`; }).join("");
+}
+function showSection(key){
+  const x = (C.settings.sections||[]).find(z => z.key === key); if (!x) { location.hash = "sections"; return; }
+  $("secIndex").style.display = "none"; $("secDetail").style.display = "block";
+  const leaders = (C.settings.team||[]).filter(p => (p.section||"").toLowerCase() === key);
+  const ev = sectionEvents(key);
+  $("secDetail").innerHTML = `<a class="back" href="#sections">‹ Sections</a>
+    <div class="card section-card ${esc(x.key)}"><div class="age">${esc(x.ages)}</div><h1 style="margin:.1em 0 .3em">${esc(x.name)}</h1>
+    <p class="muted" style="font-size:.95rem">${esc(x.blurb)}</p>
+    <div class="kv" style="margin-bottom:0">${ICON.cal}<span>${ph(x.day)}</span>${ICON.clock}<span>${ph(x.time)}</span>${x.venue?`${ICON.pin}<span>${ph(x.venue)}</span>`:""}</div>
+    <div class="btn-row"><button class="btn ${(getMy()||[]).includes(key)?"":"orange"}" onclick="toggleMySection('${esc(key)}')">${(getMy()||[]).includes(key)?"✓ On my Home · remove":"Add to my Home"}</button></div></div>
+    ${leaders.length?`<div class="sec-head"><h2>Leaders</h2><a href="#more/team">Whole team</a></div><div class="card">${leaders.map(personHtml).join("")}</div>`:""}
+    <div class="sec-head"><h2>${esc(x.name)} calendar</h2><a href="#calendar">Full calendar</a></div>${eventListHtml(ev)}`;
+}
+function personHtml(p){ const ini = (p.name||"?").split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
+  return `<div class="person"><div class="avatar">${esc(ini)}</div><div><strong>${ph(p.name)}</strong><div class="role">${esc(p.role)}${p.section?` · ${esc(p.section[0].toUpperCase()+p.section.slice(1))}`:""}</div></div></div>`; }
+const MORE = [
+  ["fundraising","Fundraising","Donate, campaigns and sponsors",'<svg viewBox="0 0 24 24"><path d="M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10z"/></svg>'],
+  ["badges","Adventure Skills and badges","The nine skills and where badges go",'<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>'],
+  ["team","Our team","Group leaders and section leaders",'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 18a4 4 0 0 1 7 0"/></svg>'],
+  ["contact","Contact and venues","Email, maps and directions",'<svg viewBox="0 0 24 24"><path d="M12 22s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>'],
+  ["join","How to join","Places, taster nights and registration",'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0M19 8h4M21 6v4"/></svg>'],
+  ["about","About the group","Who we are",'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>']
+];
+function showMoreIndex(){ $("moreDetail").style.display = "none"; $("moreIndex").style.display = "block";
+  $("moreMenu").innerHTML = `<div class="menu">${MORE.map(([k,t,d,i]) => `<a href="#more/${k}">${i}<span class="grow"><strong>${t}</strong><small>${d}</small></span><span class="chev">${ICON.chev}</span></a>`).join("")}</div>`; }
+const SKILLS = [
+  ["Camping","Pitching, cooking, keeping yourself and your patrol dry and fed: from a first night in a tent to running a lightweight camp in wild country."],
+  ["Backwoods","Fire lighting, shelters, cooking without pots, knife and axe safety, and living comfortably with what the woods give you."],
+  ["Pioneering","Knots, lashings and anchors that grow into gateways, bridges, towers and rafts built with rope and spars."],
+  ["Hillwalking","Map and compass, route cards, weather, kit and judgement: from a marked trail to leading a group across open mountain."],
+  ["Emergencies","First aid, calling for help, staying calm and keeping people safe, building to running an incident until help arrives."],
+  ["Air Activities","How aircraft fly, airfields, navigation by air and, at the higher stages, gliding and flying experience."],
+  ["Paddling","Kayaks and canoes: getting in and out, strokes, rescues, then rivers, sea and expeditions."],
+  ["Rowing","Handling a rowing boat, oars and crew work, building to coastal passages."],
+  ["Sailing","Rigging, sailing theory, capsize drill and boat handling, from a dinghy on a lake to coastal sailing."]
+];
+function badgesHtml(){
+  const b = C.badges || window.DEFAULT_CONTENT.badges;
+  const diagram = `<svg viewBox="0 0 320 300" style="width:100%;max-width:340px;display:block;margin:0 auto" role="img" aria-label="Where badges go on the jumper">
+    <defs><linearGradient id="jg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3B5F73"/><stop offset="1" stop-color="#2B4B5C"/></linearGradient></defs>
+    <path d="M110 40 L60 60 L30 130 L70 145 L75 250 L245 250 L250 145 L290 130 L260 60 L210 40 Q160 70 110 40 Z" fill="url(#jg)" stroke="#1E2124" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M118 44 Q160 78 202 44" fill="none" stroke="#F07800" stroke-width="7" stroke-linecap="round"/>
+    <path d="M60 60 L30 130 L70 145 L82 80 Z" fill="#2B4B5C" opacity=".6"/><path d="M260 60 L290 130 L250 145 L238 80 Z" fill="#2B4B5C" opacity=".6"/>
+    <g font-family="Inter,system-ui,sans-serif" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">
+      <circle cx="255" cy="95" r="11" fill="#F07800"/><text x="255" y="99">1</text>
+      <circle cx="65" cy="95" r="11" fill="#F07800"/><text x="65" y="103" font-size="0"></text><text x="65" y="99">2</text>
+      <circle cx="120" cy="120" r="11" fill="#F07800"/><text x="120" y="124">3</text>
+      <circle cx="200" cy="120" r="11" fill="#F07800"/><text x="200" y="124">4</text>
+      <rect x="248" y="112" width="14" height="10" rx="2" fill="#E8E4DA"/><rect x="248" y="126" width="14" height="10" rx="2" fill="#E8E4DA"/><rect x="248" y="140" width="14" height="10" rx="2" fill="#E8E4DA"/>
+      <rect x="58" y="112" width="14" height="10" rx="2" fill="#E8E4DA"/><rect x="58" y="126" width="14" height="10" rx="2" fill="#E8E4DA"/>
+    </g>
+    <g font-family="Inter,system-ui,sans-serif" font-size="11" fill="#5E5C55" text-anchor="middle"><text x="60" y="272">2 · right sleeve</text><text x="260" y="272">1 · left sleeve</text><text x="160" y="292">Left and right as worn, not as you look at it</text></g>
+  </svg>`;
+  const map = ["Left sleeve: group, county, section","Right sleeve: Adventure Skills, then Special Interest","Right chest: Scouting Ireland badge","Left chest: World Scout badge"]; // numbers match the diagram
+  return `<a class="back" href="#more">‹ More</a><div class="page-head"><h1>Adventure Skills and badges</h1><p>${ph(b.intro)}</p></div>
+    <div class="sec-head"><h2>The nine Adventure Skills</h2></div>
+    <div class="card"><div class="menu" style="margin:0">${SKILLS.map(([n,d],i)=>`<div class="person" style="align-items:flex-start"><div class="avatar" style="background:var(--orange-soft);color:var(--orange-dark)">${i+1}</div><div><strong>${n}</strong><div class="role">${d}</div></div></div>`).join("")}</div>
+      <p class="small muted" style="margin:1rem 0 0">${ph(b.stages)} Each badge shows its stage number and a coloured border, and you wear only the highest stage you hold in each skill.</p>
+      <div class="btn-row"><a class="btn" href="https://www.irelandscouts.ie/wp-content/uploads/2022/12/ONE-Programme-Adventure-Skills-Handbook.pdf" target="_blank" rel="noopener">Adventure Skills handbook (PDF)</a><a class="btn" href="https://www.scouts.ie" target="_blank" rel="noopener">scouts.ie</a></div></div>
+    <div class="sec-head"><h2>Where badges go</h2></div>
+    <div class="card">${diagram}<ol style="margin:1rem 0 0;padding-left:1.3em;color:var(--stone-600);font-size:.95rem">${map.map(m=>`<li style="margin:.25em 0">${m}</li>`).join("")}</ol></div>
+    ${(b.placement||[]).map(p=>`<div class="card"><h3 style="margin-bottom:.3em">${esc(p.area)}</h3><ul class="plain">${p.items.map(x=>`<li>${ph(x)}</li>`).join("")}</ul></div>`).join("")}
+    <p class="small muted">${ph(b.note||"")}</p>
+    <div class="sec-head"><h2>Sewing tips</h2></div>
+    <div class="card"><ul class="plain"><li>Pin the badge on with the jumper on the child, then take it off to sew. Badges sewn flat on a table end up in odd places.</li><li>Sew round the edge with small stitches in thread that matches the border. Iron-on glue alone falls off in the wash.</li><li>Wash jumpers inside out on a cool wash to keep badge colours.</li><li>When a Scout moves up a stage, unpick the old badge and put the new one in the same spot.</li></ul></div>`;
+}
+function showMore(sub){
+  $("moreIndex").style.display = "none"; $("moreDetail").style.display = "block";
+  const s = C.settings, email = (s.email||"").replace(/\[PLACEHOLDER\]\s*/,"");
+  if (sub === "fundraising") { $("moreDetail").innerHTML = `<a class="back" href="#more">‹ More</a><div class="page-head"><h1>Fundraising</h1><p id="fundIntro"></p></div><div id="fundDonate"></div><div class="sec-head"><h2>Current campaigns</h2></div><div id="fundCampaigns"></div><div class="sec-head"><h2>Other ways to help</h2></div><div class="card" id="fundHelp"></div><div class="sec-head"><h2>Thank you to our sponsors</h2></div><div id="fundSponsors"></div>`; renderFundraising(); return; }
+  if (sub === "badges") { $("moreDetail").innerHTML = badgesHtml(); return; }
+  if (sub === "team") { const team = s.team||[]; const top = team.filter(p=>!p.section), secs = team.filter(p=>p.section);
+    $("moreDetail").innerHTML = `<a class="back" href="#more">‹ More</a><div class="page-head"><h1>Our team</h1><p>All our leaders are volunteers, Garda vetted and trained by Scouting Ireland. To reach any of them, email the group.</p></div>
+      ${top.length?`<div class="sec-head"><h2>Group</h2></div><div class="card">${top.map(personHtml).join("")}</div>`:""}
+      ${["beavers","cubs","scouts","ventures"].map(k => { const l = secs.filter(p=>p.section.toLowerCase()===k); return l.length?`<div class="sec-head"><h2>${k[0].toUpperCase()+k.slice(1)}</h2></div><div class="card">${l.map(personHtml).join("")}</div>`:""; }).join("")}
+      ${team.length?"":`<div class="empty">Team details coming soon.</div>`}
+      ${email?`<div class="btn-row"><a class="btn orange block" href="mailto:${esc(email)}">Email the leaders</a></div>`:""}`; return; }
+  if (sub === "join") { $("moreDetail").innerHTML = `<a class="back" href="#more">‹ More</a><div class="page-head"><h1>How to join</h1></div>
+      <div class="card necker-card"><div class="necker">${NECKER}</div><div><div class="eyebrow">Our colours</div><h2 style="margin-bottom:.2em">Orange with a black border</h2><p class="muted small" style="margin:0">Every member of 7th Clare wears the same necker, from Beavers to leaders. You get yours on the night you're invested.</p></div></div>
+      <div class="card"><div class="steps">
+        <div class="step"><div><h3>Get in touch</h3><p>Email us with your child's name, age and the section you're interested in. We'll tell you about places and the waiting list.</p></div></div>
+        <div class="step"><div><h3>Come along for a taster</h3><p>Try a few meetings before committing. Old clothes and a smile are all that's needed.</p></div></div>
+        <div class="step"><div><h3>Register and get your neckerchief</h3><p>We send the Scouting Ireland registration link. Once done, your young person is invested and officially one of the group.</p></div></div></div>
+      <div class="btn-row"><a class="btn orange" href="mailto:${esc(email)}?subject=Joining 7th Clare Scouts">Ask about a place</a><a class="btn" href="#sections">See the sections</a></div>
+      <p class="small muted" style="margin:.9rem 0 0">Adult volunteers are always welcome too. No experience needed, full training provided.</p></div>`; return; }
+  if (sub === "about") { $("moreDetail").innerHTML = `<a class="back" href="#more">‹ More</a><div class="page-head"><h1>About the group</h1></div><div class="card">${paras(s.about)}</div>${s.aboutPhotoUrl?`<img src="${esc(s.aboutPhotoUrl)}" alt="" style="border-radius:var(--radius)">`:""}`; return; }
+  // contact
+  $("moreDetail").innerHTML = `<a class="back" href="#more">‹ More</a><div class="page-head"><h1>Contact</h1><p id="venueText"></p></div><div class="card" id="contactCard"></div><div class="sec-head"><h2>Where we meet</h2></div><div id="maps"></div>`;
+  renderContact();
+}
+function renderContact(){
+  const s = C.settings, email = (s.email||"").replace(/\[PLACEHOLDER\]\s*/,"");
+  $("venueText").innerHTML = ph(s.venue||"");
+  const rows = [];
+  if (s.email) rows.push(`${ICON.mail}<span><a href="mailto:${esc(email)}">${ph(s.email)}</a></span>`);
+  if (s.phone) rows.push(`${ICON.phone}<span><a href="tel:${esc(s.phone.replace(/\s/g,""))}">${ph(s.phone)}</a></span>`);
+  if (s.facebook) rows.push(`${ICON.users}<span><a href="${esc(s.facebook)}" target="_blank" rel="noopener">Facebook</a></span>`);
+  if (s.instagram) rows.push(`${ICON.users}<span><a href="${esc(s.instagram)}" target="_blank" rel="noopener">Instagram</a></span>`);
+  $("contactCard").innerHTML = `<div class="kv" style="margin:0">${rows.join("")}</div>${email?`<div class="btn-row"><a class="btn orange block" href="mailto:${esc(email)}">Email the leaders</a></div>`:""}`;
+  const byVenue = {};
+  (s.sections||[]).forEach(x => { if (x.venue) (byVenue[x.venue] = byVenue[x.venue] || []).push(`${x.name}: ${x.day} ${x.time}`); });
+  $("maps").innerHTML = (s.venues||[]).filter(v=>v.query).map(v => {
+    const q = encodeURIComponent(v.query), dir = v.link || `https://www.google.com/maps/dir/?api=1&destination=${q}`;
+    const who = (byVenue[v.name]||[]).join(" · ");
+    return `<div class="mapcard"><iframe src="https://www.google.com/maps?q=${q}&z=15&output=embed" loading="lazy" title="Map: ${esc(v.name)}"></iframe><div class="mapbar"><div><strong>${esc(v.name)}</strong><small>${esc(who)}</small></div><a class="btn primary" href="${esc(dir)}" target="_blank" rel="noopener">Directions</a></div></div>`;}).join("");
+}
+
+/* ---------- fundraising ---------- */
+function renderFundraising(){
+  const f = C.fundraising || {};
+  $("fundIntro").innerHTML = ph(f.intro||"");
+  $("fundDonate").innerHTML = f.donateUrl ? `<div class="card hero-card"><h2>${esc(f.donateTitle||"Support 7th Clare")}</h2><p>${ph(f.donateText||"")}</p><div class="btn-row"><a class="btn orange" href="${esc(f.donateUrl)}" target="_blank" rel="noopener">${esc(f.donateLabel||"Donate")}</a></div></div>` : "";
+  const camps = (f.campaigns||[]).filter(c => c.title);
+  $("fundCampaigns").innerHTML = camps.length ? camps.map(c => { const g = +c.goal||0, r = +c.raised||0, pct = g ? Math.min(100, Math.round(r/g*100)) : 0;
+    return `<div class="card"><h2>${ph(c.title)}</h2><p class="muted" style="margin:0">${ph(c.blurb||"")}</p>
+      ${g?`<div class="bar" style="margin:.8rem 0 .2rem"><i style="width:${pct}%"></i></div><div class="goal"><span><b>€${r.toLocaleString()}</b> raised</span><span>Goal €${g.toLocaleString()} · ${pct}%</span></div>`:""}
+      ${c.link?`<div class="btn-row"><a class="btn primary" href="${esc(c.link)}" target="_blank" rel="noopener">${esc(c.linkLabel||"Get involved")}</a></div>`:""}</div>`; }).join("") : `<div class="empty">No campaigns running right now.</div>`;
+  $("fundHelp").innerHTML = paras(f.help||"");
+  const sp = (f.sponsors||[]).filter(x => x.name);
+  $("fundSponsors").innerHTML = sp.length ? `<div class="sponsors">${sp.map(x => `<a class="sponsor" ${x.url?`href="${esc(x.url)}" target="_blank" rel="noopener"`:""}>${x.logoUrl?`<img src="${esc(x.logoUrl)}" alt="${esc(x.name)}">`:""}<span>${esc(x.name)}</span></a>`).join("")}</div><p class="small muted" style="margin-top:.8rem">Would your business like to support the group? Email ${esc((C.settings.email||"").replace(/\[PLACEHOLDER\]\s*/,""))}.</p>` : `<div class="empty">Sponsor a camp, a tent or a section and your business will be thanked here.</div>`;
+}
+
+/* ---------- kit ---------- */
+const kitKey = id => "kit-ticks-" + id;
+const loadTicks = id => { try { return JSON.parse(localStorage.getItem(kitKey(id))||"{}"); } catch { return {}; } };
+const saveTicks = (id,t) => { try { localStorage.setItem(kitKey(id), JSON.stringify(t)); } catch {} };
+const itemKey = (k,it) => (k.id+"-"+it.n).toLowerCase().replace(/[^a-z0-9]+/g,"-");
+function showKitIndex(){
+  $("kitDetail").style.display = "none"; $("kitIndex").style.display = "block";
+  $("kitCards").innerHTML = KITS.map(k => { const all = k.groups.flatMap(g=>g.items), t = loadTicks(k.id), done = all.filter(it=>t[itemKey(k,it)]).length;
+    return `<div class="card tap" onclick="location.hash='kit/${esc(k.id)}'"><div class="card-row"><div class="grow"><h2 style="margin:0 0 .2em">${esc(k.title)}</h2><div class="small muted">${esc(k.event)}</div><div class="small" style="margin-top:.4em;color:var(--orange-dark);font-weight:600">${done} of ${all.length} packed</div></div><span class="chev">${ICON.chev}</span></div></div>`; }).join("");
+}
+let currentKit = null;
+function showKit(id){
+  const k = KITS.find(x => x.id === id); if (!k) { location.hash = "kit"; return; }
+  currentKit = k; $("kitIndex").style.display = "none"; $("kitDetail").style.display = "block";
+  const t = loadTicks(k.id), all = k.groups.flatMap(g=>g.items), done = all.filter(it=>t[itemKey(k,it)]).length;
+  $("kitDetail").innerHTML = `<a class="back" href="#kit">‹ All kit lists</a>
+    <div class="print-head"><h1>${esc(k.title)}: kit list</h1><div class="small">${esc(k.event)}</div></div>
+    <div class="page-head"><h1>${esc(k.title)}</h1><p>${esc(k.event)}</p>${(()=>{ const ev = eventsSorted().find(e=>e.kitId===k.id && !isPast(e)); return ev ? `<p style="margin-top:.4rem"><a href="#events/${ev._i}" class="tag" style="font-size:.78rem;padding:.3em .8em;background:var(--orange-soft);color:var(--orange-dark);text-decoration:none">For ${esc(ev.title)} · ${fmt(ev.date)}</a></p>` : ""; })()}</div>
+    <div class="kit-toolbar"><div class="progress">Packed <b id="doneCount">${done}</b> of ${all.length}</div><div class="btn-row" style="margin:0"><button class="btn" onclick="clearTicks()">Clear</button><button class="btn" onclick="share('${esc(k.title)} kit list','kit/${esc(k.id)}')">Share</button><button class="btn primary" onclick="window.print()">Print A4</button></div></div>
+    <div class="bar"><i id="bar" style="width:${all.length?done/all.length*100:0}%"></i></div>
+    <div class="card"><p style="margin:0" class="muted">${esc(k.summary)}</p></div>
+    ${k.docs&&k.docs.length?`<div class="card docs"><h2>Guides and downloads</h2><div class="menu" style="margin:0">${k.docs.map(d=>`<a href="${esc(d.url)}" target="_blank" rel="noopener" ${/\.pdf$/i.test(d.url)?'download':''}><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span class="grow"><strong>${esc(d.title)}</strong>${d.note?`<small>${esc(d.note)}</small>`:""}</span><span class="chev">${ICON.chev}</span></a>`).join("")}</div></div>`:""}
+    <p class="small muted kit-legend"><span class="must">Essential</span> = must be in the bag. Everything else is strongly recommended.</p>
+    <div class="card items"><div class="groups">${k.groups.map(g => `<div class="group"><h3>${esc(g.name)}</h3>${g.items.map(it => { const key = itemKey(k,it), on = !!t[key]; return `<div class="item ${on?"done":""}"><input type="checkbox" id="${key}" ${on?"checked":""} onchange="toggleTick('${key}',this.checked)"><label for="${key}"><span class="n">${esc(it.n)}${it.must?'<span class="must">Essential</span>':""}</span>${it.note?`<span class="note">${esc(it.note)}</span>`:""}</label></div>`; }).join("")}</div>`).join("")}</div></div>
+    ${k.tips&&k.tips.length?`<div class="card tips"><h2>Packing tips</h2><ul class="plain">${k.tips.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
+    ${k.dontBring&&k.dontBring.length?`<div class="card dont"><h2>Leave at home</h2><ul class="plain">${k.dontBring.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
+    <div class="print-foot">7th Clare Scouts, Ballyvaughan · 7thclarescouts@gmail.com</div>`;
+}
+function toggleTick(key,on){ const t = loadTicks(currentKit.id); if (on) t[key]=1; else delete t[key]; saveTicks(currentKit.id,t);
+  $(key).closest(".item").classList.toggle("done",on); const all = currentKit.groups.flatMap(g=>g.items).length, n = Object.keys(t).length;
+  $("doneCount").textContent = n; $("bar").style.width = (all?n/all*100:0)+"%"; }
+function clearTicks(){ saveTicks(currentKit.id,{}); showKit(currentKit.id); }
+
+/* ---------- sheet, share, toast ---------- */
+function openSheet(html){ $("sheet").innerHTML = html; $("sheetBg").classList.add("on"); document.body.style.overflow = "hidden"; }
+function closeSheet(){ $("sheetBg").classList.remove("on"); document.body.style.overflow = ""; if (/^#events\/\d+/.test(location.hash)) history.replaceState(null,"","#calendar"); }
+async function share(title, hash){
+  const url = location.origin + location.pathname + "#" + hash;
+  if (navigator.share) { try { await navigator.share({title, url}); return; } catch {} }
+  try { await navigator.clipboard.writeText(url); toast("Link copied"); } catch { prompt("Copy this link:", url); }
+}
+let toastT; function toast(m){ $("toast").textContent = m; $("toast").classList.add("on"); clearTimeout(toastT); toastT = setTimeout(()=>$("toast").classList.remove("on"), 1800); }
+
+/* ---------- data & PWA ---------- */
+function renderAll(){ $("updatedAt").textContent = C.updatedAt ? "Updated " + fmt(C.updatedAt.slice(0,10)) : ""; route(); }
+async function load(){
+  renderAll();
+  try {
+    const r = await fetch("/.netlify/functions/content", {cache:"no-store"});
+    if (!r.ok) throw 0;
+    const c = await r.json();
+    if (c && c.settings) { C = c;
+      if (Array.isArray(c.kits) && c.kits.length) KITS = c.kits.map(k => { const d = window.DEFAULT_KITS.find(x => x.id === k.id); return (d && !(k.docs && k.docs.length)) ? {...k, docs: d.docs} : k; });
+      renderAll(); }
+    $("offline").classList.remove("on");
+  } catch (e) { if (!navigator.onLine) $("offline").classList.add("on"); }
+}
+window.addEventListener("online", load);
+window.addEventListener("offline", () => $("offline").classList.add("on"));
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").then(reg => {
+    reg.addEventListener("updatefound", () => { const nw = reg.installing; nw && nw.addEventListener("statechange", () => { if (nw.state === "installed" && navigator.serviceWorker.controller) showUpdate(); }); });
+  }).catch(()=>{});
+  navigator.serviceWorker.addEventListener("controllerchange", () => location.reload());
+}
+function showUpdate(){ const t = $("toast"); t.innerHTML = 'New version available. <a href="#" style="color:#FFB366;font-weight:600" onclick="location.reload();return false">Reload</a>'; t.classList.add("on"); t.style.pointerEvents = "auto"; }
+let deferredInstall = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredInstall = e; const c = $("installCard"); if (c && !localStorage.getItem("install-dismissed")) c.classList.add("on"); });
+async function doInstall(){ if (!deferredInstall) return; deferredInstall.prompt(); await deferredInstall.userChoice; $("installCard").classList.remove("on"); try { localStorage.setItem("install-dismissed","1"); } catch {} }
+load();
+</script>
+</body>
+</html>

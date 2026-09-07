@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Leaders · 7th Clare Scouts</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--stone-50:#F4F1EA;--stone-100:#E8E4DA;--stone-200:#D3CFC4;--stone-400:#9A968C;--stone-600:#5E5C55;--ink:#1E2124;--sea-700:#1B4A63;--sea-500:#2E6F8E;--sea-100:#DCEAF0;--cranesbill:#B0306A;--gorse:#E3A92B;--moss:#5C7A4A;--gentian:#2F55A8}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Inter",system-ui,sans-serif;background:var(--stone-50);color:var(--ink);line-height:1.5}
+h1,h2,h3{font-family:"Fraunces",Georgia,serif;margin:0 0 .4em}
+.top{background:var(--sea-700);color:#fff;padding:1rem 0}
+.wrap{width:min(960px,92vw);margin:0 auto}
+.top .wrap{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.top a{color:#fff}
+main{padding:1.5rem 0 4rem}
+.card{background:#fff;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.06);padding:1.3rem;margin-bottom:1.3rem;border-top:5px solid var(--sea-500)}
+label{display:block;font-size:.8rem;font-weight:600;color:var(--stone-600);margin:.7rem 0 .25rem;letter-spacing:.04em;text-transform:uppercase}
+input,textarea,select{width:100%;padding:.6em .75em;border:1px solid var(--stone-200);border-radius:8px;font:inherit;background:#fff}
+textarea{min-height:90px;resize:vertical}
+.row{display:grid;gap:.8rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.btn{display:inline-flex;align-items:center;gap:.4em;padding:.6em 1.1em;border-radius:999px;border:0;font:inherit;font-weight:600;cursor:pointer;background:var(--sea-700);color:#fff}
+.btn.secondary{background:var(--stone-100);color:var(--ink)}
+.btn.danger{background:transparent;color:var(--cranesbill);border:1px solid var(--cranesbill)}
+.btn.save{background:var(--cranesbill);font-size:1.05rem;padding:.8em 1.5em}
+.item{border:1px solid var(--stone-200);border-radius:10px;padding:1rem;margin:.8rem 0;background:var(--stone-50)}
+.item .actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.6rem}
+.tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin:1rem 0}
+.tabs button{border:1px solid var(--stone-200);background:#fff;padding:.5em 1em;border-radius:999px;font:inherit;cursor:pointer}
+.tabs button.on{background:var(--sea-700);color:#fff;border-color:var(--sea-700)}
+.pane{display:none}.pane.on{display:block}
+.savebar{position:sticky;bottom:0;background:rgba(244,241,234,.95);backdrop-filter:blur(8px);border-top:1px solid var(--stone-200);padding:.8rem 0;margin-top:1rem}
+.savebar .wrap{display:flex;gap:1rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.msg{font-size:.9rem;color:var(--stone-600)}
+.msg.ok{color:var(--moss)}.msg.err{color:var(--cranesbill)}
+.hint{font-size:.85rem;color:var(--stone-400)}
+#login{max-width:420px;margin:3rem auto}
+</style>
+</head>
+<body>
+<div class="top"><div class="wrap"><h1 style="margin:0;font-size:1.3rem">7th Clare Scouts · Leaders</h1><a href="index.html">← Open app</a></div></div>
+<div class="wrap"><p class="hint" id="srcNote" style="margin:.6rem 0 0"></p></div>
+<main>
+<div class="wrap">
+
+<div id="login" class="card">
+  <h2>Leader sign in</h2>
+  <p class="hint">Enter the shared leader password to edit the site.</p>
+  <label>Password</label>
+  <input type="password" id="pw" autocomplete="current-password">
+  <p style="margin-top:1rem"><button class="btn" onclick="login()">Sign in</button></p>
+  <p class="msg" id="loginMsg"></p>
+</div>
+
+<div id="editor" style="display:none">
+  <div id="updateBanner" style="display:none" class="card"></div>
+  <div class="tabs">
+    <button class="on" data-pane="notices">Notices</button>
+    <button data-pane="events">Events</button>
+    <button data-pane="news">News</button>
+    <button data-pane="sections">Sections</button>
+    <button data-pane="kits">Kit lists</button>
+    <button data-pane="team">Team</button>
+    <button data-pane="badges">Badges</button>
+    <button data-pane="fund">Fundraising</button>
+    <button data-pane="settings">Site text &amp; contact</button>
+    <button data-pane="tools">Import / export</button>
+  </div>
+
+  <div class="pane on" id="pane-notices">
+    <div class="card"><h2>Notices</h2><p class="hint">Short, important messages shown at the top of the members hub (cancellations, reminders). Keep to one or two.</p>
+      <div id="noticeList"></div><button class="btn secondary" onclick="addNotice()">+ Add notice</button></div>
+  </div>
+
+  <div class="pane" id="pane-events">
+    <div class="card"><h2>Events</h2><p class="hint">Past events disappear from the site automatically but stay here until you delete them.</p>
+      <div id="eventList"></div><button class="btn secondary" onclick="addEvent()">+ Add event</button></div>
+  </div>
+
+  <div class="pane" id="pane-news">
+    <div class="card"><h2>News</h2><p class="hint">Newest first on the site. The six most recent are shown.</p>
+      <div id="newsList"></div><button class="btn secondary" onclick="addNews()">+ Add news item</button></div>
+  </div>
+
+  <div class="pane" id="pane-sections">
+    <div class="card"><h2>Sections</h2><p class="hint">Meeting night, time and blurb for each section.</p><div id="sectionList"></div></div>
+  </div>
+
+  <div class="pane" id="pane-kits">
+    <div class="card"><h2>Kit lists</h2><p class="hint">One list per event. Items are typed one per line: start a line with <code>##</code> for a group heading, put a <code>*</code> in front of essential items, and add a note after a <code>|</code>. Example:<br><code>## Waterproofs</code><br><code>* Waterproof jacket | With a hood, not a ski jacket</code><br><code>Gaiters | Recommended</code></p>
+      <div id="kitList"></div><button class="btn secondary" onclick="addKit()">+ Add kit list</button></div>
+  </div>
+
+  <div class="pane" id="pane-team">
+    <div class="card"><h2>Our team</h2><p class="hint">Name, role and section only. Leave section blank for group roles (Group Leader, Deputy GL, Chair, Treasurer, Secretary). No personal contact details are published.</p>
+      <div id="teamList"></div><button class="btn secondary" onclick="addPerson()">+ Add person</button></div>
+  </div>
+
+  <div class="pane" id="pane-badges">
+    <div class="card"><h2>Adventure Skills and badges</h2><p class="hint">The nine skills and the diagram are built in. Edit the wording and the badge positions here.</p>
+      <label>Intro</label><textarea id="b_intro"></textarea>
+      <label>Typical stages by section</label><textarea id="b_stages"></textarea>
+      <label>Badge positions (one area per block: a line starting with ## for the area, then one badge per line)</label><textarea id="b_placement" style="min-height:220px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem"></textarea>
+      <label>Note under the positions</label><textarea id="b_note"></textarea>
+    </div>
+  </div>
+
+  <div class="pane" id="pane-fund">
+    <div class="card"><h2>Donate</h2>
+      <label>Intro (top of the Fundraising tab)</label><textarea id="f_intro"></textarea>
+      <label>Donate card title</label><input id="f_donateTitle">
+      <label>Donate card text</label><textarea id="f_donateText"></textarea>
+      <div class="row"><div><label>Donate link (iDonate, GoFundMe, Revolut, etc.)</label><input id="f_donateUrl" placeholder="https://"></div><div><label>Button label</label><input id="f_donateLabel"></div></div>
+      <p class="hint">Leave the donate link blank to hide the donate card.</p>
+    </div>
+    <div class="card"><h2>Campaigns</h2><p class="hint">Goal and raised are in euro. Update "raised" as money comes in; the progress bar follows.</p>
+      <div id="campList"></div><button class="btn secondary" onclick="addCampaign()">+ Add campaign</button></div>
+    <div class="card"><h2>Other ways to help</h2><label>Text (blank line between paragraphs)</label><textarea id="f_help" style="min-height:120px"></textarea></div>
+    <div class="card"><h2>Sponsors</h2><p class="hint">Logo is optional: put the image in the zip (e.g. sponsors/hotel.png) and enter the path.</p>
+      <div id="sponsorList"></div><button class="btn secondary" onclick="addSponsor()">+ Add sponsor</button></div>
+  </div>
+
+  <div class="pane" id="pane-settings">
+    <div class="card"><h2>Homepage text</h2>
+      <label>Hero headline</label><input id="s_heroTitle">
+      <label>Hero intro</label><textarea id="s_heroLede"></textarea>
+      <label>About us (blank line between paragraphs)</label><textarea id="s_about" style="min-height:140px"></textarea>
+    </div>
+    <div class="card"><h2>Contact</h2>
+      <div class="row">
+        <div><label>Email</label><input id="s_email"></div>
+        <div><label>Phone</label><input id="s_phone"></div>
+      </div>
+      <label>Where we meet (general note; per-section venues are under Sections)</label><input id="s_venue">
+      <div class="row">
+        <div><label>Facebook URL</label><input id="s_facebook"></div>
+        <div><label>Instagram URL</label><input id="s_instagram"></div>
+      </div>
+    </div>
+    <div class="card"><h2>Images</h2><p class="hint">Paste image URLs (e.g. from a photo hosted on the site itself: upload the file into the zip and use its name, like <code>photos/group.jpg</code>).</p>
+      <label>Logo</label><input id="s_logoUrl" placeholder="logo.png">
+      <label>About photo</label><input id="s_aboutPhotoUrl" placeholder="photos/group.jpg">
+      <label>Join photo</label><input id="s_joinPhotoUrl" placeholder="photos/camp.jpg">
+    </div>
+    <div class="card"><h2>Venue maps</h2><p class="hint">Each venue gets a small map. "Search text" is what Google Maps is asked to show; "Directions link" is optional (a maps.app.goo.gl share link works).</p><div id="venueMapList"></div></div>
+    <div class="card" style="border-top-color:var(--gorse)"><h2>Reset</h2><p class="hint">Reload the built-in default content into the editor (does not save until you press Save).</p><button class="btn danger" onclick="resetDefaults()">Load defaults</button></div>
+  </div>
+
+  <div class="pane" id="pane-tools">
+    <div class="card"><h2>Export</h2><p class="hint">Downloads everything currently saved as a JSON file. Send it to Claude to have lists read or edited, or keep it as a backup.</p><button class="btn" onclick="exportJson()">Download content.json</button></div>
+    <div class="card"><h2>Import</h2><p class="hint">Paste JSON from Claude (or choose a file). Merge keeps what you have and adds or replaces only the parts in the file, matched by id or title. Replace overwrites everything.</p>
+      <input type="file" id="importFile" accept="application/json,.json" style="margin:.5rem 0">
+      <label>Or paste JSON</label><textarea id="importText" style="min-height:120px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem"></textarea>
+      <div class="actions" style="justify-content:flex-start"><button class="btn" onclick="importJson('merge')">Merge into content</button><button class="btn danger" onclick="importJson('replace')">Replace everything</button></div>
+      <p class="msg" id="importMsg"></p></div>
+  </div>
+
+  <div class="savebar"><div class="wrap">
+    <span class="msg" id="saveMsg"></span>
+    <button class="btn save" onclick="save()">Save &amp; publish</button>
+  </div></div>
+</div>
+
+</div>
+</main>
+
+<script src="defaults.js"></script>
+<script src="kit-defaults.js"></script>
+<script>
+const API = "/.netlify/functions/content";
+let PW = "", C = null, LOADED_AT = null;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = id => document.getElementById(id);
+const clone = o => JSON.parse(JSON.stringify(o));
+
+async function login(){
+  PW = $("pw").value;
+  $("loginMsg").textContent = "Checking…";
+  try {
+    const r = await fetch(API + "?check=1", {method:"POST", headers:{"x-admin-password":PW}});
+    if (!r.ok) { $("loginMsg").textContent = (await r.json()).error || "Wrong password."; $("loginMsg").className="msg err"; return; }
+    const g = await fetch(API, {cache:"no-store"});
+    const data = await g.json();
+    C = (data && data.settings) ? data : clone(window.DEFAULT_CONTENT);
+    LOADED_AT = C.updatedAt || null; delete C.source;
+    $("login").style.display = "none"; $("editor").style.display = "block";
+    if (data && data.source) $("srcNote").textContent = data.source === "github" ? "Content is stored in GitHub (Claude can read and edit it directly)." : "Content is stored in Netlify Blobs.";
+    renderAll();
+  } catch (e) { $("loginMsg").textContent = "Couldn't reach the server. Is the site deployed on Netlify?"; $("loginMsg").className="msg err"; }
+}
+$("pw").addEventListener("keydown", e => { if (e.key === "Enter") login(); });
+
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.classList.remove("on"));
+  document.querySelectorAll(".pane").forEach(x => x.classList.remove("on"));
+  b.classList.add("on"); $("pane-" + b.dataset.pane).classList.add("on");
+});
+
+function renderAll(){ renderNotices(); renderEvents(); renderNews(); renderSections(); renderSettings(); renderKits(); renderTeam(); renderFund(); renderBadges(); checkUpdate(); }
+
+// ---- Merge logic shared by import and deploy updates ----
+function mergeContent(base, patch){
+  const out = clone(base);
+  const byId = (arr, key) => Object.fromEntries((arr||[]).map((x,i)=>[x[key],i]));
+  if (Array.isArray(patch.kits)) { out.kits = out.kits || []; const idx = byId(out.kits,"id"); patch.kits.forEach(k => { if (k.id in idx) out.kits[idx[k.id]] = k; else out.kits.push(k); }); }
+  if (Array.isArray(patch.events)) { out.events = out.events || []; patch.events.forEach(e => { const i = out.events.findIndex(x => x.date===e.date && x.title.trim().toLowerCase()===e.title.trim().toLowerCase()); if (i>=0) out.events[i] = {...out.events[i], ...e}; else out.events.push(e); }); }
+  if (Array.isArray(patch.news)) { out.news = out.news || []; patch.news.forEach(n => { const i = out.news.findIndex(x => x.date===n.date && x.title===n.title); if (i>=0) out.news[i] = n; else out.news.push(n); }); }
+  if (Array.isArray(patch.notices)) out.notices = patch.notices;
+  if (patch.badges) out.badges = {...(out.badges||{}), ...patch.badges};
+  if (patch.fundraising) out.fundraising = {...(out.fundraising||{}), ...patch.fundraising};
+  if (patch.settings) { out.settings = {...out.settings, ...patch.settings}; if (patch.settings.sections) out.settings.sections = patch.settings.sections; }
+  return out;
+}
+function summarise(patch){ const p=[]; if (patch.kits) p.push(patch.kits.length+" kit list"+(patch.kits.length===1?"":"s")); if (patch.events) p.push(patch.events.length+" event"+(patch.events.length===1?"":"s")); if (patch.news) p.push(patch.news.length+" news"); if (patch.notices) p.push("notices"); if (patch.badges) p.push("badges page"); if (patch.fundraising) p.push("fundraising"); if (patch.settings) p.push("settings"); return p.join(", ") || "nothing"; }
+
+// ---- Deploy updates: updates.json shipped in the zip ----
+let UPDATE = null;
+async function checkUpdate(){
+  try { const r = await fetch("updates.json", {cache:"no-store"}); if (!r.ok) return; UPDATE = await r.json(); } catch { return; }
+  const applied = (C.appliedUpdates||[]);
+  const b = $("updateBanner");
+  if (!UPDATE || !UPDATE.version || applied.includes(UPDATE.version)) { b.style.display = "none"; return; }
+  b.style.display = "block"; b.style.borderTopColor = "var(--gorse)";
+  b.innerHTML = `<h2>Update ${esc(UPDATE.version)} is in this deploy</h2><p class="hint">${esc(UPDATE.note||"")} It changes: ${esc(summarise(UPDATE))}. Your own edits to other items are kept.</p><div class="actions" style="justify-content:flex-start"><button class="btn" onclick="applyUpdate()">Apply update</button><button class="btn secondary" onclick="C.appliedUpdates=[...(C.appliedUpdates||[]),UPDATE.version];checkUpdate()">Ignore</button></div>`;
+}
+function applyUpdate(){ C = mergeContent(C, UPDATE); C.appliedUpdates = [...(C.appliedUpdates||[]), UPDATE.version]; renderAll(); $("saveMsg").textContent = "Update applied. Press Save & publish to make it live."; $("saveMsg").className = "msg ok"; window.scrollTo({top:document.body.scrollHeight}); }
+
+// ---- Import / export ----
+function exportJson(){ const blob = new Blob([JSON.stringify(C,null,2)], {type:"application/json"}); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "7thclare-content-" + new Date().toISOString().slice(0,10) + ".json"; a.click(); }
+$("importFile").addEventListener("change", e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => { $("importText").value = t; }); });
+function importJson(mode){
+  let patch; try { patch = JSON.parse($("importText").value); } catch { $("importMsg").textContent = "That isn't valid JSON."; $("importMsg").className = "msg err"; return; }
+  if (mode === "replace") { if (!confirm("Replace ALL saved content with this file?")) return; C = patch; }
+  else C = mergeContent(C, patch);
+  renderAll(); $("importMsg").textContent = (mode==="replace"?"Replaced":"Merged") + ": " + summarise(patch) + ". Press Save & publish to make it live."; $("importMsg").className = "msg ok";
+}
+function renderBadges(){
+  C.badges = C.badges || clone(window.DEFAULT_CONTENT.badges);
+  ["intro","stages","note"].forEach(k => { const el = $("b_"+k); el.value = C.badges[k]||""; el.oninput = () => C.badges[k] = el.value; });
+  const el = $("b_placement"); el.value = (C.badges.placement||[]).map(p => "## "+p.area+"\n"+p.items.join("\n")).join("\n\n");
+  el.oninput = () => { const out=[]; let g=null; el.value.split("\n").forEach(l => { const t=l.trim(); if(!t) return; if(t.startsWith("##")){ g={area:t.replace(/^#+\s*/,""),items:[]}; out.push(g); } else { if(!g){ g={area:"Badges",items:[]}; out.push(g);} g.items.push(t);} }); C.badges.placement = out; };
+}
+
+// ---- Team ----
+function renderTeam(){
+  C.settings.team = C.settings.team || [];
+  const secs = ["","beavers","cubs","scouts","ventures"];
+  $("teamList").innerHTML = C.settings.team.map((p,i) => `<div class="item"><div class="row">
+    <div><label>Name</label><input value="${esc(p.name)}" oninput="C.settings.team[${i}].name=this.value"></div>
+    <div><label>Role</label><input value="${esc(p.role)}" oninput="C.settings.team[${i}].role=this.value" placeholder="Group Leader, Section Leader, Assistant Leader..."></div>
+    <div><label>Section</label><select onchange="C.settings.team[${i}].section=this.value">${secs.map(s=>`<option value="${s}" ${s===(p.section||"")?"selected":""}>${s||"Group (none)"}</option>`).join("")}</select></div></div>
+    <div class="actions"><button class="btn secondary" onclick="if(${i}>0){[C.settings.team[${i}-1],C.settings.team[${i}]]=[C.settings.team[${i}],C.settings.team[${i}-1]];renderTeam()}">Up</button><button class="btn danger" onclick="C.settings.team.splice(${i},1);renderTeam()">Delete</button></div></div>`).join("");
+}
+function addPerson(){ C.settings.team.push({name:"",role:"",section:""}); renderTeam(); }
+
+// ---- Fundraising ----
+const FUND_KEYS = ["intro","donateTitle","donateText","donateUrl","donateLabel","help"];
+function renderFund(){
+  C.fundraising = C.fundraising || {campaigns:[],sponsors:[]};
+  FUND_KEYS.forEach(k => { const el = $("f_"+k); el.value = C.fundraising[k] || ""; el.oninput = () => C.fundraising[k] = el.value; });
+  C.fundraising.campaigns = C.fundraising.campaigns || [];
+  $("campList").innerHTML = C.fundraising.campaigns.map((c,i) => `<div class="item">
+    <label>Title</label><input value="${esc(c.title)}" oninput="C.fundraising.campaigns[${i}].title=this.value">
+    <label>Blurb</label><textarea oninput="C.fundraising.campaigns[${i}].blurb=this.value">${esc(c.blurb||"")}</textarea>
+    <div class="row"><div><label>Goal (€)</label><input type="number" value="${esc(c.goal||"")}" oninput="C.fundraising.campaigns[${i}].goal=+this.value"></div><div><label>Raised so far (€)</label><input type="number" value="${esc(c.raised||"")}" oninput="C.fundraising.campaigns[${i}].raised=+this.value"></div></div>
+    <div class="row"><div><label>Link (optional)</label><input value="${esc(c.link||"")}" oninput="C.fundraising.campaigns[${i}].link=this.value"></div><div><label>Link label</label><input value="${esc(c.linkLabel||"")}" oninput="C.fundraising.campaigns[${i}].linkLabel=this.value" placeholder="Get involved"></div></div>
+    <div class="actions"><button class="btn danger" onclick="C.fundraising.campaigns.splice(${i},1);renderFund()">Delete</button></div></div>`).join("");
+  C.fundraising.sponsors = C.fundraising.sponsors || [];
+  $("sponsorList").innerHTML = C.fundraising.sponsors.map((x,i) => `<div class="item"><div class="row">
+    <div><label>Business name</label><input value="${esc(x.name)}" oninput="C.fundraising.sponsors[${i}].name=this.value"></div>
+    <div><label>Website (optional)</label><input value="${esc(x.url||"")}" oninput="C.fundraising.sponsors[${i}].url=this.value"></div>
+    <div><label>Logo path (optional)</label><input value="${esc(x.logoUrl||"")}" oninput="C.fundraising.sponsors[${i}].logoUrl=this.value"></div></div>
+    <div class="actions"><button class="btn danger" onclick="C.fundraising.sponsors.splice(${i},1);renderFund()">Delete</button></div></div>`).join("");
+}
+function addCampaign(){ C.fundraising.campaigns.push({title:"",blurb:"",goal:0,raised:0,link:"",linkLabel:""}); renderFund(); }
+function addSponsor(){ C.fundraising.sponsors.push({name:"",url:"",logoUrl:""}); renderFund(); }
+
+// ---- Kit lists ----
+function kitToText(k){ return (k.groups||[]).map(g => "## " + g.name + "\n" + g.items.map(it => (it.must?"* ":"") + it.n + (it.note?" | "+it.note:"")).join("\n")).join("\n\n"); }
+function textToGroups(t){
+  const groups = []; let g = null;
+  t.split("\n").forEach(line => {
+    const s = line.trim(); if (!s) return;
+    if (s.startsWith("##")) { g = {name:s.replace(/^#+\s*/,""), items:[]}; groups.push(g); return; }
+    if (!g) { g = {name:"Items", items:[]}; groups.push(g); }
+    const must = s.startsWith("*"); const body = s.replace(/^\*\s*/,"");
+    const [n, ...rest] = body.split("|"); const it = {n:n.trim()}; if (rest.length) it.note = rest.join("|").trim(); if (must) it.must = true; g.items.push(it);
+  });
+  return groups;
+}
+function renderKits(){
+  if (!Array.isArray(C.kits) || !C.kits.length) C.kits = clone(window.DEFAULT_KITS);
+  $("kitList").innerHTML = C.kits.map((k,i) => `<div class="item">
+    <div class="row">
+      <div><label>Title</label><input value="${esc(k.title)}" oninput="C.kits[${i}].title=this.value"></div>
+      <div><label>Link id (letters only)</label><input value="${esc(k.id)}" oninput="C.kits[${i}].id=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"></div>
+    </div>
+    <label>Event (one line)</label><input value="${esc(k.event||"")}" oninput="C.kits[${i}].event=this.value">
+    <label>Summary</label><textarea oninput="C.kits[${i}].summary=this.value">${esc(k.summary||"")}</textarea>
+    <label>Items (see format above)</label><textarea style="min-height:320px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem" oninput="C.kits[${i}].groups=textToGroups(this.value)">${esc(kitToText(k))}</textarea>
+    <label>Guides and downloads (one per line: Title | link | note). Put PDFs in a docs/ folder in the zip, e.g. docs/Sionnach_Tips.pdf</label><textarea oninput="C.kits[${i}].docs=this.value.split('\\n').map(l=>l.split('|').map(x=>x.trim())).filter(p=>p[0]).map(p=>({title:p[0],url:p[1]||'',note:p[2]||''}))">${esc((k.docs||[]).map(d=>[d.title,d.url,d.note||''].join(' | ')).join("\\n"))}</textarea>
+    <label>Packing tips (one per line)</label><textarea oninput="C.kits[${i}].tips=this.value.split('\n').map(x=>x.trim()).filter(Boolean)">${esc((k.tips||[]).join("\n"))}</textarea>
+    <label>Leave at home (one per line)</label><textarea oninput="C.kits[${i}].dontBring=this.value.split('\n').map(x=>x.trim()).filter(Boolean)">${esc((k.dontBring||[]).join("\n"))}</textarea>
+    <div class="actions"><button class="btn secondary" onclick="resetKit(${i})">Reset to built-in</button><button class="btn secondary" onclick="C.kits.splice(${i+1},0,clone(C.kits[${i}]));C.kits[${i+1}].id+='-copy';C.kits[${i+1}].title+=' (copy)';renderKits()">Duplicate</button><button class="btn danger" onclick="if(confirm('Delete this kit list?')){C.kits.splice(${i},1);renderKits()}">Delete</button></div></div>`).join("");
+}
+function resetKit(i){ const d = window.DEFAULT_KITS.find(x => x.id === C.kits[i].id); if (!d) { alert("No built-in version of this list."); return; } if (confirm("Replace this list with the built-in " + d.title + " list? Your edits to it will be lost until you Save.")) { C.kits[i] = clone(d); renderKits(); } }
+function addKit(){ C.kits.push({id:"new-list", title:"New kit list", event:"", summary:"", groups:[{name:"Wear on the day",items:[]}], tips:[], dontBring:[]}); renderKits(); }
+
+function renderNotices(){
+  $("noticeList").innerHTML = C.notices.map((n,i) => `<div class="item">
+    <label>Title</label><input value="${esc(n.title)}" oninput="C.notices[${i}].title=this.value">
+    <label>Message</label><textarea oninput="C.notices[${i}].body=this.value">${esc(n.body)}</textarea>
+    <div class="actions"><button class="btn danger" onclick="C.notices.splice(${i},1);renderNotices()">Delete</button></div></div>`).join("");
+}
+function addNotice(){ C.notices.push({title:"",body:""}); renderNotices(); }
+
+function renderEvents(){
+  const secs = ["group","beavers","cubs","scouts","ventures"];
+  C.events.sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  $("eventList").innerHTML = C.events.map((e,i) => `<div class="item">
+    <div class="row">
+      <div><label>Start date</label><input type="date" value="${esc(e.date)}" onchange="C.events[${i}].date=this.value"></div>
+      <div><label>End date (optional)</label><input type="date" value="${esc(e.endDate||"")}" onchange="C.events[${i}].endDate=this.value"></div>
+      <div><label>Section</label><select onchange="C.events[${i}].section=this.value">${secs.map(s=>`<option ${s===(e.section||"group")?"selected":""}>${s}</option>`).join("")}</select></div>
+    </div>
+    <label>Title</label><input value="${esc(e.title)}" oninput="C.events[${i}].title=this.value">
+    <div class="row">
+      <div><label>Location</label><input value="${esc(e.location||"")}" oninput="C.events[${i}].location=this.value"></div>
+      <div><label>Time (optional)</label><input value="${esc(e.time||"")}" oninput="C.events[${i}].time=this.value" placeholder="e.g. 10:00 at the den"></div>
+      <div><label>Kit list (optional)</label><select onchange="C.events[${i}].kitId=this.value">${[["","None"],...(C.kits||window.DEFAULT_KITS).map(k=>[k.id,k.title])].map(([v,l])=>`<option value="${v}" ${v===(e.kitId||"")?"selected":""}>${esc(l)}</option>`).join("")}</select></div>
+    </div>
+    <label>Details</label><textarea oninput="C.events[${i}].details=this.value">${esc(e.details)}</textarea>
+    <div class="actions"><button class="btn danger" onclick="C.events.splice(${i},1);renderEvents()">Delete</button></div></div>`).join("");
+}
+function addEvent(){ C.events.push({date:new Date().toISOString().slice(0,10),title:"",section:"group",details:""}); renderEvents(); }
+
+function renderNews(){
+  C.news.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  $("newsList").innerHTML = C.news.map((n,i) => `<div class="item">
+    <label>Date</label><input type="date" value="${esc(n.date)}" onchange="C.news[${i}].date=this.value">
+    <label>Title</label><input value="${esc(n.title)}" oninput="C.news[${i}].title=this.value">
+    <label>Text</label><textarea oninput="C.news[${i}].body=this.value">${esc(n.body)}</textarea>
+    <div class="actions"><button class="btn danger" onclick="C.news.splice(${i},1);renderNews()">Delete</button></div></div>`).join("");
+}
+function addNews(){ C.news.push({date:new Date().toISOString().slice(0,10),title:"",body:""}); renderNews(); }
+
+function renderSections(){
+  $("sectionList").innerHTML = C.settings.sections.map((s,i) => `<div class="item"><h3>${esc(s.name)} <span class="hint">${esc(s.ages)}</span></h3>
+    <div class="row">
+      <div><label>Meeting night</label><input value="${esc(s.day)}" oninput="C.settings.sections[${i}].day=this.value"></div>
+      <div><label>Time</label><input value="${esc(s.time)}" oninput="C.settings.sections[${i}].time=this.value"></div>
+      <div><label>Venue</label><input value="${esc(s.venue||"")}" oninput="C.settings.sections[${i}].venue=this.value"></div>
+    </div>
+    <label>Blurb</label><textarea oninput="C.settings.sections[${i}].blurb=this.value">${esc(s.blurb)}</textarea></div>`).join("");
+}
+
+const SETTING_KEYS = ["heroTitle","heroLede","about","email","phone","venue","facebook","instagram","logoUrl","aboutPhotoUrl","joinPhotoUrl"];
+function renderSettings(){ SETTING_KEYS.forEach(k => { const el = $("s_"+k); el.value = C.settings[k] || ""; el.oninput = () => C.settings[k] = el.value; });
+  C.settings.venues = C.settings.venues || [];
+  $("venueMapList").innerHTML = C.settings.venues.map((v,i) => `<div class="item">
+    <label>Venue name</label><input value="${esc(v.name)}" oninput="C.settings.venues[${i}].name=this.value">
+    <label>Search text</label><input value="${esc(v.query)}" oninput="C.settings.venues[${i}].query=this.value">
+    <label>Directions link (optional)</label><input value="${esc(v.link||"")}" oninput="C.settings.venues[${i}].link=this.value"></div>`).join(""); }
+function resetDefaults(){ if (confirm("Replace everything in the editor with the built-in defaults?")) { C = clone(window.DEFAULT_CONTENT); renderAll(); } }
+
+async function save(){
+  $("saveMsg").textContent = "Saving…"; $("saveMsg").className = "msg";
+  try {
+    const fresh = await (await fetch(API, {cache:"no-store"})).json();
+    if (fresh && fresh.updatedAt && fresh.updatedAt !== LOADED_AT) {
+      const who = fresh.updatedBy === "claude" ? "Claude" : "someone else";
+      if (!confirm(`The content was changed by ${who} at ${new Date(fresh.updatedAt).toLocaleString()} since you opened the editor. Saving will overwrite those changes. Save anyway?\n\n(Cancel, then reload the page to see the latest version.)`)) { $("saveMsg").textContent = "Not saved."; return; }
+    }
+    const r = await fetch(API, {method:"POST", headers:{"Content-Type":"application/json","x-admin-password":PW}, body: JSON.stringify(C)});
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.status);
+    LOADED_AT = j.updatedAt; $("saveMsg").textContent = "Published. The site updates immediately."; $("saveMsg").className = "msg ok";
+  } catch (e) { $("saveMsg").textContent = "Save failed: " + e.message; $("saveMsg").className = "msg err"; }
+}
+</script>
+</body>
+</html>

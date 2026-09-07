@@ -1,0 +1,14 @@
+{
+  "name": "7th Clare Scouts",
+  "short_name": "7th Clare",
+  "description": "7th Clare Scout Group, Ballyvaughan: events, notices, kit lists and contact.",
+  "start_url": "./index.html#home",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F4F1EA",
+  "theme_color": "#1B4A63",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
