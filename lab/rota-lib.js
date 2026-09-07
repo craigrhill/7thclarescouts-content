@@ -3,7 +3,9 @@
 const API = "/.netlify/functions/rota", TK = "rota-token";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const fmt = s => new Date(s + "T12:00:00").toLocaleDateString("en-IE", { weekday: "short", day: "numeric", month: "short" });
+// The year is shown only when it is not the current one, so a list spanning
+// years does not read as jumbled while this year's dates stay short.
+const fmt = s => { const d = new Date(s + "T12:00:00"); return d.toLocaleDateString("en-IE", { weekday: "short", day: "numeric", month: "short", ...(d.getFullYear() === new Date().getFullYear() ? {} : { year: "numeric" }) }); };
 let token = null; try { token = localStorage.getItem(TK); } catch {}
 function setToken(t){ token = t; try { if (t) localStorage.setItem(TK, t); else localStorage.removeItem(TK); } catch {} }
 let onUnauthorized = () => {};

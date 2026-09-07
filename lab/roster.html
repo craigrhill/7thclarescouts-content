@@ -60,13 +60,23 @@
       </table>
     </div>
 
+    <div class="card" id="eventsCard" hidden>
+      <h2>Calendar</h2>
+      <p class="small muted" id="eventsNote"></p>
+      <div class="add">
+        <div class="row"><input type="date" id="evDate"><input type="text" id="evTitle" placeholder="What is it?" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addEvent()}"></div>
+        <div class="row"><select id="evSection"></select><label class="small"><input type="checkbox" id="evPrivate"> Leaders only</label><button class="btn primary" onclick="addEvent()">Add</button><span class="small muted" id="evMsg"></span></div>
+      </div>
+      <table class="roster"><tbody id="events"></tbody></table>
+    </div>
+
   </section>
 </main>
 <footer class="wrap">Nothing on this page is public. Codes are personal.</footer>
 
 <script src="rota-lib.js"></script>
 <script>
-let C = null, D = null, editing = null;
+let C = null, D = null, editing = null, editingEvent = null;
 function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
 const personById = id => (D.people || []).find(p => p.id === id);
 const canManage = () => !!D.me.secretary || (!(D.people || []).some(p => p.secretary) && !!D.me.lead);
@@ -98,9 +108,64 @@ function render(){
     </div></td></tr>`;
   }).join("") : `<tr><td colspan="5" class="empty">Nobody yet. Add the first Scouter below.</td></tr>`;
   if (manage && !$("newSecs").children.length) $("newSecs").innerHTML = chips([], null);
+  renderEvents(manage);
 }
+
+// ---- calendar: public events live in the group content, leaders-only ones in the rota store ----
+const allEvents = () => [
+  ...((C.events || []).map(e => ({ ...e, priv: false }))),
+  ...(((D && D.events) || []).map(e => ({ ...e, priv: true }))),
+].sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
+const evKey = e => e.date + "|" + e.title;
+function renderEvents(manage){
+  $("eventsCard").hidden = !manage; if (!manage) return;
+  if (!$("evSection").children.length) $("evSection").innerHTML = `<option value="">Whole group</option>` + C.settings.sections.map(x => `<option value="${esc(x.key)}">${esc(x.name)}</option>`).join("");
+  const today = new Date().toISOString().slice(0, 10);
+  const all = allEvents(), soon = all.filter(e => (e.endDate || e.date) >= today), past = all.length - soon.length;
+  $("eventsNote").textContent = "A public event shows on the app calendar for parents and can be rostered. A leaders-only one shows on the rota only."
+    + (past ? " " + past + " past event" + (past === 1 ? "" : "s") + " not shown." : "");
+  $("events").innerHTML = soon.length ? soon.map(e => {
+    const k = evKey(e), open = editingEvent === k;
+    const row = `<tr class="person">
+      <td class="nm">${esc(fmt(e.date))}${e.endDate ? ` <span class="small muted">to ${esc(fmt(e.endDate))}</span>` : ""}</td>
+      <td>${esc(e.title)}${e.priv ? ` <span class="rbadge">leaders only</span>` : ""}</td>
+      <td>${e.section ? pill(C, e.section) : `<span class="small muted">whole group</span>`}</td>
+      <td class="act"><button class="btn quiet" onclick="editEvent('${esc(k)}')">${open ? "Close" : "Edit"}</button></td>
+    </tr>`;
+    if (!open) return row;
+    const kits = (C.kits || []).map(x => `<option value="${esc(x.id)}" ${x.id === (e.kitId || "") ? "selected" : ""}>${esc(x.title)}</option>`).join("");
+    const secs = C.settings.sections.map(x => `<option value="${esc(x.key)}" ${x.key === (e.section || "") ? "selected" : ""}>${esc(x.name)}</option>`).join("");
+    return row + `<tr class="editor"><td colspan="4"><div class="edrow">
+      <div class="row"><label>Starts <input type="date" id="edDate" value="${esc(e.date)}"></label><label>Ends <input type="date" id="edEnd" value="${esc(e.endDate || "")}"></label></div>
+      <div class="row"><input type="text" id="edTitle" value="${esc(e.title)}"></div>
+      <div class="row"><select id="edSection"><option value="">Whole group</option>${secs}</select><select id="edKit"><option value="">No kit list</option>${kits}</select></div>
+      <div class="row"><input type="text" id="edLocation" placeholder="Where" value="${esc(e.location || "")}"><input type="text" id="edTime" placeholder="Time" value="${esc(e.time || "")}"></div>
+      <div class="row"><textarea id="edDetails" placeholder="Details for parents" style="min-height:4rem">${esc(e.details || "")}</textarea></div>
+      <div class="row"><button class="btn primary" onclick="saveEvent('${esc(k)}',${e.priv})">Save</button><button class="btn quiet" onclick="removeEvent('${esc(k)}',${e.priv})">Remove</button><span class="small muted">${e.priv ? "Leaders only." : "On the public calendar."}</span></div>
+    </div></td></tr>`;
+  }).join("") : `<tr><td colspan="4" class="empty">Nothing coming up.</td></tr>`;
+}
+function editEvent(k){ editingEvent = editingEvent === k ? null : k; render(); }
+// A public event changes the group content, so reload that as well as the rota.
+async function afterEvents(){ C = await loadContent(); await load(); }
+const addEvent = () => guarded(async () => {
+  const date = $("evDate").value, title = $("evTitle").value.trim();
+  if (!date || !title) { $("evMsg").textContent = "A date and a title, please."; return; }
+  $("evMsg").textContent = "";
+  await api("POST", "?a=event", { date, title, section: $("evSection").value, private: $("evPrivate").checked });
+  $("evTitle").value = ""; await afterEvents();
+});
+const saveEvent = (key, priv) => guarded(async () => {
+  await api("POST", "?a=event-update", { key, private: priv, date: $("edDate").value, endDate: $("edEnd").value, title: $("edTitle").value,
+    section: $("edSection").value, kitId: $("edKit").value, location: $("edLocation").value, time: $("edTime").value, details: $("edDetails").value });
+  editingEvent = null; await afterEvents();
+});
+const removeEvent = (key, priv) => guarded(async () => {
+  if (!confirm("Remove this event?" + (priv ? "" : " It will disappear from the app calendar too."))) return;
+  editingEvent = null; await api("POST", "?a=event-remove", { key, private: priv }); await afterEvents();
+});
 async function load(){ showErr(""); D = await api("GET", "?sections="); $("gate").hidden = true; $("app").hidden = false; render(); }
-async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); await load().catch(() => {}); } }
+async function guarded(fn){ try { await fn(); } catch (e) { await load().catch(() => {}); showErr(e.message); } }
 function edit(id){ editing = editing === id ? null : id; render(); }
 const addPeople = () => guarded(async () => {
   const names = $("newName").value.split(/[,\n]/).map(x => x.trim()).filter(Boolean); if (!names.length) return;

@@ -72,7 +72,8 @@ function upcoming(k){
     const d = new Date(today); while (d.getDay() !== wd) d.setDate(d.getDate() + 1);
     for (let i = 0; i < 8; i++) { out.push({ id: "m:" + iso(d), date: iso(d), title: (section.name || "") + " meeting", sub: [section.time, section.venue].filter(Boolean).join(", "), kind: "meeting" }); d.setDate(d.getDate() + 7); }
   }
-  (C.events || []).filter(e => e.date >= iso(today) && (e.section === k || !e.section || e.section === "all"))
+  // Public events from the group calendar, plus any leaders-only ones.
+  [...(C.events || []), ...((D && D.events) || [])].filter(e => e.date >= iso(today) && (e.section === k || !e.section || e.section === "all"))
     .forEach(e => out.push({ id: "e:" + e.date + ":" + e.title, date: e.date, title: e.title, sub: [e.location, e.endDate ? "to " + fmt(e.endDate) : ""].filter(Boolean).join(", "), kind: "event" }));
   return out.sort((a, b) => a.date.localeCompare(b.date));
 }

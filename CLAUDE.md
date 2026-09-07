@@ -111,7 +111,7 @@ Shared, private data behind a personal code. Nothing in it is published.
 Store keys: `secret` (HMAC key, generated on first use, never leaves the
 server), `roster` (people with `id`, `name`, `sections`, `lead`, `secretary`,
 `code`, `codeHash`), `section/<key>` (`required` and `slots`, each slot `who` as
-person ids, `off`, optional `need`). Every write is guarded by the document's
+person ids, `off`, optional `need`), `events` (leaders-only calendar events). Every write is guarded by the document's
 etag and retried on conflict, so concurrent edits do not overwrite each other.
 
 Roles are flags on a person, and the function enforces them, not the pages:
@@ -124,7 +124,10 @@ Roles are flags on a person, and the function enforces them, not the pages:
   the store so the secretary can see them again; GET returns them to
   secretaries only, never to leads or helpers. Adding is a name (or
   several, comma separated), section chips and Add; the code shows in the
-  row.
+  row. The secretary also keeps the calendar there: a public event is
+  written into `content.json`, the same file `admin.html` edits, so it
+  reaches parents and the rota alike; a "leaders only" one is kept in the
+  rota store and shows on the rota only.
 * **lead** runs coverage on `rota.html`: adults needed per section and per
   meeting, anyone's ticks, weeks off. Leads see the roster there read-only.
 * neither: sees the rota, ticks only themselves, and sees only people who
@@ -153,6 +156,14 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
   keeps the deployed function self-contained so the zip-drop fallback works.
   `@netlify/blobs` is pinned exactly in package.json; bumping it changes the
   vendor code, so re-run the equivalence check before committing.
+* **The rota function writes `content.json` too.** Calendar events from the
+  secretary go through the same GitHub-or-Blobs path `content.mjs` uses, so
+  those helpers are duplicated in `netlify/src/rota.mjs`. One difference is
+  deliberate: `rota.mjs` writes with the sha from the read it based the
+  change on, so a concurrent save conflicts and is retried rather than
+  overwritten. `content.mjs` re-reads the sha immediately before writing,
+  which cannot conflict; it is safe there only because admin replaces the
+  whole document and warns on `updatedAt` drift first.
 * **Duplicated on purpose, change together.** `mergeContent` lives in both
   `admin.html` and `tools/apply-update.mjs`. `mergeBuiltInKits` lives in both
   `index.html` and `admin.html`. The admin password check (`BUILT_IN_HASH`

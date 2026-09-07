@@ -6,8 +6,16 @@
 import { createHandler, memoryStore } from "../netlify/src/rota.mjs";
 
 process.env.ADMIN_PASSWORD = "admin-for-test";
-const store = memoryStore();
-const handler = createHandler(() => store);
+const store = memoryStore(), contentStore = memoryStore();
+const stores = { rota: store, "site-content": contentStore };
+const handler = createHandler((name) => stores[name]);
+// A stand-in group calendar, as the content function would serve it.
+await contentStore.setJSON("content", {
+  settings: { sections: [{ key: "scouts", name: "Scouts" }, { key: "cubs", name: "Cubs" }, { key: "beavers", name: "Beavers" }] },
+  kits: [{ id: "sionnach", title: "Sionnach" }],
+  events: [{ date: "2030-05-01", title: "Existing camp", section: "scouts" }],
+  notices: [{ title: "keep me" }],
+});
 const base = "https://x.test/.netlify/functions/rota";
 let pass = 0, fail = 0;
 const ok = (name, got, want) => { const good = JSON.stringify(got) === JSON.stringify(want); good ? pass++ : fail++; console.log(`${good ? "PASS" : "FAIL"}  ${name}${good ? "" : `\n        got  ${JSON.stringify(got)}\n        want ${JSON.stringify(want)}`}`); };
@@ -106,6 +114,82 @@ ok("removing a person strips them from the section's ticks", [r.status, r.j.peop
 r = await call("GET", "?sections=scouts", { token: lead }); ok("removed person's token is revoked", r.status, 401);
 r = await call("GET", "?sections=scouts", { token: m2 });   ok("their ticks are gone from the slot", r.j.sections.scouts.slots[slot].who, [memberId]);
 ok("no code hashes leak in GET", JSON.stringify(r.j).includes("codeHash"), false);
+
+// ---- calendar events ----
+r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14", title: "Spring camp", section: "scouts", location: "Ruan", kitId: "sionnach", details: "Two nights." } });
+ok("secretary adds a public event", [r.status, r.j.events.map(e => e.title)], [200, ["Spring camp", "Existing camp"]]);
+ok("it carries only the fields given", r.j.events[0], { date: "2030-03-14", title: "Spring camp", section: "scouts", location: "Ruan", kitId: "sionnach", details: "Two nights." });
+{ const doc = await contentStore.get("content", { type: "json" });
+  ok("it is written into the group calendar, and the rest of the content is untouched", [doc.events.length, doc.notices[0].title, doc.updatedBy], [2, "keep me", "secretary"]); }
+r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14", title: "spring camp " } });
+ok("a duplicate date and title is refused", r.status, 409);
+r = await call("POST", "?a=event", { token: m2, body: { date: "not-a-date", title: "X" } });                        ok("a bad date is refused", r.status, 400);
+r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14" } });                                    ok("a missing title is refused", r.status, 400);
+r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14", title: "X", endDate: "2030-03-01" } }); ok("an end date before the start is refused", r.status, 400);
+r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14", title: "X", section: "nope" } });       ok("an unknown section is refused", r.status, 400);
+r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14", title: "X", kitId: "nope" } });         ok("an unknown kit list is refused", r.status, 400);
+r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14", title: "X".repeat(200), details: "d".repeat(3000) } });
+ok("long text is capped, not rejected", [r.j.events.find(e => e.title.startsWith("XX")).title.length, r.j.events.find(e => e.title.startsWith("XX")).details.length], [120, 2000]);
+r = await call("POST", "?a=event-remove", { token: m2, body: { key: "2030-03-14|" + "X".repeat(120) } });           ok("and can be removed again", r.status, 200);
+r = await call("POST", "?a=event-update", { token: m2, body: { key: "2030-03-14|Spring camp", date: "2030-03-21", title: "Spring camp", location: "Tulla" } });
+ok("editing moves the date and drops fields left out", [r.status, r.j.events.find(e => e.title === "Spring camp").date, "kitId" in r.j.events.find(e => e.title === "Spring camp")], [200, "2030-03-21", false]);
+r = await call("POST", "?a=event-update", { token: m2, body: { key: "2030-01-01|Nothing", date: "2030-01-01", title: "Nothing" } });
+ok("editing something that is not there is 404", r.status, 404);
+r = await call("POST", "?a=event-update", { token: m2, body: { key: "2030-03-21|Spring camp", date: "2030-05-01", title: "Existing camp" } });
+ok("editing onto another event's date and title is refused", r.status, 409);
+r = await call("POST", "?a=event", { token: m2, body: { private: true, date: "2030-04-02", title: "Leaders planning night", section: "scouts" } });
+ok("a leaders-only event is stored privately", [r.status, r.j.private, r.j.events.map(e => e.title)], [200, true, ["Leaders planning night"]]);
+{ const doc = await contentStore.get("content", { type: "json" });
+  ok("and never reaches the public calendar", doc.events.some(e => e.title === "Leaders planning night"), false); }
+r = await call("GET", "?sections=scouts", { token: m2 });
+ok("private events come back on GET", r.j.events.map(e => e.title), ["Leaders planning night"]);
+r = await call("GET", "?sections=scouts", { token: cubsLead });
+ok("a lead sees them too, so the rota can show them", r.j.events.length, 1);
+r = await call("POST", "?a=event", { token: cubsLead, body: { date: "2030-06-01", title: "Not allowed" } });
+ok("a section lead cannot add an event", r.status, 403);
+r = await call("POST", "?a=event-remove", { token: m2, body: { private: true, key: "2030-04-02|Leaders planning night" } });
+ok("a private event can be removed", r.j.events.length, 0);
+{ // With no calendar configured at all, a public event fails clearly and a private one still works.
+  const bare = memoryStore(); const h2 = createHandler((n) => (n === "rota" ? store : bare));
+  const rr = await h2(new Request(base + "?a=event", { method: "POST", headers: { "Content-Type": "application/json", "x-rota-token": m2 }, body: JSON.stringify({ date: "2030-07-01", title: "No calendar" }) }));
+  ok("no group calendar: a public event says so", [rr.status, (await rr.json()).error], [503, "The group calendar is not set up yet."]);
+  const rp = await h2(new Request(base + "?a=event", { method: "POST", headers: { "Content-Type": "application/json", "x-rota-token": m2 }, body: JSON.stringify({ private: true, date: "2030-07-01", title: "Still fine" }) }));
+  ok("no group calendar: a private event still works", rp.status, 200); }
+{ // The GitHub path: prove it reads and writes the right requests without touching Netlify.
+  const calls = []; const realFetch = globalThis.fetch;
+  const doc = { settings: { sections: [{ key: "scouts", name: "Scouts" }] }, kits: [], events: [], notices: [{ title: "keep" }] };
+  globalThis.fetch = async (url, init = {}) => {
+    calls.push({ url: String(url).split("?")[0], method: init.method || "GET" });
+    if ((init.method || "GET") === "GET") return new Response(JSON.stringify({ content: Buffer.from(JSON.stringify(doc)).toString("base64"), sha: "abc" }), { status: 200 });
+    const sent = JSON.parse(init.body); Object.assign(doc, JSON.parse(Buffer.from(sent.content, "base64").toString("utf8")));
+    return new Response("{}", { status: 200 });
+  };
+  process.env.GITHUB_REPO = "owner/repo"; process.env.GITHUB_TOKEN = "tok";
+  const rr = await call("POST", "?a=event", { token: m2, body: { date: "2031-01-01", title: "Via GitHub", section: "scouts" } });
+  delete process.env.GITHUB_REPO; delete process.env.GITHUB_TOKEN; globalThis.fetch = realFetch;
+  ok("the GitHub path writes the event and keeps the rest", [rr.status, doc.events.map(e => e.title), doc.notices[0].title, doc.updatedBy], [200, ["Via GitHub"], "keep", "secretary"]);
+  ok("it used the contents API, reading once then writing with that sha", [calls.every(c => c.url.startsWith("https://api.github.com/repos/owner/repo/contents/")), calls.map(c => c.method)], [true, ["GET", "PUT"]]); }
+
+{ // A save by someone else between our read and our write must not be clobbered:
+  // GitHub rejects the stale sha, and we redo the change on the newer document.
+  const realFetch = globalThis.fetch;
+  let doc = { settings: { sections: [{ key: "scouts", name: "Scouts" }] }, kits: [], events: [], notices: [] };
+  let sha = "sha-1", puts = 0;
+  globalThis.fetch = async (url, init = {}) => {
+    if ((init.method || "GET") === "GET") return new Response(JSON.stringify({ content: Buffer.from(JSON.stringify(doc)).toString("base64"), sha }), { status: 200 });
+    const sent = JSON.parse(init.body);
+    if (puts++ === 0) { // someone else saved first: their event lands, our sha is now stale
+      doc = { ...doc, events: [{ date: "2031-02-02", title: "Theirs" }] }; sha = "sha-2";
+      return new Response("{}", { status: 409 });
+    }
+    if (sent.sha !== sha) return new Response("{}", { status: 409 });
+    doc = JSON.parse(Buffer.from(sent.content, "base64").toString("utf8"));
+    return new Response("{}", { status: 200 });
+  };
+  process.env.GITHUB_REPO = "owner/repo"; process.env.GITHUB_TOKEN = "tok";
+  r = await call("POST", "?a=event", { token: m2, body: { date: "2031-03-03", title: "Ours" } });
+  delete process.env.GITHUB_REPO; delete process.env.GITHUB_TOKEN; globalThis.fetch = realFetch;
+  ok("a concurrent save is retried, and neither event is lost", [r.status, puts, doc.events.map(e => e.title)], [200, 2, ["Theirs", "Ours"]]); }
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -33,10 +33,19 @@
 //   POST   ?a=person-update {id,name?,sections?,lead?,secretary?}  { person }   secretary
 //   POST   ?a=person-remove {id,sections}                     { people }   secretary
 //   POST   ?a=recode   {id}                                   { code }   secretary
+//   POST   ?a=event        {date,title,section?,...,private?}  { events }   secretary
+//   POST   ?a=event-update {key,...}                           { events }   secretary
+//   POST   ?a=event-remove {key,private?}                      { events }   secretary
+//
+// Calendar events: a public one is written into content.json, the same file
+// admin.html edits, so it reaches parents and the rota alike. A "private" one
+// is kept in this store under "events" and never leaves the leaders' area.
+// Either way an event is identified by "date|title".
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { getStore } from "@netlify/blobs";
 
 const STORE = "rota";
+const CONTENT_STORE = "site-content", CONTENT_KEY = "content", CONTENT_FILE = "content.json";
 const TOKEN_DAYS = 365; // a code signs a phone in for a year
 // The admin password check is the same as in content.mjs, duplicated on purpose
 // so each built function stays self-contained. Change both together.
@@ -61,6 +70,62 @@ function adminOk(req) {
   const given = req.headers.get("x-admin-password") || "";
   const envPw = process.env.ADMIN_PASSWORD;
   return envPw ? safeEqual(given, envPw) : safeEqual(createHash("sha256").update(given).digest("hex"), BUILT_IN_HASH);
+}
+
+// ---- the public group calendar, in content.json ----
+// The same GitHub-or-Blobs path content.mjs uses, duplicated so this function
+// stays self-contained when bundled. Change both together.
+const gh = () => {
+  const repo = process.env.GITHUB_REPO, token = process.env.GITHUB_TOKEN;
+  if (!repo || !token) return null;
+  const path = process.env.GITHUB_PATH || CONTENT_FILE;
+  return { url: `https://api.github.com/repos/${repo}/contents/${path}`, token, branch: process.env.GITHUB_BRANCH || "main" };
+};
+const ghHeaders = (t) => ({ Authorization: `Bearer ${t}`, Accept: "application/vnd.github+json", "User-Agent": "7thclare-rota", "X-GitHub-Api-Version": "2022-11-28" });
+async function ghRead(g) {
+  const r = await fetch(`${g.url}?ref=${g.branch}&t=${Date.now()}`, { headers: ghHeaders(g.token) });
+  if (r.status === 404) return { data: null, sha: null };
+  if (!r.ok) throw new Error(`GitHub read failed: ${r.status}`);
+  const j = await r.json();
+  return { data: JSON.parse(Buffer.from(j.content.replace(/\n/g, ""), "base64").toString("utf8")), sha: j.sha };
+}
+// The sha passed in is the one from the read this change was based on, so a
+// save by someone else in between makes GitHub reject with 409 rather than
+// letting us overwrite it. Re-reading the sha here would defeat that.
+const CONFLICT = "conflict";
+async function ghWrite(g, data, message, sha) {
+  const body = { message, content: Buffer.from(JSON.stringify(data, null, 2)).toString("base64"), branch: g.branch };
+  if (sha) body.sha = sha;
+  const r = await fetch(g.url, { method: "PUT", headers: { ...ghHeaders(g.token), "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (r.status === 409 || r.status === 422) throw new Error(CONFLICT);
+  if (!r.ok) throw new Error(`GitHub write failed: ${r.status}`);
+}
+async function readContent(storeFactory) {
+  const g = gh();
+  if (g) { const { data, sha } = await ghRead(g); if (data) return { doc: data, sha }; }
+  const doc = await storeFactory(CONTENT_STORE).get(CONTENT_KEY, { type: "json" });
+  if (!doc) throw new Error("The group calendar is not set up yet.");
+  return { doc, sha: null };
+}
+// Read the whole content document, change only its events, write it back,
+// retrying if someone else saved while we were working.
+async function withContentEvents(storeFactory, fn) {
+  const g = gh();
+  for (let attempt = 0; ; attempt++) {
+    const { doc, sha } = await readContent(storeFactory);
+    const out = fn(doc);
+    if (out.error) return out;
+    doc.events = out.events;
+    doc.updatedAt = new Date().toISOString();
+    doc.updatedBy = "secretary";
+    try {
+      if (g) await ghWrite(g, doc, `Calendar update ${doc.updatedAt}`, sha);
+      else await storeFactory(CONTENT_STORE).setJSON(CONTENT_KEY, doc);
+      return out;
+    } catch (e) {
+      if (String(e.message) !== CONFLICT || attempt >= 2) throw e;
+    }
+  }
 }
 
 // ---- store access with optimistic concurrency ----
@@ -114,6 +179,31 @@ function readToken(sec, token) {
 
 // ---- shapes and validation ----
 const rosterFallback = () => ({ people: [] });
+const eventsFallback = () => ({ events: [] });
+const eventKey = (e) => e.date + "|" + e.title;
+const sameEvent = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+const isDate = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v + "T12:00:00Z"));
+const oneLine = (v, n) => String(v ?? "").trim().replace(/\s+/g, " ").slice(0, n);
+// Events go on the public site, so every field is checked and capped here.
+function cleanEvent(b, sectionKeys, kitIds) {
+  if (!isDate(b.date)) return { error: "A start date is needed." };
+  const title = oneLine(b.title, 120);
+  if (!title) return { error: "A title is needed." };
+  const e = { date: b.date, title };
+  if (b.endDate) {
+    if (!isDate(b.endDate)) return { error: "That end date is not a date." };
+    if (b.endDate < b.date) return { error: "The end date is before the start date." };
+    e.endDate = b.endDate;
+  }
+  const section = oneLine(b.section, 32);
+  if (section) { if (!sectionKeys.includes(section)) return { error: "Unknown section." }; e.section = section; }
+  const location = oneLine(b.location, 120); if (location) e.location = location;
+  const time = oneLine(b.time, 60); if (time) e.time = time;
+  const kitId = oneLine(b.kitId, 32);
+  if (kitId) { if (!kitIds.includes(kitId)) return { error: "Unknown kit list." }; e.kitId = kitId; }
+  const details = String(b.details ?? "").trim().slice(0, 2000); if (details) e.details = details;
+  return { event: e };
+}
 const sectionFallback = () => ({ required: 2, slots: {} });
 const pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, ...(withCode ? { code: p.code || null } : {}) });
 const isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
@@ -128,7 +218,7 @@ export function createHandler(storeFactory) {
     const url = new URL(req.url);
     const a = url.searchParams.get("a") || "";
     try {
-      const store = storeFactory();
+      const store = storeFactory(STORE);
       const sec = await secret(store);
 
       // Unauthenticated entry points.
@@ -169,7 +259,8 @@ export function createHandler(storeFactory) {
         // Leads and the secretary see everyone. Others see the people who share a section with them, which is all coverage needs.
         const mine = new Set(me.sections || []);
         const visible = (me.lead || canManage) ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
-        return json(200, { me: pub(me, canManage), people: visible.map((p) => pub(p, canManage)), sections });
+        const { doc: ev } = await readDoc(store, "events", eventsFallback);
+        return json(200, { me: pub(me, canManage), people: visible.map((p) => pub(p, canManage)), sections, events: ev.events || [] });
       }
       if (req.method !== "POST") return fail(405, "Method not allowed.");
       const b = await body(req);
@@ -202,7 +293,59 @@ export function createHandler(storeFactory) {
         const doc = await update(store, "section/" + b.section, sectionFallback, (d) => { d.required = n; for (const s of Object.values(d.slots)) if (s.need === n) delete s.need; return d; });
         return json(200, { section: doc });
       }
-      if (!canManage) return fail(403, "Only the secretary can change the roster.");
+      if (!canManage) return fail(403, "Only the secretary can do that.");
+
+      if (a === "event" || a === "event-update" || a === "event-remove") {
+        const isPrivate = !!b.private;
+        // Apply the change to a list of events, or return an error to report.
+        // Sections and kit lists are checked against the group calendar even for
+        // a private event, so the two stay consistent.
+        const apply = (list, content) => {
+          const sectionKeys = ((content && content.settings.sections) || []).map((x) => x.key);
+          const kitIds = ((content && content.kits) || []).map((k) => k.id);
+          if (a === "event-remove") {
+            const next = list.filter((e) => !sameEvent(eventKey(e), b.key));
+            return next.length === list.length ? { error: [404, "No such event."] } : { events: next };
+          }
+          const { event, error } = cleanEvent(b, sectionKeys, kitIds);
+          if (error) return { error: [400, error] };
+          const key = eventKey(event);
+          const clash = (skip) => list.some((e, i) => i !== skip && sameEvent(eventKey(e), key));
+          if (a === "event") {
+            if (clash(-1)) return { error: [409, "There is already an event with that date and title."] };
+            return { events: [...list, event] };
+          }
+          const i = list.findIndex((e) => sameEvent(eventKey(e), b.key));
+          if (i < 0) return { error: [404, "No such event."] };
+          if (clash(i)) return { error: [409, "There is already an event with that date and title."] };
+          const next = [...list]; next[i] = event; return { events: next };
+        };
+        const sort = (l) => l.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
+
+        let out;
+        if (isPrivate) {
+          let content = null;
+          try { content = (await readContent(storeFactory)).doc; } catch {}
+          let err = null;
+          const d = await update(store, "events", eventsFallback, (doc) => {
+            const r2 = apply(doc.events || [], content);
+            if (r2.error) { err = r2.error; return false; }
+            doc.events = sort(r2.events); return doc;
+          });
+          if (err) return fail(err[0], err[1]);
+          out = { events: d.events };
+        } else {
+          try {
+            out = await withContentEvents(storeFactory, (doc) => {
+              const r2 = apply(Array.isArray(doc.events) ? doc.events : [], doc);
+              return r2.error ? r2 : { events: sort(r2.events) };
+            });
+          } catch (e) { return fail(503, String(e.message || e)); }
+          if (out.error) return fail(out.error[0], out.error[1]);
+        }
+        return json(200, { events: out.events, private: isPrivate });
+      }
+
 
       if (a === "person") {
         const name = cleanName(b.name); if (!name) return fail(400, "A name is needed.");
@@ -263,6 +406,8 @@ export function memoryStore() {
       const e = m.get(key); if (!e) return null;
       return { data: opts.type === "json" ? JSON.parse(e.value) : e.value, etag: e.etag, metadata: {} };
     },
+    async get(key, opts = {}) { const e = m.get(key); if (!e) return null; return opts.type === "json" ? JSON.parse(e.value) : e.value; },
+    async setJSON(key, value) { m.set(key, { value: JSON.stringify(value), etag: randomBytes(6).toString("hex") }); },
     async set(key, value, opts = {}) {
       const cur = m.get(key);
       if (opts.onlyIfNew && cur) return { modified: false };
@@ -274,4 +419,4 @@ export function memoryStore() {
   };
 }
 
-export default createHandler(() => getStore(STORE));
+export default createHandler((name) => getStore(name));

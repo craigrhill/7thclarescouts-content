@@ -169,15 +169,15 @@ var DEFAULT_RETRY_DELAY = getEnvironment().get("NODE_ENV") === "test" ? 1 : 5e3;
 var MIN_RETRY_DELAY = 1e3;
 var MAX_RETRY = 5;
 var RATE_LIMIT_HEADER = "X-RateLimit-Reset";
-var fetchAndRetry = async (fetch, url, options, attemptsLeft = MAX_RETRY, getRetryUrl) => {
+var fetchAndRetry = async (fetch2, url, options, attemptsLeft = MAX_RETRY, getRetryUrl) => {
   try {
-    const res = await fetch(url, options);
+    const res = await fetch2(url, options);
     const isRetryable = res.status === 429 || res.status >= 500 || getRetryUrl !== void 0 && res.status === 403;
     if (attemptsLeft > 0 && isRetryable) {
       const delay = getDelay(res.headers.get(RATE_LIMIT_HEADER));
       await sleep(delay);
       const retryUrl = getRetryUrl ? await getRetryUrl() : url;
-      return fetchAndRetry(fetch, retryUrl, options, attemptsLeft - 1, getRetryUrl);
+      return fetchAndRetry(fetch2, retryUrl, options, attemptsLeft - 1, getRetryUrl);
     }
     return res;
   } catch (error) {
@@ -187,7 +187,7 @@ var fetchAndRetry = async (fetch, url, options, attemptsLeft = MAX_RETRY, getRet
     const delay = getDelay();
     await sleep(delay);
     const retryUrl = getRetryUrl ? await getRetryUrl() : url;
-    return fetchAndRetry(fetch, retryUrl, options, attemptsLeft - 1, getRetryUrl);
+    return fetchAndRetry(fetch2, retryUrl, options, attemptsLeft - 1, getRetryUrl);
   }
 };
 var getDelay = (rateLimitReset) => {
@@ -201,11 +201,11 @@ var sleep = (ms) => new Promise((resolve) => {
 });
 var SIGNED_URL_ACCEPT_HEADER = "application/json;type=signed-url";
 var Client = class {
-  constructor({ apiURL, consistency, edgeURL, fetch, region, siteID, token, uncachedEdgeURL }) {
+  constructor({ apiURL, consistency, edgeURL, fetch: fetch2, region, siteID, token, uncachedEdgeURL }) {
     this.apiURL = apiURL;
     this.consistency = consistency ?? "eventual";
     this.edgeURL = edgeURL;
-    this.fetch = fetch ?? globalThis.fetch;
+    this.fetch = fetch2 ?? globalThis.fetch;
     this.region = region;
     this.siteID = siteID;
     this.token = token;
@@ -810,6 +810,9 @@ var getStore = (input, options) => {
 
 // netlify/src/rota.mjs
 var STORE = "rota";
+var CONTENT_STORE = "site-content";
+var CONTENT_KEY = "content";
+var CONTENT_FILE = "content.json";
 var TOKEN_DAYS = 365;
 var BUILT_IN_HASH = "e5aea01f131ba1b26c0c87bb21822cc93e73039466bf15f6cae3a1b77ac1235d";
 var headers = {
@@ -831,6 +834,56 @@ function adminOk(req) {
   const given = req.headers.get("x-admin-password") || "";
   const envPw = process.env.ADMIN_PASSWORD;
   return envPw ? safeEqual(given, envPw) : safeEqual(createHash("sha256").update(given).digest("hex"), BUILT_IN_HASH);
+}
+var gh = () => {
+  const repo = process.env.GITHUB_REPO, token = process.env.GITHUB_TOKEN;
+  if (!repo || !token) return null;
+  const path = process.env.GITHUB_PATH || CONTENT_FILE;
+  return { url: `https://api.github.com/repos/${repo}/contents/${path}`, token, branch: process.env.GITHUB_BRANCH || "main" };
+};
+var ghHeaders = (t) => ({ Authorization: `Bearer ${t}`, Accept: "application/vnd.github+json", "User-Agent": "7thclare-rota", "X-GitHub-Api-Version": "2022-11-28" });
+async function ghRead(g) {
+  const r = await fetch(`${g.url}?ref=${g.branch}&t=${Date.now()}`, { headers: ghHeaders(g.token) });
+  if (r.status === 404) return { data: null, sha: null };
+  if (!r.ok) throw new Error(`GitHub read failed: ${r.status}`);
+  const j = await r.json();
+  return { data: JSON.parse(Buffer.from(j.content.replace(/\n/g, ""), "base64").toString("utf8")), sha: j.sha };
+}
+var CONFLICT = "conflict";
+async function ghWrite(g, data, message, sha) {
+  const body2 = { message, content: Buffer.from(JSON.stringify(data, null, 2)).toString("base64"), branch: g.branch };
+  if (sha) body2.sha = sha;
+  const r = await fetch(g.url, { method: "PUT", headers: { ...ghHeaders(g.token), "Content-Type": "application/json" }, body: JSON.stringify(body2) });
+  if (r.status === 409 || r.status === 422) throw new Error(CONFLICT);
+  if (!r.ok) throw new Error(`GitHub write failed: ${r.status}`);
+}
+async function readContent(storeFactory) {
+  const g = gh();
+  if (g) {
+    const { data, sha } = await ghRead(g);
+    if (data) return { doc: data, sha };
+  }
+  const doc = await storeFactory(CONTENT_STORE).get(CONTENT_KEY, { type: "json" });
+  if (!doc) throw new Error("The group calendar is not set up yet.");
+  return { doc, sha: null };
+}
+async function withContentEvents(storeFactory, fn) {
+  const g = gh();
+  for (let attempt = 0; ; attempt++) {
+    const { doc, sha } = await readContent(storeFactory);
+    const out = fn(doc);
+    if (out.error) return out;
+    doc.events = out.events;
+    doc.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    doc.updatedBy = "secretary";
+    try {
+      if (g) await ghWrite(g, doc, `Calendar update ${doc.updatedAt}`, sha);
+      else await storeFactory(CONTENT_STORE).setJSON(CONTENT_KEY, doc);
+      return out;
+    } catch (e) {
+      if (String(e.message) !== CONFLICT || attempt >= 2) throw e;
+    }
+  }
 }
 async function readDoc(store, key, fallback) {
   const r = await store.getWithMetadata(key, { type: "json", consistency: "strong" });
@@ -888,6 +941,39 @@ function readToken(sec, token) {
   }
 }
 var rosterFallback = () => ({ people: [] });
+var eventsFallback = () => ({ events: [] });
+var eventKey = (e) => e.date + "|" + e.title;
+var sameEvent = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+var isDate = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v + "T12:00:00Z"));
+var oneLine = (v, n) => String(v ?? "").trim().replace(/\s+/g, " ").slice(0, n);
+function cleanEvent(b, sectionKeys, kitIds) {
+  if (!isDate(b.date)) return { error: "A start date is needed." };
+  const title = oneLine(b.title, 120);
+  if (!title) return { error: "A title is needed." };
+  const e = { date: b.date, title };
+  if (b.endDate) {
+    if (!isDate(b.endDate)) return { error: "That end date is not a date." };
+    if (b.endDate < b.date) return { error: "The end date is before the start date." };
+    e.endDate = b.endDate;
+  }
+  const section = oneLine(b.section, 32);
+  if (section) {
+    if (!sectionKeys.includes(section)) return { error: "Unknown section." };
+    e.section = section;
+  }
+  const location = oneLine(b.location, 120);
+  if (location) e.location = location;
+  const time = oneLine(b.time, 60);
+  if (time) e.time = time;
+  const kitId = oneLine(b.kitId, 32);
+  if (kitId) {
+    if (!kitIds.includes(kitId)) return { error: "Unknown kit list." };
+    e.kitId = kitId;
+  }
+  const details = String(b.details ?? "").trim().slice(0, 2e3);
+  if (details) e.details = details;
+  return { event: e };
+}
 var sectionFallback = () => ({ required: 2, slots: {} });
 var pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, ...withCode ? { code: p.code || null } : {} });
 var isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
@@ -908,7 +994,7 @@ function createHandler(storeFactory) {
     const url = new URL(req.url);
     const a = url.searchParams.get("a") || "";
     try {
-      const store = storeFactory();
+      const store = storeFactory(STORE);
       const sec = await secret(store);
       if (req.method === "POST" && a === "bootstrap") {
         if (!adminOk(req)) return fail(401, "Wrong password.");
@@ -959,7 +1045,8 @@ function createHandler(storeFactory) {
         }
         const mine = new Set(me.sections || []);
         const visible = me.lead || canManage ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
-        return json(200, { me: pub(me, canManage), people: visible.map((p) => pub(p, canManage)), sections });
+        const { doc: ev } = await readDoc(store, "events", eventsFallback);
+        return json(200, { me: pub(me, canManage), people: visible.map((p) => pub(p, canManage)), sections, events: ev.events || [] });
       }
       if (req.method !== "POST") return fail(405, "Method not allowed.");
       const b = await body(req);
@@ -998,7 +1085,64 @@ function createHandler(storeFactory) {
         });
         return json(200, { section: doc });
       }
-      if (!canManage) return fail(403, "Only the secretary can change the roster.");
+      if (!canManage) return fail(403, "Only the secretary can do that.");
+      if (a === "event" || a === "event-update" || a === "event-remove") {
+        const isPrivate = !!b.private;
+        const apply = (list, content) => {
+          const sectionKeys = (content && content.settings.sections || []).map((x) => x.key);
+          const kitIds = (content && content.kits || []).map((k) => k.id);
+          if (a === "event-remove") {
+            const next2 = list.filter((e) => !sameEvent(eventKey(e), b.key));
+            return next2.length === list.length ? { error: [404, "No such event."] } : { events: next2 };
+          }
+          const { event, error } = cleanEvent(b, sectionKeys, kitIds);
+          if (error) return { error: [400, error] };
+          const key = eventKey(event);
+          const clash = (skip) => list.some((e, i2) => i2 !== skip && sameEvent(eventKey(e), key));
+          if (a === "event") {
+            if (clash(-1)) return { error: [409, "There is already an event with that date and title."] };
+            return { events: [...list, event] };
+          }
+          const i = list.findIndex((e) => sameEvent(eventKey(e), b.key));
+          if (i < 0) return { error: [404, "No such event."] };
+          if (clash(i)) return { error: [409, "There is already an event with that date and title."] };
+          const next = [...list];
+          next[i] = event;
+          return { events: next };
+        };
+        const sort = (l) => l.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
+        let out;
+        if (isPrivate) {
+          let content = null;
+          try {
+            content = (await readContent(storeFactory)).doc;
+          } catch {
+          }
+          let err = null;
+          const d = await update(store, "events", eventsFallback, (doc) => {
+            const r2 = apply(doc.events || [], content);
+            if (r2.error) {
+              err = r2.error;
+              return false;
+            }
+            doc.events = sort(r2.events);
+            return doc;
+          });
+          if (err) return fail(err[0], err[1]);
+          out = { events: d.events };
+        } else {
+          try {
+            out = await withContentEvents(storeFactory, (doc) => {
+              const r2 = apply(Array.isArray(doc.events) ? doc.events : [], doc);
+              return r2.error ? r2 : { events: sort(r2.events) };
+            });
+          } catch (e) {
+            return fail(503, String(e.message || e));
+          }
+          if (out.error) return fail(out.error[0], out.error[1]);
+        }
+        return json(200, { events: out.events, private: isPrivate });
+      }
       if (a === "person") {
         const name = cleanName(b.name);
         if (!name) return fail(400, "A name is needed.");
@@ -1078,6 +1222,14 @@ function memoryStore() {
       if (!e) return null;
       return { data: opts.type === "json" ? JSON.parse(e.value) : e.value, etag: e.etag, metadata: {} };
     },
+    async get(key, opts = {}) {
+      const e = m.get(key);
+      if (!e) return null;
+      return opts.type === "json" ? JSON.parse(e.value) : e.value;
+    },
+    async setJSON(key, value) {
+      m.set(key, { value: JSON.stringify(value), etag: randomBytes(6).toString("hex") });
+    },
     async set(key, value, opts = {}) {
       const cur = m.get(key);
       if (opts.onlyIfNew && cur) return { modified: false };
@@ -1088,7 +1240,7 @@ function memoryStore() {
     }
   };
 }
-var rota_default = createHandler(() => getStore(STORE));
+var rota_default = createHandler((name) => getStore(name));
 export {
   createHandler,
   rota_default as default,

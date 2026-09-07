@@ -32,7 +32,7 @@ const names = async (p) => (await p.locator("#people .person .nm").allInnerTexts
 const addOnRoster = async (p, name, secs, lead) => {
   for (const i of await p.locator("#newSecs input").all()) await i.uncheck();
   await p.fill("#newName", name); for (const s of secs) await p.locator(`#newSecs input[data-key=${s}]`).check(); if (lead) await p.check("#newLead");
-  await p.getByRole("button", { name: "Add", exact: true }).click(); await p.waitForTimeout(800);
+  await p.locator("#addCard").getByRole("button", { name: "Add", exact: true }).click(); await p.waitForTimeout(800);
   return (await p.locator("#people tr.person", { hasText: name.split(",")[0].trim() }).locator("td.code-cell code").innerText()).trim();
 };
 
@@ -54,7 +54,7 @@ try {
   ok("a newly added row is highlighted", await S.locator("#people tr.fresh").count() >= 1, true);
   ok("section chips stay ticked for the next add", await S.locator("#newSecs input[data-key=beavers]").isChecked(), true);
   ok("no secretary checkbox on the add form", await S.locator("#newSecretary").count(), 0);
-  await S.fill("#newName", "Bulk One, Bulk Two"); await S.getByRole("button", { name: "Add", exact: true }).click(); await S.waitForTimeout(1200);
+  await S.fill("#newName", "Bulk One, Bulk Two"); await S.locator("#addCard").getByRole("button", { name: "Add", exact: true }).click(); await S.waitForTimeout(1200);
   ok("several names at once, comma separated", (await names(S)).slice(-2), ["Bulk One", "Bulk Two"]);
   ok("both got codes", await S.locator("#people tr.person td.code-cell code").count(), 6);
   for (const n of ["Bulk One", "Bulk Two"]) { await S.locator("#people tr.person", { hasText: n }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(150); await S.locator("#people tr.editor button:has-text('Remove from roster')").click(); await S.waitForTimeout(700); }
@@ -120,6 +120,37 @@ try {
   await S2.screenshot({ path: ".e2e/roster-1280.png" });
   await L.click("text=Sign out"); await L.waitForTimeout(300);
   ok("sign out returns to the gate", await L.locator("#gate").isVisible(), true);
+  // ---- calendar ----
+  const evRows = async (p) => (await p.locator("#events tr.person td.nm").allInnerTexts()).map((t) => t.trim());
+  ok("only the secretary sees the calendar card", [await S.locator("#eventsCard").isVisible(), await L.locator("#eventsCard").count(), await M.locator("#eventsCard").count()], [true, 0, 0]);
+  const before = (await evRows(S)).length;
+  await S.fill("#evDate", "2030-03-14"); await S.fill("#evTitle", "Spring camp");
+  await S.selectOption("#evSection", "scouts");
+  await S.locator("#eventsCard").getByRole("button", { name: "Add", exact: true }).click(); await S.waitForTimeout(1200);
+  ok("secretary adds a public event", (await evRows(S)).length, before + 1);
+  ok("it reached the group content endpoint, so parents and the rota see it", await S.evaluate(async () => (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).events.some((e) => e.title === "Spring camp")), true);
+  await S.fill("#evDate", "2030-04-02"); await S.fill("#evTitle", "Leaders planning night"); await S.check("#evPrivate");
+  await S.locator("#eventsCard").getByRole("button", { name: "Add", exact: true }).click(); await S.waitForTimeout(1200);
+  ok("a leaders-only event is marked as such", await S.locator("#events tr.person", { hasText: "Leaders planning night" }).locator(".rbadge").innerText(), "LEADERS ONLY");
+  ok("and stays off the public calendar", await S.evaluate(async () => (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).events.some((e) => e.title === "Leaders planning night")), false);
+  await S.uncheck("#evPrivate");
+  await S.fill("#evDate", "2030-03-14"); await S.fill("#evTitle", "Spring camp");
+  await S.locator("#eventsCard").getByRole("button", { name: "Add", exact: true }).click(); await S.waitForTimeout(1000);
+  ok("a duplicate is refused with a reason", (await S.locator("#err").innerText()).includes("already an event"), true);
+  await S.fill("#evTitle", "");
+  await S.locator("#events tr.person", { hasText: "Spring camp" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(250);
+  await S.fill("#edLocation", "Ruan"); await S.selectOption("#edKit", "sionnach");
+  await S.locator("#events tr.editor button:has-text('Save')").click(); await S.waitForTimeout(1200);
+  ok("editing an event saves the extra fields", await S.evaluate(async () => { const e = (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).events.find((x) => x.title === "Spring camp"); return [e.location, e.kitId]; }), ["Ruan", "sionnach"]);
+  const L2 = await page(1280, 900); await go(L2, "rota.html"); await L2.fill("#code", leadCode); await signInBtn(L2).click(); await L2.waitForTimeout(900); await pickSec(L2, "Scouts");
+  const slotText = (await L2.locator(".slot").allInnerTexts()).join(" | ");
+  ok("the lead sees both new events on the rota", [slotText.includes("Spring camp"), slotText.includes("Leaders planning night")], [true, true]);
+  await L2.screenshot({ path: ".e2e/rota-with-events-1280.png" });
+  await S.locator("#events tr.person", { hasText: "Leaders planning night" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(250);
+  await S.locator("#events tr.editor button:has-text('Remove')").click(); await S.waitForTimeout(1200);
+  ok("a leaders-only event can be removed", (await evRows(S)).length, before + 1);
+  await S.screenshot({ path: ".e2e/roster-calendar-390.png", fullPage: true });
+
   await S.locator("#people tr.person", { hasText: "Lead Test" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(150);
   ok("editor offers to hand the secretary role over", await S.locator("#people tr.editor button:has-text('Make secretary instead of me')").count(), 1);
   await S.locator("#people tr.editor button:has-text('Make secretary instead of me')").click(); await S.waitForTimeout(1200);
