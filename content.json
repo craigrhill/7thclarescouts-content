@@ -167,6 +167,15 @@
       "section": "scouts",
       "location": "Kilrush",
       "details": "Water activities weekend."
+    },
+    {
+      "date": "2026-09-25",
+      "endDate": "2026-09-27",
+      "title": "Sionnach Adventure, Maamturks",
+      "section": "scouts",
+      "location": "Connemara (Lough Inagh side)",
+      "kitId": "sionnach",
+      "details": "Two nights under canvas in the Maamturks. Packing night is the meeting beforehand: bring your full rucksack."
     }
   ],
   "news": [
@@ -180,14 +189,31 @@
     {
       "id": "sionnach",
       "title": "Sionnach Adventure",
-      "event": "Two-night mountain expedition, patrols of four, Friday to Sunday",
-      "summary": "You carry everything for two nights on the hill: tent, food, water, cooking gear and clothes. One rucksack only, nothing carried in your hands, and no day bags. Pack light, pack dry, and pack it yourself so you know where everything is.",
+      "event": "Two nights under canvas in the mountains, patrols of four plus one leader, Friday night to Sunday",
+      "summary": "You carry everything for two nights on the hill: tent, food, water, cooking gear and clothes. One rucksack only (65 to 70 litres is plenty), nothing carried in your hands, and no day bags. Staff check gear at Friday check-in and anyone missing essentials is sent home, so pack it yourself and pack it at the meeting the week before.",
+      "docs": [
+        {
+          "title": "Sionnach Adventure: Fail to Prepare, Prepare to Fail (PDF)",
+          "url": "docs/Sionnach_Tips.pdf",
+          "note": "The official preparation guide. Read it with your patrol before packing night."
+        },
+        {
+          "title": "sionnach.org",
+          "url": "https://www.sionnach.org",
+          "note": "Full kit list and a sample programme for the three meetings before a Sionnach."
+        }
+      ],
       "tips": [
-        "Line your rucksack with a heavy-duty plastic bag (a compost or fertiliser bag is ideal) and put sleeping bag and spare clothes in their own dry bags inside it. Double waterproofing is the rule.",
-        "Heavy things go close to your back, middle to bottom. Light things on top. Waterproofs, map, compass, snacks and water go in the lid or side pockets where you can reach them.",
-        "The weight should sit on your hips, not your shoulders, and nothing should swing when you walk. Wear the packed bag at a meeting before the event and get a leader to help you adjust the straps.",
-        "Boots must be broken in over a few weeks. Runners and trail shoes are not allowed and you will be sent home.",
-        "Friday dinner is eaten before you leave or on the way. Plan for two breakfasts, two lunches and one patrol dinner."
+        "Packing night: bring your packed rucksack to the meeting the week before. Empty it, repack it with the patrol, add the shared troop kit, then get a leader to adjust the straps. Weight on the hips, not the shoulders, and nothing swinging.",
+        "Line the rucksack with a heavy-duty plastic bag (a compost or fertiliser bag is ideal) and put sleeping bag and spare clothes in their own dry bags inside. Double waterproofing is the rule.",
+        "Heavy things close to your back, middle to bottom. Sleeping bag at the bottom in a compression sack, mat on top. Waterproofs, head torch, map, compass, snacks and water go in the lid or side pockets: Friday night arrival is dark and chaotic.",
+        "Everything must fit inside the bag except the roll mat and tent poles. Gear hanging off the outside wastes energy and gets wet.",
+        "Practise before you go: taking and walking on a bearing, adding magnetic variation, pacing 100 m, and writing a route card from the map extract the coordinator emails out. Do not write or draw on your map.",
+        "Friday: eat dinner before you leave or on the way. A light supper (biscuits, a hot dog) is all you'll cook on arrival. Get to sleep; Saturday is long.",
+        "Saturday: leaders' meeting at about 9 am, then walk to High Camp. Pitch away from hollows and water channels, peg out fully and use every guy line even if the weather looks fine. Leave gear in a dry bag, don't lay out bedding yet.",
+        "From High Camp you head out for the summit or horseshoe loop with just a bag, lunch, first aid kit, storm shelter, Trangia, torch and one well-protected sleeping bag. Only stop for lunch at a checkpoint.",
+        "Boil water from the stream for dinner, put warm layers on before it gets cold and dark, and take every scrap of rubbish home. Leave no trace.",
+        "Sunday: Scouts' Own at High Camp, badges, then walk out. Leave a full change of clothes in the car for the drive home. Small car parks mean you may be blocked in for a while, so tell whoever is collecting you."
       ],
       "groups": [
         {
@@ -195,7 +221,7 @@
           "items": [
             {
               "n": "Walking boots",
-              "note": "Broken in, ankle support, good sole. Leather ideally. No runners or trail shoes.",
+              "note": "Your own, broken in over a few weeks. Strong sole, ankle support, leather ideally: fabric and Gore-Tex boots don't survive Irish bog. Runners or trail shoes mean you go home.",
               "must": true
             },
             {
@@ -218,13 +244,13 @@
               "must": true
             },
             {
-              "n": "Hat and gloves",
-              "note": "Warm hat, plus a spare pair of gloves in the bag",
+              "n": "Warm hat and gloves",
+              "note": "Plus a spare pair of gloves in the bag",
               "must": true
             },
             {
               "n": "Gaiters",
-              "note": "Very useful in bog; strongly recommended"
+              "note": "Great with boots and waterproof trousers in bog; strongly recommended"
             }
           ]
         },
@@ -233,18 +259,22 @@
           "items": [
             {
               "n": "Waterproof jacket with hood",
-              "note": "Proper hillwalking waterproof: covers wrists and bum, has a hood. Not a ski jacket, not a mac-in-a-sac.",
+              "note": "Real hillwalking waterproof: covers your wrists, covers your bum, handy pockets, a hood. Not a ski jacket (snowproof, not waterproof) and not a mac-in-a-sac.",
               "must": true
             },
             {
               "n": "Waterproof over-trousers",
-              "note": "Pull-on or zipped, must go over boots",
+              "note": "Pull-on or zipped; long enough to cover the ankle of your boot",
               "must": true
+            },
+            {
+              "n": "Second waterproof jacket",
+              "note": "Optional but handy if the first one soaks through"
             }
           ]
         },
         {
-          "name": "Spare clothes (in a dry bag)",
+          "name": "Spare clothes (in their own dry bag)",
           "items": [
             {
               "n": "Spare base layer top",
@@ -271,6 +301,10 @@
             {
               "n": "Spare trousers",
               "note": "Lightweight"
+            },
+            {
+              "n": "Full change of clothes for the car",
+              "note": "Left in the car, not carried. For the drive home and the cuppa afterwards."
             }
           ]
         },
@@ -279,17 +313,46 @@
           "items": [
             {
               "n": "Sleeping bag",
-              "note": "3-season, in a dry bag, packed at the bottom of the rucksack",
+              "note": "3-season, in a compression sack inside a dry bag, at the bottom of the rucksack",
               "must": true
             },
             {
               "n": "Sleeping mat",
-              "note": "Foam or inflatable; strapped outside or inside",
+              "note": "Foam or inflatable; the one thing allowed strapped on top",
               "must": true
             },
             {
-              "n": "Tent (shared)",
-              "note": "Lightweight 2 or 3 person, split between the patrol. No dome tents with fibreglass poles, no Icelandics.",
+              "n": "Ear plugs",
+              "note": "Leaders snore"
+            }
+          ]
+        },
+        {
+          "name": "Troop kit (provided by the group, shared out across the patrol)",
+          "items": [
+            {
+              "n": "Hike tent",
+              "note": "Lightweight, separate flysheet and inner, low profile, aluminium poles. No dome tents (heavy fibreglass poles, single skin, catch the wind) and no Icelandics. Put it up the week before: check zips, count pegs, add paracord for missing guys.",
+              "must": true
+            },
+            {
+              "n": "Extra tent pegs",
+              "note": "X, V or triangular pegs hold in bog far better than round ones. Bring spares.",
+              "must": true
+            },
+            {
+              "n": "Trangia and Trangia fuel bottle",
+              "note": "One between two. Meths in a proper fuel bottle (Trangia or MSR type), never a drinks bottle, or it leaks over your food. Know every part.",
+              "must": true
+            },
+            {
+              "n": "Storm shelter",
+              "note": "One per patrol, carried on the summit loop",
+              "must": true
+            },
+            {
+              "n": "Maps",
+              "note": "OSI Discovery 1:50,000, laminated (not 'weatherproof'). At least two per patrol, or paper in a map case.",
               "must": true
             }
           ]
@@ -297,16 +360,6 @@
         {
           "name": "Eating and cooking",
           "items": [
-            {
-              "n": "Trangia (shared)",
-              "note": "One between two, with a proper fuel bottle of meths. Know how every part works.",
-              "must": true
-            },
-            {
-              "n": "Fuel",
-              "note": "Meths in a Trangia or MSR-type fuel bottle, never a drinks bottle",
-              "must": true
-            },
             {
               "n": "Lighter and matches",
               "note": "Both, in a ziplock bag",
@@ -319,7 +372,7 @@
             },
             {
               "n": "Water bottles",
-              "note": "At least 2 litres total; refill on the hill",
+              "note": "At least 2 litres total; refill and boil from streams",
               "must": true
             },
             {
@@ -327,11 +380,19 @@
               "note": "Or a filter, one per patrol"
             },
             {
+              "n": "Small plastic bottles for condiments",
+              "note": "Milk powder, sugar, coffee, oil. Light and secure."
+            },
+            {
+              "n": "Compact lunchbox",
+              "note": "For sandwiches made at home"
+            },
+            {
               "n": "Small tea towel and scourer"
             },
             {
               "n": "Bin bags",
-              "note": "Carry all rubbish out",
+              "note": "Every scrap of rubbish and leftover food comes home",
               "must": true
             }
           ]
@@ -340,18 +401,18 @@
           "name": "Navigation and safety",
           "items": [
             {
-              "n": "Map",
-              "note": "OSI Discovery 1:50,000, laminated or in a map case. Two per patrol.",
+              "n": "Compass",
+              "note": "Silva Type 4 or similar with a roamer. Must point north, spin freely, no bubble. Swap the short cord for paracord so you can hold it at your belly button; larks-foot it to a belt loop, not round your neck.",
               "must": true
             },
             {
-              "n": "Compass",
-              "note": "Silva Type 4 or similar, no bubble, on a cord tied to you",
+              "n": "Map extract and route card",
+              "note": "The coordinator emails a map extract before the event. Prepare your route card from it. Pencil too.",
               "must": true
             },
             {
               "n": "Head torch",
-              "note": "Plus spare batteries, packed where you can reach it",
+              "note": "Plus spare batteries, packed at the top of the bag for Friday night",
               "must": true
             },
             {
@@ -360,17 +421,12 @@
             },
             {
               "n": "Survival bag",
-              "note": "Orange bivvy bag, one each",
-              "must": true
-            },
-            {
-              "n": "Storm shelter (shared)",
-              "note": "One per patrol, carried on summit attempts",
+              "note": "Orange bivvy bag, one each. Doubles as something to sit on at High Camp.",
               "must": true
             },
             {
               "n": "Personal first aid kit",
-              "note": "Blister plasters, plasters, tape, painkillers, any personal medication",
+              "note": "Blister plasters, plasters, tape, painkillers, any personal medication. Tell your leader about any medical condition before the Saturday leaders' meeting.",
               "must": true
             },
             {
@@ -378,7 +434,8 @@
               "must": true
             },
             {
-              "n": "Route card and pencil",
+              "n": "Patrol ID tag",
+              "note": "Issued at check-in. Wear it round your neck and hand it to staff at every checkpoint.",
               "must": true
             },
             {
@@ -391,29 +448,38 @@
           "name": "Food",
           "items": [
             {
+              "n": "Friday supper snack",
+              "note": "Biscuits, a hot dog: easy to eat, easy to heat, easy to clean. Dinner is eaten before you leave.",
+              "must": true
+            },
+            {
               "n": "Two breakfasts",
-              "note": "Porridge with raisins and milk powder, or pre-made pancakes to reheat",
+              "note": "Porridge with raisins and milk powder, or pre-made pancakes to heat. Precook sausages at home and just reheat.",
               "must": true
             },
             {
               "n": "Two lunches",
-              "note": "Sandwiches made at home (salami keeps better than ham), fruit, chocolate, trail mix",
+              "note": "Sandwiches made at home (salami or cured meat keeps better than ham or chicken), fruit, chocolate bars, GORP",
               "must": true
             },
             {
               "n": "One patrol dinner",
-              "note": "Planned together: pasta, curry, stir-fry or a dehydrated meal. No tins, no pot noodles.",
+              "note": "Planned together: Trangia pots feed two. Precooked rice, dehydrated pasta for beginners; curry, stir-fry, pasta and chorizo when you're good. Cook at home and reheat if you can. No tins, no jars, no pot noodles.",
               "must": true
             },
             {
-              "n": "Snacks for the hill",
-              "note": "Trail mix, bars, sweets; eat little and often",
+              "n": "Hill snacks",
+              "note": "Nuts, raisins, chocolate in a ziplock; eat little and often",
               "must": true
             },
             {
               "n": "Emergency rations",
-              "note": "A sealed bar or bag of trail mix that is NOT eaten unless it is a real emergency",
+              "note": "A sealed bag of GORP or flapjacks that is NOT eaten unless it is a real emergency",
               "must": true
+            },
+            {
+              "n": "Dessert",
+              "note": "Banoffee (digestives, caramel, banana, cream, a Flake) or apple and pear crumble-less with honey, brown sugar and granola. Share it round High Camp."
             },
             {
               "n": "Tea, coffee, hot chocolate",
@@ -429,25 +495,21 @@
               "must": true
             },
             {
-              "n": "Toilet paper",
-              "note": "In a ziplock bag, plus a small trowel per patrol",
+              "n": "Toilet paper in a ziplock",
+              "note": "Go well away from camp and water, dig a hole with your heel, use the minimum, don't burn it, cover it fully. No baby wipes.",
               "must": true
             },
             {
-              "n": "Sun cream and lip balm"
+              "n": "Sun cream and lip balm",
+              "note": "Summer"
             },
             {
               "n": "Small towel",
               "note": "Travel size"
             },
             {
-              "n": "Ziplock bags",
-              "note": "A few spare; they solve most problems"
-            },
-            {
-              "n": "Patrol ID tag",
-              "note": "Given at registration; wear it and show it at every checkpoint",
-              "must": true
+              "n": "Spare ziplock bags",
+              "note": "They solve most problems"
             }
           ]
         }
@@ -457,12 +519,14 @@
         "Ski jackets or mac-in-a-sac style jackets",
         "Jeans, cotton hoodies or cotton tracksuits",
         "Dome tents with fibreglass poles, or Icelandic tents",
-        "Tins and cans, glass jars",
-        "Pot noodles, Koka noodles or other food with no nutrition",
-        "Baby wipes (they do not break down)",
-        "Paper maps without a case",
-        "A second bag, a day bag or anything carried in your hands",
-        "Speakers, games consoles, hair gel, valuables"
+        "Briefcase-style camping gas stoves",
+        "Tins, cans and glass jars",
+        "Pot Noodle or Koka noodles (no nutrition)",
+        "Baby wipes (they don't break down)",
+        "Paper maps without a case, or 'weatherproof' maps",
+        "A day bag, a second bag, or anything carried in your hands (chairs, sleeping bags)",
+        "Nineteen litres of water, twelve spare sandwiches, hair gel, a peg mallet, your parents' good delph",
+        "Valuables left in the car"
       ]
     },
     {
@@ -760,7 +824,733 @@
         "Speakers, consoles, valuables",
         "Anything you have not carried up a hill before"
       ]
+    },
+    {
+      "id": "weekly",
+      "title": "Weekly meetings",
+      "event": "What to wear and bring to a normal meeting night",
+      "summary": "Meetings are active and often outdoors, whatever the weather. Wear the section's uniform on top, old clothes underneath and shoes that can get muddy. Nothing valuable, nothing you'd mind losing.",
+      "tips": [
+        "Name everything: jumper, fleece, necker, water bottle. They all look the same in a pile at the end of the night.",
+        "If a meeting is a hike, a bike night or a special activity, leaders will say so in the app or by message. Otherwise assume the usual kit.",
+        "Scouts: once a term is full uniform night. It will be in the Scouts calendar."
+      ],
+      "groups": [
+        {
+          "name": "Every section, every week",
+          "items": [
+            {
+              "n": "Group necker and woggle",
+              "note": "Orange with the black border. Worn at every meeting.",
+              "must": true
+            },
+            {
+              "n": "Old trousers or tracksuit bottoms",
+              "note": "Not school uniform, not good clothes",
+              "must": true
+            },
+            {
+              "n": "Shoes or boots that can get muddy",
+              "note": "Runners are fine for most nights",
+              "must": true
+            },
+            {
+              "n": "Rain jacket",
+              "note": "Kept in the bag; most nights have something outdoors",
+              "must": true
+            },
+            {
+              "n": "Water bottle",
+              "note": "Named"
+            },
+            {
+              "n": "Any medication",
+              "note": "Inhaler, EpiPen; tell a leader where it is",
+              "must": true
+            }
+          ]
+        },
+        {
+          "name": "Beavers (ages 6 to 8)",
+          "items": [
+            {
+              "n": "Beaver jumper",
+              "note": "Over a t-shirt",
+              "must": true
+            },
+            {
+              "n": "Necker and woggle",
+              "must": true
+            }
+          ]
+        },
+        {
+          "name": "Cubs (ages 9 to 11)",
+          "items": [
+            {
+              "n": "Cub jumper",
+              "note": "Over a t-shirt",
+              "must": true
+            },
+            {
+              "n": "Necker and woggle",
+              "must": true
+            }
+          ]
+        },
+        {
+          "name": "Scouts (ages 12 to 15)",
+          "items": [
+            {
+              "n": "Scout fleece",
+              "note": "The usual top for meetings",
+              "must": true
+            },
+            {
+              "n": "Necker and woggle",
+              "must": true
+            },
+            {
+              "n": "Full uniform once a term",
+              "note": "Shirt, badges, necker: see the Full uniform list. The date is in the Scouts calendar."
+            },
+            {
+              "n": "Notebook and pen",
+              "note": "For patrol planning"
+            }
+          ]
+        },
+        {
+          "name": "Ventures (ages 15 to 17)",
+          "items": [
+            {
+              "n": "Necker and woggle",
+              "note": "The only fixed item",
+              "must": true
+            },
+            {
+              "n": "Whatever you like on top",
+              "note": "Most wear the Scout fleece"
+            }
+          ]
+        }
+      ],
+      "dontBring": [
+        "Phones out during the meeting (leave it in the bag or at home)",
+        "Good clothes, white runners, anything that can't get muddy",
+        "Sweets and fizzy drinks",
+        "Money, unless a leader has asked for it"
+      ]
+    },
+    {
+      "id": "uniform",
+      "title": "Full uniform",
+      "event": "Scouts and Ventures: investitures, parades, once-a-term uniform night, county and national events",
+      "summary": "Full uniform starts in Scouts. Beavers and Cubs wear their jumper and necker; from Scouts on, full uniform means the Scouting Ireland shirt with badges, group necker, dark trousers and proper shoes. It comes out for investitures, parades, awards and the once-a-term uniform night.",
+      "tips": [
+        "Badges go on the shirt in the positions Scouting Ireland sets out. Ask a leader before sewing anything on; moving badges leaves holes.",
+        "Iron the shirt the night before and roll the necker properly. It sounds fussy but a smart patrol on parade is noticed.",
+        "Keep uniform separate from camp clothes: it goes in a bag of its own and comes out for the ceremony only."
+      ],
+      "groups": [
+        {
+          "name": "Uniform",
+          "items": [
+            {
+              "n": "Scouting Ireland uniform shirt",
+              "note": "[PLACEHOLDER] Confirm which shirt the group uses. Clean and ironed, buttons done, sleeves rolled or down as instructed.",
+              "must": true
+            },
+            {
+              "n": "Group necker and woggle",
+              "note": "Orange with the black border, rolled neatly",
+              "must": true
+            },
+            {
+              "n": "Badges",
+              "note": "Group badge, county badge, section badge, World Membership badge and any earned badges, sewn on correctly",
+              "must": true
+            },
+            {
+              "n": "Dark trousers or skirt",
+              "note": "Navy or black, plain. No jeans, no tracksuit bottoms.",
+              "must": true
+            },
+            {
+              "n": "Plain belt",
+              "note": "Dark, if trousers have loops"
+            },
+            {
+              "n": "Dark shoes or boots",
+              "note": "Clean. No white runners.",
+              "must": true
+            },
+            {
+              "n": "Plain dark socks"
+            }
+          ]
+        },
+        {
+          "name": "Weather",
+          "items": [
+            {
+              "n": "Scout fleece",
+              "note": "Worn over the shirt when it's cold; comes off for the ceremony"
+            },
+            {
+              "n": "Plain rain jacket",
+              "note": "For parades and outdoor investitures"
+            }
+          ]
+        },
+        {
+          "name": "For awards and investitures",
+          "items": [
+            {
+              "n": "Any badges or certificates to be presented",
+              "note": "Leaders will tell you"
+            },
+            {
+              "n": "Neckers for new members",
+              "note": "Held by the leaders until investiture"
+            }
+          ]
+        }
+      ],
+      "dontBring": [
+        "Jeans, tracksuits, hoodies over the shirt",
+        "Badges from other groups or old sections that no longer apply",
+        "Trainers, unless a leader has said otherwise"
+      ]
+    },
+    {
+      "id": "overnight-out",
+      "title": "One night camping",
+      "event": "A single night under canvas, usually a Friday or Saturday, all sections",
+      "summary": "One night out is the first taste of camping for Beavers and Cubs and a regular thing for Scouts. Tents and cooking gear are shared, so this is personal kit only. Pack it in one bag with your child, so they know where everything is.",
+      "tips": [
+        "Pack with your child, not for them. Talk through where the torch is, where the warm layer is, where the spare socks are.",
+        "Everything in the bag goes inside a bin bag or dry bag first. Tents leak, bags get left in wet grass.",
+        "Layers beat one big coat: base layer, fleece, jacket. Nights are cold even in June.",
+        "Write your child's name on the bag and on the sleeping bag."
+      ],
+      "groups": [
+        {
+          "name": "Wear on the day",
+          "items": [
+            {
+              "n": "Section jumper or fleece and necker",
+              "must": true
+            },
+            {
+              "n": "Old trousers",
+              "note": "Not jeans",
+              "must": true
+            },
+            {
+              "n": "Boots or sturdy runners",
+              "must": true
+            },
+            {
+              "n": "Rain jacket",
+              "must": true
+            }
+          ]
+        },
+        {
+          "name": "Sleeping",
+          "items": [
+            {
+              "n": "Sleeping bag",
+              "note": "In a bin bag or dry bag",
+              "must": true
+            },
+            {
+              "n": "Sleeping mat",
+              "note": "Foam or inflatable",
+              "must": true
+            },
+            {
+              "n": "Pyjamas or thermals to sleep in",
+              "note": "Not the clothes worn during the day",
+              "must": true
+            },
+            {
+              "n": "Small pillow",
+              "note": "Or use the fleece"
+            },
+            {
+              "n": "Teddy",
+              "note": "Beavers and Cubs: absolutely allowed"
+            }
+          ]
+        },
+        {
+          "name": "Clothes (in a bag inside the bag)",
+          "items": [
+            {
+              "n": "Full change of clothes",
+              "note": "Top, trousers, underwear, socks",
+              "must": true
+            },
+            {
+              "n": "Extra warm layer",
+              "note": "Fleece or hoodie",
+              "must": true
+            },
+            {
+              "n": "Spare socks",
+              "note": "Two pairs",
+              "must": true
+            },
+            {
+              "n": "Warm hat",
+              "must": true
+            },
+            {
+              "n": "Waterproof trousers",
+              "note": "Recommended"
+            },
+            {
+              "n": "Wellies",
+              "note": "If the site is likely to be wet"
+            }
+          ]
+        },
+        {
+          "name": "Eating",
+          "items": [
+            {
+              "n": "Plate, bowl, mug",
+              "note": "Plastic or metal, named",
+              "must": true
+            },
+            {
+              "n": "Knife, fork and spoon",
+              "must": true
+            },
+            {
+              "n": "Water bottle",
+              "must": true
+            },
+            {
+              "n": "Tea towel",
+              "note": "Named"
+            }
+          ]
+        },
+        {
+          "name": "Personal",
+          "items": [
+            {
+              "n": "Head torch or torch",
+              "note": "With working batteries",
+              "must": true
+            },
+            {
+              "n": "Toothbrush and toothpaste",
+              "must": true
+            },
+            {
+              "n": "Small towel",
+              "must": true
+            },
+            {
+              "n": "Wash bag",
+              "note": "Soap, flannel"
+            },
+            {
+              "n": "Any medication",
+              "note": "Handed to a leader with instructions, in a named bag",
+              "must": true
+            },
+            {
+              "n": "Sun cream and hat",
+              "note": "Summer"
+            },
+            {
+              "n": "Plastic bag for wet and dirty clothes",
+              "must": true
+            }
+          ]
+        }
+      ],
+      "dontBring": [
+        "Phones, tablets, games (leaders carry a phone for emergencies)",
+        "Sweets and fizzy drinks, unless a leader has said otherwise",
+        "Knives (Scouts: only with a leader's permission and a knife permit)",
+        "Aerosols and deodorant sprays near tents",
+        "Money, jewellery, anything valuable"
+      ]
+    },
+    {
+      "id": "overnight-in",
+      "title": "One night indoors",
+      "event": "A sleepover in the den, a hall or a hostel, all sections",
+      "summary": "An indoor night is a sleeping bag on a hall floor and a lot of games. No tent, no waterproofs needed for sleeping, but there is nearly always an outdoor activity, so the rain jacket and sensible shoes still come.",
+      "tips": [
+        "A foam mat matters more indoors than out: hall floors are hard and cold.",
+        "Pack the sleeping bag and pyjamas at the top so bedtime is quick.",
+        "Beavers: a familiar teddy or small blanket makes a first night away much easier."
+      ],
+      "groups": [
+        {
+          "name": "Wear on the day",
+          "items": [
+            {
+              "n": "Section jumper or fleece and necker",
+              "must": true
+            },
+            {
+              "n": "Comfortable trousers",
+              "must": true
+            },
+            {
+              "n": "Runners",
+              "must": true
+            },
+            {
+              "n": "Rain jacket",
+              "note": "There is nearly always an outdoor activity",
+              "must": true
+            }
+          ]
+        },
+        {
+          "name": "Sleeping",
+          "items": [
+            {
+              "n": "Sleeping bag",
+              "must": true
+            },
+            {
+              "n": "Sleeping mat",
+              "note": "Hall floors are hard",
+              "must": true
+            },
+            {
+              "n": "Pillow",
+              "must": true
+            },
+            {
+              "n": "Pyjamas",
+              "must": true
+            },
+            {
+              "n": "Teddy or blanket",
+              "note": "Beavers and Cubs"
+            }
+          ]
+        },
+        {
+          "name": "Clothes",
+          "items": [
+            {
+              "n": "Change of clothes for the next day",
+              "must": true
+            },
+            {
+              "n": "Spare socks and underwear",
+              "must": true
+            },
+            {
+              "n": "Warm layer",
+              "note": "Halls are cold at night"
+            },
+            {
+              "n": "Indoor shoes or slippers",
+              "note": "If the hall asks for shoes off"
+            }
+          ]
+        },
+        {
+          "name": "Eating and personal",
+          "items": [
+            {
+              "n": "Plate, bowl, mug, cutlery",
+              "note": "Named. Leaders will say if the venue has its own.",
+              "must": true
+            },
+            {
+              "n": "Water bottle",
+              "must": true
+            },
+            {
+              "n": "Toothbrush and toothpaste",
+              "must": true
+            },
+            {
+              "n": "Small towel and wash bag",
+              "must": true
+            },
+            {
+              "n": "Torch",
+              "note": "For finding the toilet at 2 am"
+            },
+            {
+              "n": "Any medication",
+              "note": "Handed to a leader with instructions",
+              "must": true
+            },
+            {
+              "n": "Plastic bag for dirty clothes"
+            }
+          ]
+        }
+      ],
+      "dontBring": [
+        "Phones, tablets, games consoles",
+        "Sweets and fizzy drinks, unless asked",
+        "Money and valuables",
+        "Anything that can't be replaced if it goes missing in a hall with forty children"
+      ]
+    },
+    {
+      "id": "standing-camp",
+      "title": "Multi-day standing camp",
+      "event": "Three nights or more on one site: summer camp, county camp, jamborees",
+      "summary": "A standing camp is camping in one place for several days with a full programme: activities, cooking in patrols, and usually a day out. Bags come by car so weight matters less, but everything still has to survive rain, mud and being lived out of for a week. One big bag, plus a small day bag for activities.",
+      "tips": [
+        "Pack in labelled bags inside the big bag: a bag per day of clothes for younger sections, or by type (tops, bottoms, socks) for older. Wet stuff goes in its own bag.",
+        "Two of everything that gets wet: two pairs of shoes, two rain jackets if you have them, plenty of socks.",
+        "Write a kit list inside the bag lid so your child can check they have everything on the last day.",
+        "Leaders hold all medication and money, handed over in a named bag on the first day."
+      ],
+      "groups": [
+        {
+          "name": "Wear on the day",
+          "items": [
+            {
+              "n": "Section jumper or fleece and necker",
+              "must": true
+            },
+            {
+              "n": "Old trousers",
+              "must": true
+            },
+            {
+              "n": "Boots or sturdy runners",
+              "must": true
+            },
+            {
+              "n": "Rain jacket",
+              "must": true
+            }
+          ]
+        },
+        {
+          "name": "Sleeping",
+          "items": [
+            {
+              "n": "Sleeping bag",
+              "note": "3-season",
+              "must": true
+            },
+            {
+              "n": "Sleeping mat",
+              "must": true
+            },
+            {
+              "n": "Pillow",
+              "must": true
+            },
+            {
+              "n": "Pyjamas or thermals",
+              "note": "Two sets",
+              "must": true
+            },
+            {
+              "n": "Ground sheet or bin bag",
+              "note": "To keep the sleeping bag off any damp"
+            }
+          ]
+        },
+        {
+          "name": "Clothes",
+          "items": [
+            {
+              "n": "T-shirts",
+              "note": "One per day plus two spare",
+              "must": true
+            },
+            {
+              "n": "Trousers and shorts",
+              "note": "Two pairs of trousers, two shorts",
+              "must": true
+            },
+            {
+              "n": "Underwear and socks",
+              "note": "One per day plus three spare",
+              "must": true
+            },
+            {
+              "n": "Warm layers",
+              "note": "Two fleeces or hoodies",
+              "must": true
+            },
+            {
+              "n": "Waterproof trousers",
+              "must": true
+            },
+            {
+              "n": "Second pair of shoes",
+              "note": "Runners or wellies; one pair will be wet",
+              "must": true
+            },
+            {
+              "n": "Warm hat and sun hat",
+              "must": true
+            },
+            {
+              "n": "Swimming gear and towel",
+              "note": "If water activities are on the programme"
+            },
+            {
+              "n": "Full uniform",
+              "note": "Scouts and Ventures, for opening and closing ceremonies",
+              "must": true
+            },
+            {
+              "n": "Flip-flops or crocs",
+              "note": "For showers"
+            }
+          ]
+        },
+        {
+          "name": "Eating",
+          "items": [
+            {
+              "n": "Plate, bowl, mug",
+              "note": "Named",
+              "must": true
+            },
+            {
+              "n": "Knife, fork and spoon",
+              "must": true
+            },
+            {
+              "n": "Water bottle",
+              "must": true
+            },
+            {
+              "n": "Tea towel",
+              "must": true
+            },
+            {
+              "n": "Small lunch box",
+              "note": "For day trips"
+            }
+          ]
+        },
+        {
+          "name": "Personal",
+          "items": [
+            {
+              "n": "Head torch and spare batteries",
+              "must": true
+            },
+            {
+              "n": "Toothbrush, toothpaste, soap, shampoo",
+              "must": true
+            },
+            {
+              "n": "Two towels",
+              "note": "One for washing, one for swimming or drying gear",
+              "must": true
+            },
+            {
+              "n": "Sun cream",
+              "must": true
+            },
+            {
+              "n": "Insect repellent"
+            },
+            {
+              "n": "Any medication",
+              "note": "In a named bag with written instructions, handed to a leader",
+              "must": true
+            },
+            {
+              "n": "Bin bags",
+              "note": "Several: wet clothes, dirty clothes, rubbish",
+              "must": true
+            },
+            {
+              "n": "Day bag",
+              "note": "Small rucksack for activities and the day out",
+              "must": true
+            },
+            {
+              "n": "Spending money",
+              "note": "In a named envelope, handed to a leader. Amount will be advised."
+            },
+            {
+              "n": "Book, cards, small game",
+              "note": "For quiet time"
+            }
+          ]
+        },
+        {
+          "name": "Patrol kit (shared, brought by the group)",
+          "items": [
+            {
+              "n": "Tents, stoves, cooking gear, first aid",
+              "note": "Supplied by the group; Scouts and Ventures help carry and pitch"
+            }
+          ]
+        }
+      ],
+      "dontBring": [
+        "Phones and electronics (leaders will say if a phone is allowed for the day out)",
+        "Sweets and fizzy drinks beyond what leaders allow",
+        "Aerosols and deodorant sprays",
+        "Knives without a leader's permission",
+        "Expensive clothes and anything that can't get ruined"
+      ]
     }
   ],
-  "updatedAt": "2026-09-07T01:02:40.261Z"
+  "updatedAt": "2026-09-07T01:02:40.261Z",
+  "badges": {
+    "intro": "Every young person works through the same nine Adventure Skills, from stage 1 to stage 9, whichever section they are in. You start at stage 1 no matter your age, keep the highest stage badge you have earned on your sleeve, and replace it when you move up. Most Scouts settle on two or three skills they really enjoy rather than trying all nine.",
+    "stages": "As a rough guide, Beavers usually reach stages 1 to 2, Cubs stages 2 to 4, Scouts stages 3 to 6 and Ventures stages 5 to 9, but the stages are not tied to sections and a keen Cub can be ahead of a new Scout.",
+    "placement": [
+      {
+        "area": "Right chest (as you wear it)",
+        "items": [
+          "Scouting Ireland badge"
+        ]
+      },
+      {
+        "area": "Left chest",
+        "items": [
+          "World Scout badge (purple circle)"
+        ]
+      },
+      {
+        "area": "Left sleeve, top to bottom",
+        "items": [
+          "7th Clare group badge",
+          "Clare County badge",
+          "Section badge (Beaver, Cub, Scout, Venture)"
+        ]
+      },
+      {
+        "area": "Right sleeve, top to bottom",
+        "items": [
+          "Adventure Skills stage badges (highest stage only, one per skill)",
+          "Special Interest badges below them"
+        ]
+      },
+      {
+        "area": "Progress badges",
+        "items": [
+          "[PLACEHOLDER] Confirm with your section leader where the section's progress badges (Bree, Ruarc, Conn for Beavers; Turas, Taisteal, Tagann for Cubs) are worn"
+        ]
+      }
+    ],
+    "note": "This is the layout our leaders use. If a badge doesn't fit, ask before sewing: moving a badge leaves holes. Jumpers and uniform shirts follow the same layout."
+  },
+  "appliedUpdates": [
+    "v0_19"
+  ]
 }
