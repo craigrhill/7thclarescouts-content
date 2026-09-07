@@ -32,6 +32,15 @@ const lead = r.j.token, leadId = r.j.me.id;
 r = await call("GET", "?sections=scouts,beavers", { token: lead });
 ok("GET returns me, people and requested sections with defaults", [r.status, r.j.people.length, r.j.sections.scouts.required, Object.keys(r.j.sections).sort()], [200, 1, 2, ["beavers", "scouts"]]);
 r = await call("GET", "?sections=scouts", { token: lead.slice(0, -2) + "zz" }); ok("tampered token is 401", r.status, 401);
+{ // A correctly signed token whose expiry has passed is refused.
+  const { createHmac } = await import("node:crypto");
+  const sec = store._map.get("secret").value;
+  const payload = Buffer.from(JSON.stringify({ id: leadId, exp: Date.now() - 1000 })).toString("base64url");
+  const expired = payload + "." + createHmac("sha256", Buffer.from(sec, "hex")).update(payload).digest("base64url");
+  r = await call("GET", "?sections=scouts", { token: expired }); ok("expired token is 401", r.status, 401);
+  const future = Buffer.from(JSON.stringify({ id: leadId, exp: Date.now() + 60000 })).toString("base64url");
+  r = await call("GET", "?sections=scouts", { token: future + "." + createHmac("sha256", Buffer.from(sec, "hex")).update(future).digest("base64url") });
+  ok("a freshly signed unexpired token works (sanity for the expiry check)", r.status, 200); }
 
 r = await call("POST", "?a=person", { token: lead, body: { name: "Member One", sections: ["scouts", "bad key!"], lead: false } });
 ok("secretary adds a member; bad section keys dropped", [r.status, r.j.person.sections, r.j.person.lead, r.j.person.secretary], [200, ["scouts"], false, false]);

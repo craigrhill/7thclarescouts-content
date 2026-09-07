@@ -14,6 +14,10 @@ Owner: Craig Hill (craigrhill). Group email: 7thclarescouts@gmail.com.
 * Verify UI changes with headless Chromium screenshots at 390px and 1280px
   before reporting them done. Chromium is preinstalled; do not run
   `playwright install`.
+* `npm test` runs every offline check: both function harnesses and the
+  drift guards for the two duplicated functions. `npm run e2e` runs the
+  leaders' area in a real browser against the local preview and writes
+  screenshots to `.e2e/`. Run both before pushing anything they cover.
 * `main` is production and auto-deploys. Anything committed there is public
   within about a minute.
 
@@ -73,6 +77,9 @@ warning fires correctly for leaders.
     tools/test-function.mjs         offline smoke test of the built content
                                     function; pass two bundles to prove equivalence
     tools/test-rota.mjs             offline harness for the rota function
+    tools/test-kits.mjs             drift guard: mergeBuiltInKits in both files
+    tools/test-merge.mjs            drift guard: mergeContent in both files
+    tools/e2e-rota.mjs              browser suite for the leaders' area
     tools/apply-update.mjs          ports admin's mergeContent, --dry-run
     tools/serve.mjs                 local preview, stands in for the
                                     content function so the app loads
