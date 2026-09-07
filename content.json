@@ -1,0 +1,766 @@
+{
+  "settings": {
+    "heroTitle": "Adventure, friendship and the outdoors, on the edge of the Burren.",
+    "heroLede": "7th Clare Scout Group in Ballyvaughan welcomes young people from 6 to 17. We camp, hike, build, cook, paddle and learn to look after each other and the wild places around us.",
+    "about": "We're a volunteer-run Scout Group based in Ballyvaughan, County Clare, part of Scouting Ireland. Our programme is built around the Burren: limestone hills, the Atlantic on our doorstep, caves, green roads and dark skies.\n\nYoung people plan their own adventures with the support of trained adult leaders, gaining skills, confidence and a lasting love of the outdoors along the way.",
+    "venue": "Beavers and Cubs meet at the hall in Ballyvaughan. Scouts and Ventures meet at Newquay National School.",
+    "email": "7thclarescouts@gmail.com",
+    "phone": "",
+    "facebook": "",
+    "instagram": "",
+    "venues": [
+      {
+        "name": "The Hall, Ballyvaughan",
+        "query": "Ballyvaughan Hall, Ballyvaughan, Co. Clare",
+        "link": "https://maps.app.goo.gl/EUeUCyrZT5u3BVAE6"
+      },
+      {
+        "name": "Newquay National School",
+        "query": "Newquay National School, New Quay, Co. Clare",
+        "link": "https://maps.app.goo.gl/f47QxW9KYiKD9x3DA"
+      }
+    ],
+    "team": [
+      {
+        "name": "Victor McSweeney",
+        "role": "Group Leader",
+        "section": ""
+      },
+      {
+        "name": "Craig Hill",
+        "role": "Deputy Group Leader",
+        "section": ""
+      },
+      {
+        "name": "Jo Irwin",
+        "role": "Chair",
+        "section": ""
+      },
+      {
+        "name": "Gillian Hynes",
+        "role": "Section Leader",
+        "section": "beavers"
+      },
+      {
+        "name": "Darren Smith",
+        "role": "Section Leader",
+        "section": "cubs"
+      },
+      {
+        "name": "Craig Hill",
+        "role": "Section Leader",
+        "section": "scouts"
+      },
+      {
+        "name": "[PLACEHOLDER] TBD",
+        "role": "Section Leader",
+        "section": "ventures"
+      }
+    ],
+    "sections": [
+      {
+        "key": "beavers",
+        "name": "Beavers",
+        "ages": "Ages 6 to 8",
+        "day": "Tuesday",
+        "time": "6:00 to 7:00 pm",
+        "venue": "The Hall, Ballyvaughan",
+        "blurb": "Games, crafts, nature and first adventures. Beavers learn by playing and exploring together."
+      },
+      {
+        "key": "cubs",
+        "name": "Cubs",
+        "ages": "Ages 9 to 11",
+        "day": "Thursday",
+        "time": "6:00 to 7:30 pm",
+        "venue": "The Hall, Ballyvaughan",
+        "blurb": "Badges, hikes, campfires and first nights away under canvas."
+      },
+      {
+        "key": "scouts",
+        "name": "Scouts",
+        "ages": "Ages 12 to 15",
+        "day": "Thursday",
+        "time": "6:00 to 7:30 pm",
+        "venue": "Newquay National School",
+        "blurb": "Patrol-led camping, pioneering, navigation and expeditions across Clare and beyond."
+      },
+      {
+        "key": "ventures",
+        "name": "Ventures",
+        "ages": "Ages 15 to 17",
+        "day": "Thursday",
+        "time": "6:00 to 7:30 pm",
+        "venue": "Newquay National School",
+        "blurb": "Youth-led challenges, mountain trips, international events and leadership."
+      }
+    ]
+  },
+  "fundraising": {
+    "intro": "Everything we do is run by volunteers, and every euro raised goes straight back into the young people: tents, stoves, camp fees and keeping subs as low as we can.",
+    "donateTitle": "Support 7th Clare",
+    "donateText": "[PLACEHOLDER] A one-off donation of any size makes a real difference. Donations go to the group account and are used only for equipment and activities.",
+    "donateUrl": "",
+    "donateLabel": "Donate",
+    "campaigns": [
+      {
+        "title": "New Lockup",
+        "blurb": "Replacing our old lockup with a larger space for gear, trailer, spars and small meetings. ",
+        "goal": 8000,
+        "raised": 450,
+        "link": "",
+        "linkLabel": ""
+      }
+    ],
+    "help": "Bag-packing days, the annual quiz night and the Christmas raffle all need helpers and prizes. If you can give a few hours, donate a prize, or know a business that might sponsor a tent, email the group.\n\nIf you shop online, ask us about fundraising schemes that give a percentage back to the group at no cost to you.",
+    "sponsors": []
+  },
+  "notices": [
+    {
+      "title": "Welcome back for the new Scouting year",
+      "body": "Meetings resume this month. Check your section's night below and keep an eye here for changes."
+    }
+  ],
+  "events": [
+    {
+      "date": "2026-10-02",
+      "endDate": "2026-10-03",
+      "title": "Chill Camp (County)",
+      "section": "scouts",
+      "location": "Ruan",
+      "details": "County camp."
+    },
+    {
+      "date": "2027-01-24",
+      "title": "MasterChef (County)",
+      "section": "scouts",
+      "location": "Tulla",
+      "details": "County cooking competition."
+    },
+    {
+      "date": "2027-03-07",
+      "title": "County Hike (County)",
+      "section": "scouts",
+      "location": "TBC",
+      "details": "Venue to be confirmed."
+    },
+    {
+      "date": "2027-04-10",
+      "endDate": "2027-04-11",
+      "title": "Backwoods Skills (County)",
+      "section": "scouts",
+      "location": "Castleconnell",
+      "details": "Backwoods skills weekend."
+    },
+    {
+      "date": "2027-05-14",
+      "endDate": "2027-05-16",
+      "title": "County Shield (County)",
+      "section": "scouts",
+      "location": "Ruan",
+      "details": "The annual County Shield camp and competition."
+    },
+    {
+      "date": "2027-05-28",
+      "endDate": "2027-05-30",
+      "title": "Water Activities Weekend (County)",
+      "section": "scouts",
+      "location": "Kilrush",
+      "details": "Water activities weekend."
+    }
+  ],
+  "news": [
+    {
+      "date": "2026-09-01",
+      "title": "New website launched",
+      "body": "Our new home online. Events, notices and news will appear here through the year."
+    }
+  ],
+  "kits": [
+    {
+      "id": "sionnach",
+      "title": "Sionnach Adventure",
+      "event": "Two-night mountain expedition, patrols of four, Friday to Sunday",
+      "summary": "You carry everything for two nights on the hill: tent, food, water, cooking gear and clothes. One rucksack only, nothing carried in your hands, and no day bags. Pack light, pack dry, and pack it yourself so you know where everything is.",
+      "tips": [
+        "Line your rucksack with a heavy-duty plastic bag (a compost or fertiliser bag is ideal) and put sleeping bag and spare clothes in their own dry bags inside it. Double waterproofing is the rule.",
+        "Heavy things go close to your back, middle to bottom. Light things on top. Waterproofs, map, compass, snacks and water go in the lid or side pockets where you can reach them.",
+        "The weight should sit on your hips, not your shoulders, and nothing should swing when you walk. Wear the packed bag at a meeting before the event and get a leader to help you adjust the straps.",
+        "Boots must be broken in over a few weeks. Runners and trail shoes are not allowed and you will be sent home.",
+        "Friday dinner is eaten before you leave or on the way. Plan for two breakfasts, two lunches and one patrol dinner."
+      ],
+      "groups": [
+        {
+          "name": "Wear on the day",
+          "items": [
+            {
+              "n": "Walking boots",
+              "note": "Broken in, ankle support, good sole. Leather ideally. No runners or trail shoes.",
+              "must": true
+            },
+            {
+              "n": "Walking socks",
+              "note": "Wool or synthetic, not cotton",
+              "must": true
+            },
+            {
+              "n": "Walking trousers",
+              "note": "Quick-dry. No jeans, no cotton tracksuits.",
+              "must": true
+            },
+            {
+              "n": "Base layer top",
+              "note": "Synthetic or merino, not cotton",
+              "must": true
+            },
+            {
+              "n": "Fleece or mid layer",
+              "must": true
+            },
+            {
+              "n": "Hat and gloves",
+              "note": "Warm hat, plus a spare pair of gloves in the bag",
+              "must": true
+            },
+            {
+              "n": "Gaiters",
+              "note": "Very useful in bog; strongly recommended"
+            }
+          ]
+        },
+        {
+          "name": "Waterproofs",
+          "items": [
+            {
+              "n": "Waterproof jacket with hood",
+              "note": "Proper hillwalking waterproof: covers wrists and bum, has a hood. Not a ski jacket, not a mac-in-a-sac.",
+              "must": true
+            },
+            {
+              "n": "Waterproof over-trousers",
+              "note": "Pull-on or zipped, must go over boots",
+              "must": true
+            }
+          ]
+        },
+        {
+          "name": "Spare clothes (in a dry bag)",
+          "items": [
+            {
+              "n": "Spare base layer top",
+              "must": true
+            },
+            {
+              "n": "Spare fleece or warm layer",
+              "must": true
+            },
+            {
+              "n": "Spare socks",
+              "note": "Two pairs; one to sleep in",
+              "must": true
+            },
+            {
+              "n": "Spare underwear",
+              "must": true
+            },
+            {
+              "n": "Warm sleeping clothes",
+              "note": "Thermals or tracksuit kept dry for camp only",
+              "must": true
+            },
+            {
+              "n": "Spare trousers",
+              "note": "Lightweight"
+            }
+          ]
+        },
+        {
+          "name": "Sleeping",
+          "items": [
+            {
+              "n": "Sleeping bag",
+              "note": "3-season, in a dry bag, packed at the bottom of the rucksack",
+              "must": true
+            },
+            {
+              "n": "Sleeping mat",
+              "note": "Foam or inflatable; strapped outside or inside",
+              "must": true
+            },
+            {
+              "n": "Tent (shared)",
+              "note": "Lightweight 2 or 3 person, split between the patrol. No dome tents with fibreglass poles, no Icelandics.",
+              "must": true
+            }
+          ]
+        },
+        {
+          "name": "Eating and cooking",
+          "items": [
+            {
+              "n": "Trangia (shared)",
+              "note": "One between two, with a proper fuel bottle of meths. Know how every part works.",
+              "must": true
+            },
+            {
+              "n": "Fuel",
+              "note": "Meths in a Trangia or MSR-type fuel bottle, never a drinks bottle",
+              "must": true
+            },
+            {
+              "n": "Lighter and matches",
+              "note": "Both, in a ziplock bag",
+              "must": true
+            },
+            {
+              "n": "Bowl, mug and spoon",
+              "note": "Plastic or metal; a spork is grand",
+              "must": true
+            },
+            {
+              "n": "Water bottles",
+              "note": "At least 2 litres total; refill on the hill",
+              "must": true
+            },
+            {
+              "n": "Water purification tablets",
+              "note": "Or a filter, one per patrol"
+            },
+            {
+              "n": "Small tea towel and scourer"
+            },
+            {
+              "n": "Bin bags",
+              "note": "Carry all rubbish out",
+              "must": true
+            }
+          ]
+        },
+        {
+          "name": "Navigation and safety",
+          "items": [
+            {
+              "n": "Map",
+              "note": "OSI Discovery 1:50,000, laminated or in a map case. Two per patrol.",
+              "must": true
+            },
+            {
+              "n": "Compass",
+              "note": "Silva Type 4 or similar, no bubble, on a cord tied to you",
+              "must": true
+            },
+            {
+              "n": "Head torch",
+              "note": "Plus spare batteries, packed where you can reach it",
+              "must": true
+            },
+            {
+              "n": "Whistle",
+              "must": true
+            },
+            {
+              "n": "Survival bag",
+              "note": "Orange bivvy bag, one each",
+              "must": true
+            },
+            {
+              "n": "Storm shelter (shared)",
+              "note": "One per patrol, carried on summit attempts",
+              "must": true
+            },
+            {
+              "n": "Personal first aid kit",
+              "note": "Blister plasters, plasters, tape, painkillers, any personal medication",
+              "must": true
+            },
+            {
+              "n": "Watch",
+              "must": true
+            },
+            {
+              "n": "Route card and pencil",
+              "must": true
+            },
+            {
+              "n": "Phone",
+              "note": "Fully charged, switched off, in a ziplock bag; emergencies only"
+            }
+          ]
+        },
+        {
+          "name": "Food",
+          "items": [
+            {
+              "n": "Two breakfasts",
+              "note": "Porridge with raisins and milk powder, or pre-made pancakes to reheat",
+              "must": true
+            },
+            {
+              "n": "Two lunches",
+              "note": "Sandwiches made at home (salami keeps better than ham), fruit, chocolate, trail mix",
+              "must": true
+            },
+            {
+              "n": "One patrol dinner",
+              "note": "Planned together: pasta, curry, stir-fry or a dehydrated meal. No tins, no pot noodles.",
+              "must": true
+            },
+            {
+              "n": "Snacks for the hill",
+              "note": "Trail mix, bars, sweets; eat little and often",
+              "must": true
+            },
+            {
+              "n": "Emergency rations",
+              "note": "A sealed bar or bag of trail mix that is NOT eaten unless it is a real emergency",
+              "must": true
+            },
+            {
+              "n": "Tea, coffee, hot chocolate",
+              "note": "Sachets and powdered milk"
+            }
+          ]
+        },
+        {
+          "name": "Personal",
+          "items": [
+            {
+              "n": "Toothbrush and small toothpaste",
+              "must": true
+            },
+            {
+              "n": "Toilet paper",
+              "note": "In a ziplock bag, plus a small trowel per patrol",
+              "must": true
+            },
+            {
+              "n": "Sun cream and lip balm"
+            },
+            {
+              "n": "Small towel",
+              "note": "Travel size"
+            },
+            {
+              "n": "Ziplock bags",
+              "note": "A few spare; they solve most problems"
+            },
+            {
+              "n": "Patrol ID tag",
+              "note": "Given at registration; wear it and show it at every checkpoint",
+              "must": true
+            }
+          ]
+        }
+      ],
+      "dontBring": [
+        "Runners or trail shoes (you will be sent home)",
+        "Ski jackets or mac-in-a-sac style jackets",
+        "Jeans, cotton hoodies or cotton tracksuits",
+        "Dome tents with fibreglass poles, or Icelandic tents",
+        "Tins and cans, glass jars",
+        "Pot noodles, Koka noodles or other food with no nutrition",
+        "Baby wipes (they do not break down)",
+        "Paper maps without a case",
+        "A second bag, a day bag or anything carried in your hands",
+        "Speakers, games consoles, hair gel, valuables"
+      ]
+    },
+    {
+      "id": "mpc",
+      "title": "Mountain Pursuit Challenge (MPC)",
+      "event": "Weekend navigation challenge, teams of four plus a leader observer, Friday night to Sunday",
+      "summary": "MPC is navigation day and night through the mountains, fully self-sufficient. You carry everything: two nights of camping, food, water and cooking gear, and you will be walking in the dark on Friday night. The kit is the same as a Sionnach with more emphasis on light, torches, warm layers and being able to find things in your bag without unpacking it.",
+      "tips": [
+        "Every item has a place in your bag and you know where it is with your eyes closed. Night navigation is where badly packed bags fall apart.",
+        "Two light sources per person: a good head torch on your head and a small backup torch in your pocket. Fresh batteries in both, spares in a ziplock.",
+        "Weight matters more on MPC than on any other event. Aim for a rucksack that is no more than a quarter of your body weight once shared kit is divided out.",
+        "You will camp late on Friday night. Have your sleeping clothes, mat and bag packed together at the top of the main compartment so camp takes ten minutes, not forty.",
+        "Practice route cards, pacing 100 metres, walking on a bearing and adding magnetic variation before you go. The observer cannot help you navigate."
+      ],
+      "groups": [
+        {
+          "name": "Wear on the day",
+          "items": [
+            {
+              "n": "Walking boots",
+              "note": "Broken in, ankle support, good sole. No runners or trail shoes.",
+              "must": true
+            },
+            {
+              "n": "Walking socks",
+              "note": "Wool or synthetic",
+              "must": true
+            },
+            {
+              "n": "Walking trousers",
+              "note": "Quick-dry, no jeans",
+              "must": true
+            },
+            {
+              "n": "Base layer top",
+              "note": "Synthetic or merino",
+              "must": true
+            },
+            {
+              "n": "Fleece or mid layer",
+              "must": true
+            },
+            {
+              "n": "Warm hat and gloves",
+              "note": "Plus spare gloves; hands get very cold navigating at night",
+              "must": true
+            },
+            {
+              "n": "Gaiters",
+              "note": "Recommended"
+            }
+          ]
+        },
+        {
+          "name": "Waterproofs",
+          "items": [
+            {
+              "n": "Waterproof jacket with hood",
+              "note": "Real hillwalking waterproof, not a ski jacket",
+              "must": true
+            },
+            {
+              "n": "Waterproof over-trousers",
+              "must": true
+            }
+          ]
+        },
+        {
+          "name": "Spare clothes (in a dry bag)",
+          "items": [
+            {
+              "n": "Spare base layer top",
+              "must": true
+            },
+            {
+              "n": "Spare warm layer",
+              "note": "A light insulated jacket earns its place on MPC",
+              "must": true
+            },
+            {
+              "n": "Spare socks",
+              "note": "Two pairs",
+              "must": true
+            },
+            {
+              "n": "Spare underwear",
+              "must": true
+            },
+            {
+              "n": "Warm sleeping clothes",
+              "note": "Thermals kept dry for camp only",
+              "must": true
+            },
+            {
+              "n": "Buff or neck gaiter"
+            }
+          ]
+        },
+        {
+          "name": "Sleeping",
+          "items": [
+            {
+              "n": "Sleeping bag",
+              "note": "3-season, in a dry bag",
+              "must": true
+            },
+            {
+              "n": "Sleeping mat",
+              "must": true
+            },
+            {
+              "n": "Tent (shared)",
+              "note": "Lightweight, split between the team. No dome tents with fibreglass poles.",
+              "must": true
+            }
+          ]
+        },
+        {
+          "name": "Eating and cooking",
+          "items": [
+            {
+              "n": "Stove (shared)",
+              "note": "Trangia one between two, or a small gas stove. Proper fuel bottle.",
+              "must": true
+            },
+            {
+              "n": "Fuel",
+              "must": true
+            },
+            {
+              "n": "Lighter and matches",
+              "note": "In a ziplock bag",
+              "must": true
+            },
+            {
+              "n": "Bowl, mug and spoon",
+              "must": true
+            },
+            {
+              "n": "Water bottles",
+              "note": "At least 2 litres; know where you can refill on your route",
+              "must": true
+            },
+            {
+              "n": "Water purification tablets",
+              "note": "One pack per team"
+            },
+            {
+              "n": "Bin bags",
+              "note": "Everything comes back out",
+              "must": true
+            }
+          ]
+        },
+        {
+          "name": "Navigation and safety",
+          "items": [
+            {
+              "n": "Map",
+              "note": "OSI Discovery 1:50,000 for the area, laminated or in a case. Two per team.",
+              "must": true
+            },
+            {
+              "n": "Compass",
+              "note": "Silva Type 4 or similar, on a cord",
+              "must": true
+            },
+            {
+              "n": "Head torch",
+              "note": "Good quality, fresh batteries",
+              "must": true
+            },
+            {
+              "n": "Backup torch",
+              "note": "Small hand torch or second head torch",
+              "must": true
+            },
+            {
+              "n": "Spare batteries",
+              "note": "For both torches, in a ziplock",
+              "must": true
+            },
+            {
+              "n": "Whistle",
+              "must": true
+            },
+            {
+              "n": "Survival bag",
+              "note": "One each",
+              "must": true
+            },
+            {
+              "n": "Storm shelter (shared)",
+              "note": "One per team",
+              "must": true
+            },
+            {
+              "n": "Personal first aid kit",
+              "note": "Blister kit, plasters, tape, painkillers, personal medication",
+              "must": true
+            },
+            {
+              "n": "Watch",
+              "note": "Needed for timing legs at night",
+              "must": true
+            },
+            {
+              "n": "Route card, pencil and waterproof notebook",
+              "must": true
+            },
+            {
+              "n": "Phone",
+              "note": "Charged, off, in a ziplock; emergencies only"
+            },
+            {
+              "n": "Hi-vis or reflective strip",
+              "note": "Useful for the road walk to and from the car park"
+            }
+          ]
+        },
+        {
+          "name": "Food",
+          "items": [
+            {
+              "n": "Friday supper",
+              "note": "Something light and quick after the night leg: wrap, soup, hot chocolate",
+              "must": true
+            },
+            {
+              "n": "Two breakfasts",
+              "note": "Porridge or pre-made pancakes",
+              "must": true
+            },
+            {
+              "n": "Two lunches",
+              "note": "Made at home; fruit, chocolate, trail mix",
+              "must": true
+            },
+            {
+              "n": "One team dinner",
+              "note": "Planned together, no tins",
+              "must": true
+            },
+            {
+              "n": "Hill snacks",
+              "note": "More than you think; night navigation burns energy",
+              "must": true
+            },
+            {
+              "n": "Emergency rations",
+              "note": "Sealed, not touched unless a real emergency",
+              "must": true
+            },
+            {
+              "n": "Hot drinks",
+              "note": "Sachets and milk powder"
+            }
+          ]
+        },
+        {
+          "name": "Personal",
+          "items": [
+            {
+              "n": "Toothbrush and small toothpaste",
+              "must": true
+            },
+            {
+              "n": "Toilet paper in a ziplock, trowel per team",
+              "must": true
+            },
+            {
+              "n": "Sun cream and lip balm"
+            },
+            {
+              "n": "Small towel"
+            },
+            {
+              "n": "Spare ziplock bags"
+            },
+            {
+              "n": "Team ID tag",
+              "note": "Wear it, show it at every checkpoint",
+              "must": true
+            }
+          ]
+        }
+      ],
+      "dontBring": [
+        "Runners or trail shoes",
+        "Ski jackets, mac-in-a-sac jackets, cotton hoodies, jeans",
+        "Dome tents with fibreglass poles, or Icelandic tents",
+        "Tins, cans, glass jars, pot noodles",
+        "Baby wipes",
+        "A second bag or anything carried in your hands",
+        "Speakers, consoles, valuables",
+        "Anything you have not carried up a hill before"
+      ]
+    }
+  ],
+  "updatedAt": "2026-09-07T01:02:40.261Z"
+}
