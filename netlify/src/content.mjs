@@ -52,7 +52,9 @@ async function ghWrite(g, data, message) {
   if (!r.ok) throw new Error(`GitHub write failed: ${r.status} ${await r.text()}`);
 }
 export default async (req) => {
-  if (req.method === "OPTIONS") return new Response("", { status: 204, headers });
+  // A 204 must not carry a body, even an empty string: the Fetch spec makes the
+  // Response constructor throw, which turned every CORS preflight into a 502.
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
   const g = gh();
   if (req.method === "GET") {
     try {

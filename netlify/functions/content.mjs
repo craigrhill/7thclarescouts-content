@@ -850,7 +850,7 @@ async function ghWrite(g, data, message) {
   if (!r.ok) throw new Error(`GitHub write failed: ${r.status} ${await r.text()}`);
 }
 var content_default = async (req) => {
-  if (req.method === "OPTIONS") return new Response("", { status: 204, headers });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
   const g = gh();
   if (req.method === "GET") {
     try {
