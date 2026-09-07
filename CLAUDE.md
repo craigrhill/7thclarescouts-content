@@ -67,10 +67,12 @@ warning fires correctly for leaders.
     content.json        live content, source of truth
     sw.js               service worker, VERSION gates the caches
     netlify/src/content.mjs         the content function, edit this one
-    netlify/functions/content.mjs   built from it by `npm run build:function`;
+    netlify/src/rota.mjs            the leaders' rota function, edit this one
+    netlify/functions/*.mjs         built from netlify/src by `npm run build:function`;
                                     self-contained so zip drops still work
-    tools/test-function.mjs         offline smoke test of the built function;
-                                    pass two bundles to prove equivalence
+    tools/test-function.mjs         offline smoke test of the built content
+                                    function; pass two bundles to prove equivalence
+    tools/test-rota.mjs             offline harness for the rota function
     tools/apply-update.mjs          ports admin's mergeContent, --dry-run
     tools/serve.mjs                 local preview, stands in for the
                                     content function so the app loads
@@ -78,6 +80,8 @@ warning fires correctly for leaders.
     lab/                experiments. Public on the site but not linked from
                         the app, not cached by sw.js, noindexed, and never
                         read by content.json. Delete a file to remove it.
+    lab/rota.html       the leaders' rota client (see below); useless
+                        without a personal code
     docs/Sionnach_Tips.pdf
 
 Tabs: Home, Calendar, Kit, Sections, More. Home is personalised per phone via
@@ -86,6 +90,28 @@ localStorage `my-sections`.
 Style: Burren palette, limestone greys and sea blue `#1B4A63`, with the logo
 orange `#F07800` as accent. Fraunces headings, Inter body. Logo is a
 Poulnabrone dolmen silhouette.
+
+## Leaders' area: the volunteer rota
+
+Shared, private data behind a personal code. Nothing in it is published.
+
+    lab/rota.html  ->  netlify/functions/rota  ->  Netlify Blobs store "rota"
+
+Store keys: `secret` (HMAC key, generated on first use, never leaves the
+server), `roster` (people with `id`, `name`, `sections`, `lead`, `codeHash`),
+`section/<key>` (`required` and `slots`, each slot `who` as person ids, `off`,
+optional `need`). Every write is guarded by the document's etag and retried on
+conflict, so concurrent edits do not overwrite each other.
+
+Access: a section lead issues each Scouter a code (`XXXX-XXXX`). Logging in
+with it returns a 90-day signed token; removing a person revokes their token
+at once. Leads manage people, numbers and anyone's ticks; everyone else may
+tick only themselves. The first lead is created with the admin password
+(`?a=bootstrap`), the same password admin.html uses. The API is documented at
+the top of `netlify/src/rota.mjs`.
+
+Local preview: `npm run serve` runs the real rota handler against an
+in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
 
 ## Gotchas
 
@@ -99,9 +125,11 @@ Poulnabrone dolmen silhouette.
   keeps the deployed function self-contained so the zip-drop fallback works.
   `@netlify/blobs` is pinned exactly in package.json; bumping it changes the
   vendor code, so re-run the equivalence check before committing.
-* **Two functions are duplicated across files.** `mergeContent` lives in both
+* **Duplicated on purpose, change together.** `mergeContent` lives in both
   `admin.html` and `tools/apply-update.mjs`. `mergeBuiltInKits` lives in both
-  `index.html` and `admin.html`. Change one copy and change the other.
+  `index.html` and `admin.html`. The admin password check (`BUILT_IN_HASH`
+  and `safeEqual`) lives in both `netlify/src/content.mjs` and
+  `netlify/src/rota.mjs`, so each built function stays self-contained.
 * **`knownKitIds` is a ledger, not a setting.** It records every built-in kit
   list admin has already offered, so a list a leader deleted on purpose is not
   auto-added back on the next load. Admin writes it on every save. Do not hand

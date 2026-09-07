@@ -18,9 +18,11 @@ What's inside
 - content.json          the live content, source of truth
 - manifest.webmanifest, icon-192.png, icon-512.png, sw.js   PWA: installable, works offline with last-saved content
 - logo.png              group logo
-- netlify/src/content.mjs         the Netlify Function source (edit this)
-- netlify/functions/content.mjs   built from it: npm run build:function
-- tools/test-function.mjs         smoke test for the function: npm run test:function
+- netlify/src/content.mjs         the content function source (edit this)
+- netlify/src/rota.mjs            the leaders' rota function source (edit this)
+- netlify/functions/*.mjs         built from those: npm run build:function
+- tools/test-function.mjs, tools/test-rota.mjs   offline tests: npm run test:function
+- lab/rota.html                   the leaders' volunteer rota; needs a personal code
 - tools/apply-update.mjs          applies updates.json to content.json the same way admin does
 - netlify.toml
 
@@ -51,6 +53,17 @@ Getting new lists/content from Claude without retyping
   content for reading or editing; paste Claude's JSON back and press Merge.
 - Claude can also read and commit content.json directly. The admin warns
   before overwriting a change Claude made.
+
+Leaders' area (volunteer rota)
+- /lab/rota.html. Not linked from the app. Shared data, private, in Netlify
+  Blobs; nothing in it is published.
+- First time: open the page, expand "First time setting this up?", enter your
+  name and the admin password. That creates the first lead and shows a code.
+- Leads add Scouters, tick which sections each can cover, and hand out codes.
+  A code signs a phone in for three months. "New code" cancels the old one;
+  removing a person signs them out at once.
+- Everyone can see the rota and tick themselves in. Only leads can tick
+  others, change the adults needed, or mark a week as no meeting.
 
 Note on the repo
 - It is public, and so is the site. Reverting a commit does not unpublish
