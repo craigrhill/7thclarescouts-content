@@ -218,7 +218,7 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
 ## Group facts
 
 Beavers, Tue 6:00 to 7:00 pm, The Hall, Ballyvaughan.
-Cubs, Thu 6:00 to 7:30 pm, The Hall.
+Cubs, Thu 6:30 to 8:00 pm, The Hall.
 Scouts and Ventures, Thu 6:00 to 7:30 pm, Newquay National School.
 
 Weekly dress: Beavers and Cubs jumper plus necker; Scouts fleece, full uniform

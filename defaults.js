@@ -24,7 +24,7 @@ window.DEFAULT_CONTENT = {
     ],
     sections: [
       { key:"beavers", name:"Beavers", ages:"Ages 6 to 8", day:"Tuesday", time:"6:00 to 7:00 pm", venue:"The Hall, Ballyvaughan", blurb:"Games, crafts, nature and first adventures. Beavers learn by playing and exploring together." },
-      { key:"cubs", name:"Cubs", ages:"Ages 9 to 11", day:"Thursday", time:"6:00 to 7:30 pm", venue:"The Hall, Ballyvaughan", blurb:"Badges, hikes, campfires and first nights away under canvas." },
+      { key:"cubs", name:"Cubs", ages:"Ages 9 to 11", day:"Thursday", time:"6:30 to 8:00 pm", venue:"The Hall, Ballyvaughan", blurb:"Badges, hikes, campfires and first nights away under canvas." },
       { key:"scouts", name:"Scouts", ages:"Ages 12 to 15", day:"Thursday", time:"6:00 to 7:30 pm", venue:"Newquay National School", blurb:"Patrol-led camping, pioneering, navigation and expeditions across Clare and beyond." },
       { key:"ventures", name:"Ventures", ages:"Ages 15 to 17", day:"Thursday", time:"6:00 to 7:30 pm", venue:"Newquay National School", blurb:"Youth-led challenges, mountain trips, international events and leadership." }
     ]
