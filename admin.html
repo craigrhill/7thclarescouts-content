@@ -111,6 +111,11 @@ textarea{min-height:90px;resize:vertical}
       <label>Typical stages by section</label><textarea id="b_stages"></textarea>
       <label>Badge positions (one area per block: a line starting with ## for the area, then one badge per line)</label><textarea id="b_placement" style="min-height:220px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem"></textarea>
       <label>Note under the positions</label><textarea id="b_note"></textarea>
+      <div class="row">
+        <div><label>Picture (optional)</label><input id="b_imageUrl" placeholder="photos/uniform-badge-placement.jpg"></div>
+        <div><label>Picture heading</label><input id="b_imageCaption" placeholder="On the full uniform shirt"></div>
+      </div>
+      <div id="b_preview"></div>
     </div>
   </div>
 
@@ -319,10 +324,12 @@ function importJson(mode){
 }
 function renderBadges(){
   C.badges = C.badges || clone(window.DEFAULT_CONTENT.badges);
-  ["intro","stages","note"].forEach(k => { const el = $("b_"+k); el.value = C.badges[k]||""; el.oninput = () => C.badges[k] = el.value; });
+  ["intro","stages","note","imageUrl","imageCaption"].forEach(k => { const el = $("b_"+k); el.value = C.badges[k]||""; el.oninput = () => { C.badges[k] = el.value; if (k === "imageUrl") badgePreview(); }; });
+  badgePreview();
   const el = $("b_placement"); el.value = (C.badges.placement||[]).map(p => "## "+p.area+"\n"+p.items.join("\n")).join("\n\n");
   el.oninput = () => { const out=[]; let g=null; el.value.split("\n").forEach(l => { const t=l.trim(); if(!t) return; if(t.startsWith("##")){ g={area:t.replace(/^#+\s*/,""),items:[]}; out.push(g); } else { if(!g){ g={area:"Badges",items:[]}; out.push(g);} g.items.push(t);} }); C.badges.placement = out; };
 }
+function badgePreview(){ const u = C.badges.imageUrl; $("b_preview").innerHTML = u ? `<img src="${esc(u)}" alt="" style="max-height:160px;width:auto;border-radius:8px;margin:.2rem 0 .6rem">` : ""; }
 
 // ---- Team ----
 function renderTeam(){

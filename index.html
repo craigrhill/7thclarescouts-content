@@ -223,6 +223,11 @@ ul.plain{margin:0;padding-left:1.15em;color:var(--stone-600)}ul.plain li{margin:
 .strip::-webkit-scrollbar{display:none}
 .strip button{flex:none;width:132px;height:132px;padding:0;border:0;border-radius:12px;overflow:hidden;background:var(--stone-100);cursor:pointer}
 .strip img{width:100%;height:100%;object-fit:cover}
+/* Not lazy loaded, unlike the gallery tiles: this is one deliberate picture,
+   and until it loads an auto height leaves it 0px tall. On the badges page it
+   sits far enough down that a lazy image never reaches the viewport to load,
+   so it stayed collapsed. The gallery tiles are safe because they reserve
+   their box with aspect-ratio. */
 .kit-figure{display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in;border-radius:10px;overflow:hidden}
 .kit-figure img{width:100%;height:auto;display:block}
 .lightbox{position:fixed;inset:0;background:rgba(20,22,24,.94);display:none;z-index:60;align-items:center;justify-content:center;padding:1rem}
@@ -612,6 +617,22 @@ function showSection(key){
 }
 function personHtml(p){ const ini = (p.name||"?").split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
   return `<div class="person"><div class="avatar">${esc(ini)}</div><div><strong>${ph(p.name)}</strong><div class="role">${esc(p.role)}${p.section?` · ${esc(p.section[0].toUpperCase()+p.section.slice(1))}`:""}</div></div></div>`; }
+/* ---------- a picture card ---------- */
+/* Used by a kit list and by the badges page. The handler carries a literal
+   token rather than the url or caption, so an apostrophe a leader types
+   cannot break it. */
+function figureSource(kind){ return kind === "kit" ? (currentKit || {}) : (C.badges || {}); }
+function figureCard(kind, fallbackAlt){
+  const f = figureSource(kind); if (!f.imageUrl) return "";
+  return `<div class="card figure">${f.imageCaption?`<h2>${esc(f.imageCaption)}</h2>`:""}
+    <button class="kit-figure" onclick="openFigure('${kind}')" aria-label="Enlarge the picture"><img src="${esc(f.imageUrl)}" alt="${esc(f.imageCaption || fallbackAlt)}"></button>
+    <p class="small muted" style="margin:.5rem 0 0">Tap the picture for a closer look, or <a href="${esc(f.imageUrl)}" target="_blank" rel="noopener">open it full size</a> to zoom in on the detail.</p></div>`;
+}
+function openFigure(kind){
+  const f = figureSource(kind); if (!f.imageUrl) return;
+  openPhoto([{url: f.imageUrl, caption: f.imageCaption || ""}], 0);
+}
+
 /* ---------- photos ---------- */
 /* One list, two surfaces. The gallery page shows every photo; a section page
    shows the ones tagged with that section. A photo with no section is
@@ -710,6 +731,7 @@ function badgesHtml(){
       <div class="btn-row"><a class="btn" href="https://www.irelandscouts.ie/wp-content/uploads/2022/12/ONE-Programme-Adventure-Skills-Handbook.pdf" target="_blank" rel="noopener">Adventure Skills handbook (PDF)</a><a class="btn" href="https://www.scouts.ie" target="_blank" rel="noopener">scouts.ie</a></div></div>
     <div class="sec-head"><h2>Where badges go</h2></div>
     <div class="card">${diagram}<ol style="margin:1rem 0 0;padding-left:1.3em;color:var(--stone-600);font-size:.95rem">${map.map(m=>`<li style="margin:.25em 0">${m}</li>`).join("")}</ol></div>
+    ${figureCard("badges", "Where badges go on the full uniform shirt")}
     ${(b.placement||[]).map(p=>`<div class="card"><h3 style="margin-bottom:.3em">${esc(p.area)}</h3><ul class="plain">${p.items.map(x=>`<li>${ph(x)}</li>`).join("")}</ul></div>`).join("")}
     <p class="small muted">${ph(b.note||"")}</p>
     <div class="sec-head"><h2>Sewing tips</h2></div>
@@ -793,9 +815,7 @@ function showKit(id){
     <div class="kit-toolbar"><div class="progress">Packed <b id="doneCount">${done}</b> of ${all.length}</div><div class="btn-row" style="margin:0"><button class="btn" onclick="clearTicks()">Clear</button><button class="btn" onclick="share('${esc(k.title)} kit list','kit/${esc(k.id)}')">Share</button><button class="btn primary" onclick="window.print()">Print A4</button></div></div>
     <div class="bar"><i id="bar" style="width:${all.length?done/all.length*100:0}%"></i></div>
     <div class="card"><p style="margin:0" class="muted">${esc(k.summary)}</p></div>
-    ${k.imageUrl?`<div class="card figure">${k.imageCaption?`<h2>${esc(k.imageCaption)}</h2>`:""}
-      <button class="kit-figure" onclick="openKitPhoto()" aria-label="Enlarge the picture"><img src="${esc(k.imageUrl)}" alt="${esc(k.imageCaption||k.title)}" loading="lazy"></button>
-      <p class="small muted" style="margin:.5rem 0 0">Tap the picture for a closer look, or <a href="${esc(k.imageUrl)}" target="_blank" rel="noopener">open it full size</a> to zoom in on the detail.</p></div>`:""}
+    ${figureCard("kit", k.title)}
     ${k.docs&&k.docs.length?`<div class="card docs"><h2>Guides and downloads</h2><div class="menu" style="margin:0">${k.docs.map(d=>`<a href="${esc(d.url)}" target="_blank" rel="noopener" ${/\.pdf$/i.test(d.url)?'download':''}><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span class="grow"><strong>${esc(d.title)}</strong>${d.note?`<small>${esc(d.note)}</small>`:""}</span><span class="chev">${ICON.chev}</span></a>`).join("")}</div></div>`:""}
     <p class="small muted kit-legend"><span class="must">Essential</span> = must be in the bag. Everything else is strongly recommended.</p>
     <div class="card items"><div class="groups">${k.groups.map(g => `<div class="group"><h3>${esc(g.name)}</h3>${g.items.map(it => { const key = itemKey(k,it), on = !!t[key]; return `<div class="item ${on?"done":""}"><input type="checkbox" id="${key}" ${on?"checked":""} onchange="toggleTick('${key}',this.checked)"><label for="${key}"><span class="n">${esc(it.n)}${it.must?'<span class="must">Essential</span>':""}</span>${it.note?`<span class="note">${esc(it.note)}</span>`:""}</label></div>`; }).join("")}</div>`).join("")}</div></div>
@@ -803,7 +823,6 @@ function showKit(id){
     ${k.dontBring&&k.dontBring.length?`<div class="card dont"><h2>Leave at home</h2><ul class="plain">${k.dontBring.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
     <div class="print-foot">7th Clare Scouts, Ballyvaughan · 7thclarescouts@gmail.com</div>`;
 }
-function openKitPhoto(){ if (currentKit && currentKit.imageUrl) openPhoto([{url: currentKit.imageUrl, caption: currentKit.imageCaption || currentKit.title}], 0); }
 function toggleTick(key,on){ const t = loadTicks(currentKit.id); if (on) t[key]=1; else delete t[key]; saveTicks(currentKit.id,t);
   $(key).closest(".item").classList.toggle("done",on); const all = currentKit.groups.flatMap(g=>g.items).length, n = Object.keys(t).length;
   $("doneCount").textContent = n; $("bar").style.width = (all?n/all*100:0)+"%"; }

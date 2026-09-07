@@ -201,13 +201,18 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
   leaves it alone and says so, or a leader with no signal would be logged out.
   A save that hits 401 asks for the password inline rather than signing out,
   which would throw away unsaved edits.
-* **A kit list can carry one picture.** `imageUrl` with an optional
-  `imageCaption` renders a card under the summary, tappable into the same
-  lightbox the gallery uses, with a plain link beside it to the file itself so
-  a phone can pinch-zoom detail the lightbox cannot. It is left out of the A4
-  print, as tips and downloads already are, so the printed sheet stays a tight
-  packing checklist. The Full uniform list uses it for Scouting Ireland's badge
-  placement chart.
+* **Two pages can carry one picture, through the same card.** `imageUrl` with
+  an optional `imageCaption` on a kit list, or on `badges`, renders a
+  `.card.figure`: tappable into the same lightbox the gallery uses, with a
+  plain link beside it to the file itself so a phone can pinch-zoom detail the
+  lightbox cannot. `figureCard(kind)` builds it and `openFigure(kind)` opens
+  it, both reading through `figureSource(kind)`, so the onclick carries the
+  literal token `"kit"` or `"badges"` and never a url or caption; an
+  apostrophe a leader types cannot break the handler. It is left out of the A4
+  kit print, as tips and downloads already are, so that sheet stays a tight
+  packing checklist. Scouting Ireland's badge placement chart is the same file
+  on both: the Full uniform kit list and the Adventure Skills page, where it
+  sits under "Where badges go" beside the built-in jumper diagram.
 * **One photo list, two surfaces.** `gallery` is the only place photos live.
   The gallery page under More shows all of them with a chip per section; a
   section page shows the ones whose `section` matches its key, capped at eight,
@@ -239,7 +244,8 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
                   venues: [{name, query, link}],
                   team: [{name, role, section}],
                   sections: [{key, name, ages, day, time, venue, blurb}] },
-      badges: { intro, stages, placement: [{area, items[]}], note },
+      badges: { intro, stages, placement: [{area, items[]}], note,
+                imageUrl?, imageCaption? },
       fundraising: { intro, donateTitle, donateText, donateUrl, donateLabel,
                      campaigns: [{title, blurb, goal, raised, link, linkLabel}],
                      help, sponsors: [{name, url, logoUrl}] },
