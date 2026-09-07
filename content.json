@@ -953,7 +953,7 @@
           "items": [
             {
               "n": "Scouting Ireland uniform shirt",
-              "note": "[PLACEHOLDER] Confirm which shirt the group uses. Clean and ironed, buttons done, sleeves rolled or down as instructed.",
+              "note": "Clean and ironed, buttons done, sleeves rolled or down as instructed.",
               "must": true
             },
             {
@@ -1504,7 +1504,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-07T11:08:36.780Z",
+  "updatedAt": "2026-09-07T11:21:20.364Z",
   "badges": {
     "intro": "Every young person works through the same nine Adventure Skills, from stage 1 to stage 9, whichever section they are in. You start at stage 1 no matter your age, keep the highest stage badge you have earned on your sleeve, and replace it when you move up. Most Scouts settle on two or three skills they really enjoy rather than trying all nine.",
     "stages": "As a rough guide, Beavers usually reach stages 1 to 2, Cubs stages 2 to 4, Scouts stages 3 to 6 and Ventures stages 5 to 9, but the stages are not tied to sections and a keen Cub can be ahead of a new Scout.",
@@ -1524,9 +1524,10 @@
       {
         "area": "Left sleeve, top to bottom",
         "items": [
-          "7th Clare group badge",
-          "Clare County badge",
-          "Section badge (Beaver, Cub, Scout, Venture)"
+          "Scout Province badge",
+          "7th Clare group badge and Clare County badge",
+          "Section badge (Beaver, Cub, Scout, Venture)",
+          "Progress awards below those: Bree, Ruarc and Conn for Beavers; Turas, Taisteal and Tagann for Cubs; Discovery, Terra Nova, Endurance and Polar (the Crean awards) for Scouts"
         ]
       },
       {
@@ -1534,12 +1535,6 @@
         "items": [
           "Adventure Skills stage badges (highest stage only, one per skill)",
           "Special Interest badges below them"
-        ]
-      },
-      {
-        "area": "Progress badges",
-        "items": [
-          "[PLACEHOLDER] Confirm with your section leader where the section's progress badges (Bree, Ruarc, Conn for Beavers; Turas, Taisteal, Tagann for Cubs) are worn"
         ]
       }
     ],
