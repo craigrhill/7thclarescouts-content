@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Attendance: 7th Clare Scouts leaders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="rota.css">
+</head>
+<body>
+<header class="appbar"><div class="wrap">
+  <div class="brand">7th Clare Scouts<small>Attendance</small></div>
+  <span class="pill">Leaders only</span>
+</div></header>
+<main class="wrap">
+  <div id="err" class="banner err" hidden></div>
+
+  <section id="gate" hidden>
+    <h1>Sign in</h1>
+    <p class="muted">Enter the code the group secretary gave you. It signs this phone in for twelve months.</p>
+    <div class="card">
+      <div class="row"><input type="text" id="code" placeholder="XXXX-XXXX" autocapitalize="characters" autocomplete="one-time-code" spellcheck="false"><button class="btn primary" onclick="signIn($('code').value, 'gateMsg', load)">Sign in</button></div>
+      <p class="msg" id="gateMsg"></p>
+    </div>
+    <p class="small muted">No code? Ask the group secretary, who keeps the roster.</p>
+  </section>
+
+  <section id="app" hidden>
+    <div class="row" style="justify-content:space-between;margin:.9rem 0 .2rem">
+      <span class="small muted">Signed in as <b id="meName"></b><span id="meRole"></span></span>
+      <span><a class="btn quiet" href="rota.html">Rota</a><a class="btn quiet" href="badges.html">Badge board</a><a id="rosterLink" class="btn quiet" href="roster.html" hidden>Roster</a><button class="btn quiet" onclick="signOut()">Sign out</button></span>
+    </div>
+
+    <h1>Attendance</h1>
+    <p class="muted intro">Tap each name as they arrive. It saves as you go, so whoever is at the door can do it and put the phone away.</p>
+    <div class="chips" id="chips"></div>
+
+    <div id="none" class="card" hidden>
+      <p class="muted" style="margin:0">No sections on your roster entry yet, so there is nothing to take attendance for. Ask the secretary to add your section on the roster.</p>
+    </div>
+
+    <div id="tonight" class="card" hidden>
+      <div class="print-head"><h1 id="printTitle"></h1><span class="small muted" id="printSub"></span></div>
+      <div class="row tools" style="justify-content:space-between;align-items:flex-end">
+        <div><label for="date" class="small muted">Meeting</label><br><input type="date" id="date"></div>
+        <div style="flex:1;min-width:10rem"><label for="note" class="small muted">What it was (optional)</label><br><input type="text" id="note" placeholder="Meeting, hike, camp…" maxlength="80"></div>
+      </div>
+      <div class="row tools" style="margin:.6rem 0 .2rem;justify-content:space-between">
+        <span id="count" class="small"></span>
+        <span><button class="btn quiet" onclick="setAll(true)">Everyone here</button><button class="btn quiet" onclick="setAll(false)">Clear</button></span>
+      </div>
+      <div class="who att" id="names"></div>
+      <div id="addRow"></div>
+    </div>
+
+    <div id="history" class="card" hidden>
+      <h2>Term so far</h2>
+      <div class="row tools" style="margin-bottom:.5rem"><button class="btn" onclick="window.print()">Print</button><button class="btn" onclick="csv()">Download CSV</button></div>
+      <div class="board-wrap" id="totals"></div>
+      <div id="meetings"></div>
+    </div>
+  </section>
+</main>
+<footer class="wrap">Nothing on this page is public. Names come from the badge board.</footer>
+
+<script src="rota-lib.js"></script>
+<script>
+const SK = "attendance-section";
+let C = null, D = null, date = null, saving = null;
+function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
+function keys(){ return C.settings.sections.map(x => x.key); }
+function visibleKeys(){ return keys().filter(k => D.sections[k]); }
+function sec(){ let k = null; try { k = localStorage.getItem(SK); } catch {} const v = visibleKeys(); return v.includes(k) ? k : v[0]; }
+function sectionName(k){ return (C.settings.sections.find(x => x.key === k) || {}).name || k; }
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+const rec = (k, d) => (D.sections[k].meetings || {})[d] || null;
+const presentSet = (k, d) => new Set((rec(k, d) || {}).present || []);
+
+function render(){
+  const me = D.me;
+  $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
+  $("rosterLink").hidden = !me.secretary;
+  const v = visibleKeys();
+  if (!v.length) { $("chips").innerHTML = ""; $("tonight").hidden = true; $("history").hidden = true; $("none").hidden = false; return; }
+  $("none").hidden = true; $("tonight").hidden = false; $("history").hidden = false;
+  const k = sec(), S = D.sections[k], youth = S.youth;
+  if (!date) date = today();
+  $("chips").innerHTML = v.map(x => `<button class="chip ${x === k ? "on" : ""}" onclick="pickSection('${esc(x)}')">${esc(sectionName(x))}</button>`).join("");
+  $("printTitle").textContent = sectionName(k) + " attendance";
+  $("printSub").textContent = "Meeting of " + fmt(date) + ", with the term so far. 7th Clare Scouts, printed " + new Date().toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" }) + ". For leaders; not for display.";
+  if ($("date").value !== date) $("date").value = date;
+  const r = rec(k, date); if (document.activeElement !== $("note")) $("note").value = r ? (r.note || "") : "";
+  const here = presentSet(k, date);
+  $("count").innerHTML = youth.length ? `<b>${here.size}</b> of ${youth.length} here${r ? `<span class="muted"> · saved by ${esc(r.by)}</span>` : ""}` : "";
+  $("names").innerHTML = youth.length
+    ? youth.map(y => `<label class="${here.has(y.id) ? "on" : ""}"><input type="checkbox" ${here.has(y.id) ? "checked" : ""} onchange="toggle('${esc(y.id)}', this.checked)">${esc(y.name)}</label>`).join("")
+    : `<span class="empty">Nobody on the ${esc(sectionName(k))} badge board yet, so nobody to tick.${D.canAdd[k] ? "" : " Ask the section lead to add them."}</span>`;
+  $("addRow").innerHTML = D.canAdd[k] ? `<div class="row add" style="margin-top:.6rem"><input type="text" id="newName" placeholder="Add a Scout: name, or several separated by commas" autocomplete="off"><button class="btn primary" onclick="add()">Add</button></div><p class="small muted" style="margin:.3rem 0 0">Added here goes on the badge board too; it is the same list.</p>` : "";
+  // Term so far: newest first, and a tally per Scout.
+  const dates = Object.keys(S.meetings || {}).sort().reverse();
+  $("meetings").innerHTML = dates.length ? dates.map(d => { const m = S.meetings[d], p = new Set(m.present), away = youth.filter(y => !p.has(y.id));
+      return `<details class="meeting"><summary><span><b>${esc(fmt(d))}</b>${m.note ? `, ${esc(m.note)}` : ""}</span><span class="muted">${p.size} of ${youth.length}</span></summary>
+        <p class="small" style="margin:.4rem 0">${away.length ? "Missing: " + away.map(y => esc(y.name)).join(", ") : "Everyone was there."}<span class="muted"> · saved by ${esc(m.by)}</span></p>
+        <p class="small" style="margin:0"><button class="btn quiet" onclick="openDate('${esc(d)}')">Edit</button><button class="btn quiet" onclick="removeMeeting('${esc(d)}')">Remove this meeting</button></p></details>`; }).join("")
+    : `<div class="empty">No meetings recorded yet.</div>`;
+  $("totals").innerHTML = dates.length && youth.length ? `<table class="board"><thead><tr><th class="nm">Scout</th><th>Here</th><th>Of</th><th>Rate</th></tr></thead><tbody>${youth.map(y => { const n = dates.filter(d => S.meetings[d].present.includes(y.id)).length;
+      return `<tr><td class="nm">${esc(y.name)}</td><td>${n}</td><td>${dates.length}</td><td>${Math.round(100 * n / dates.length)}%</td></tr>`; }).join("")}</tbody></table>` : "";
+}
+async function load(){ showErr(""); D = await api("GET", "?a=attendance&sections=" + keys().join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
+async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); } }
+function pickSection(k){ try { localStorage.setItem(SK, k); } catch {} render(); }
+function openDate(d){ date = d; render(); $("tonight").scrollIntoView({ block: "start", behavior: "smooth" }); }
+// Every change sends the whole list for the date, so two phones at the door
+// converge on whatever was tapped last rather than fighting over a diff.
+async function save(k, present){ const r = await api("POST", "?a=attend", { section: k, date, present, note: $("note").value }); D.sections[k].meetings = r.meetings; render(); }
+const toggle = (id, on) => guarded(async () => { const k = sec(), s = presentSet(k, date); if (on) s.add(id); else s.delete(id); await save(k, [...s]); });
+const setAll = (on) => guarded(async () => { const k = sec(); await save(k, on ? D.sections[k].youth.map(y => y.id) : []); });
+const removeMeeting = (d) => guarded(async () => { const k = sec(); if (!confirm(`Remove the record for ${fmt(d)}?`)) return; const r = await api("POST", "?a=attend-remove", { section: k, date: d }); D.sections[k].meetings = r.meetings; if (date === d) date = today(); render(); });
+async function add(){ const name = ($("newName").value || "").trim(); if (!name) return;
+  await guarded(async () => { const k = sec(); const r = await api("POST", "?a=badge-add", { section: k, name }); D.sections[k].youth = r.board.youth.map(({ id, n, name }) => ({ id, n, name })); render(); }); }
+$("date").addEventListener("change", () => { if (isDateStr($("date").value)) { date = $("date").value; render(); } });
+$("note").addEventListener("change", () => guarded(async () => { const k = sec(); if (rec(k, date) || $("note").value.trim()) await save(k, [...presentSet(k, date)]); }));
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target && e.target.id === "newName") add(); });
+const isDateStr = s => /^\d{4}-\d{2}-\d{2}$/.test(s || "");
+function csv(){
+  const k = sec(), S = D.sections[k], dates = Object.keys(S.meetings || {}).sort();
+  const rows = [["Scout", ...dates, "Here", "Of"], ...S.youth.map(y => { const n = dates.filter(d => S.meetings[d].present.includes(y.id)).length; return [y.name, ...dates.map(d => S.meetings[d].present.includes(y.id) ? "1" : ""), n, dates.length]; })];
+  const text = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/csv" })); a.download = `attendance-${k}.csv`; a.click();
+}
+function signOut(msg){ setToken(null); D = null; $("app").hidden = true; $("gate").hidden = false; $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
+onUnauthorized = signOut;
+async function boot(){
+  C = await loadContent();
+  if (token) { try { await load(); return; } catch (e) { if (token) showErr(e.message); } }
+  $("gate").hidden = false;
+}
+boot();
+</script>
+</body>
+</html>

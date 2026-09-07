@@ -1011,6 +1011,7 @@ var canSeeBoard = (me, canManage, k) => canManage || (me.sections || []).include
 var canEditBoard = (me, canManage, k) => canSeeBoard(me, canManage, k) && (canManage || !!me.lead);
 var byNumber = (youth) => [...youth].sort((x, y) => x.n - y.n);
 var boardFor = (doc) => ({ next: doc.next, youth: byNumber(doc.youth), stages: doc.stages, updatedAt: doc.updatedAt || null });
+var attendanceFallback = () => ({ meetings: {} });
 var publicBoard = (k, doc) => ({ section: k, updatedAt: doc.updatedAt || null, rows: byNumber(doc.youth).map((y) => ({ n: y.n, stages: doc.stages[y.id] || {} })) });
 var pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, ...withCode ? { code: p.code || null } : {} });
 var isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
@@ -1088,6 +1089,18 @@ function createHandler(storeFactory) {
           canEdit[k] = canEditBoard(me, canManage, k);
         }
         return json(200, { me: pub(me, canManage), boards, canEdit });
+      }
+      if (req.method === "GET" && a === "attendance") {
+        const keys = (url.searchParams.get("sections") || "").split(",").map((s) => s.trim()).filter(isKey).filter((k) => canSeeBoard(me, canManage, k));
+        const sections = {}, canEdit = {}, canAdd = {};
+        for (const k of keys) {
+          const { doc: board } = await readDoc(store, "badges/" + k, badgesFallback);
+          const { doc: att } = await readDoc(store, "attendance/" + k, attendanceFallback);
+          sections[k] = { youth: byNumber(board.youth).map(({ id, n, name }) => ({ id, n, name })), meetings: att.meetings, updatedAt: att.updatedAt || null };
+          canEdit[k] = true;
+          canAdd[k] = canEditBoard(me, canManage, k);
+        }
+        return json(200, { me: pub(me, canManage), sections, canEdit, canAdd });
       }
       if (req.method === "GET") {
         const keys = (url.searchParams.get("sections") || "").split(",").map((s) => s.trim()).filter(isKey);
@@ -1225,6 +1238,25 @@ function createHandler(storeFactory) {
         });
         if (problem) return fail(400, problem);
         return json(200, { board: boardFor(doc) });
+      }
+      if (a === "attend" || a === "attend-remove") {
+        const k = b.section;
+        if (!isKey(k)) return fail(400, "Bad section.");
+        if (!canSeeBoard(me, canManage, k)) return fail(403, "That section is not on your roster entry.");
+        if (!isDate(b.date)) return fail(400, "Bad date.");
+        const { doc: board } = await readDoc(store, "badges/" + k, badgesFallback);
+        const known = new Set(board.youth.map((y) => y.id));
+        const doc = await update(store, "attendance/" + k, attendanceFallback, (d) => {
+          if (a === "attend-remove") {
+            delete d.meetings[b.date];
+            return d;
+          }
+          const present = [...new Set((Array.isArray(b.present) ? b.present : []).filter((id) => known.has(id)))];
+          const note = String(b.note || "").trim().slice(0, 80);
+          d.meetings[b.date] = { present, note, by: me.name, at: (/* @__PURE__ */ new Date()).toISOString() };
+          return d;
+        });
+        return json(200, { meetings: doc.meetings });
       }
       if (a === "slot") {
         if (!isKey(b.section) || !isSlotId(b.id)) return fail(400, "Bad section or slot.");

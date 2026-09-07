@@ -98,6 +98,7 @@ warning fires correctly for leaders.
     lab/rota.html       the rota: coverage per section (see below)
     lab/roster.html     the secretary's roster: people, sections, codes
     lab/badges.html     the Adventure Skills badge board, names and all (see below)
+    lab/attendance.html attendance per meeting, taken at the door (see below)
     lab/rota-lib.js     sign-in, API calls and helpers shared by both
     lab/rota.css        styles shared by both
     photos/            images referenced from content, such as the badge
@@ -126,7 +127,9 @@ server), `roster` (people with `id`, `name`, `sections`, `lead`, `secretary`,
 `code`, `codeHash`), `section/<key>` (`required` and `slots`, each slot `who` as
 person ids, `off`, optional `need`), `events` (leaders-only calendar events),
 `badges/<key>` (the section's badge board: `next`, `youth` with `id`, `n`,
-`name`, and `stages` keyed by youth id then skill)). Every write is guarded by
+`name`, and `stages` keyed by youth id then skill), `attendance/<key>`
+(`meetings` keyed by ISO date: `present` youth ids, `note`, `by`, `at`).
+Every write is guarded by
 the document's etag and retried on conflict, so concurrent edits do not
 overwrite each other.
 
@@ -179,6 +182,20 @@ assigned at creation and never changed or reused, so a removal retires a
 number rather than shifting everyone else's. Skills are the fixed nine, in
 the order the public Adventure Skills page lists them; keys match between
 `rota.mjs`, `rota-lib.js` and `index.html`.
+
+### Attendance
+
+`lab/attendance.html` is taken at the door on a phone: pick the section,
+the date defaults to today, tap each name as they arrive. Every tap saves
+the whole list for that date, so two phones at the door converge on
+whatever was tapped last instead of fighting over a diff. Names come from
+the badge board, which is the one list of young people; a lead can add a
+Scout from either page and both see it. Anyone signed in with the section
+on their roster entry can fill it in, helpers included, because whoever is
+at the door does it; only a lead can add Scouts. "Term so far" lists the
+meetings newest first with who was missing, a tally per Scout, print and
+CSV. Nothing in it is public, and the public board endpoint never includes
+it.
 
 The service worker never caches the rota function except that public board
 read, which is network first with the last copy as fallback. Before this the

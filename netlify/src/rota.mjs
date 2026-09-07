@@ -42,6 +42,15 @@
 //   POST   ?a=badge-rename {section,id,name}                   { board }   lead of it
 //   POST   ?a=badge-remove {section,id}                        { board }   lead of it
 //   POST   ?a=badge-stage  {section,id,skill,stage 0..9}       { board }   lead of it
+//   GET    ?a=attendance&sections=a,b            { me, sections: {k: {youth, meetings}}, canEdit, canAdd }
+//   POST   ?a=attend        {section,date,present:[ids],note?}  { meetings }   anyone on that section
+//   POST   ?a=attend-remove {section,date}                      { meetings }   anyone on that section
+//
+// Attendance: attendance/<key> holds one record per meeting date, the ids of
+// the young people who were there (from the section's badge board, which is
+// where names live) and an optional note. Anyone signed in with the section
+// on their roster entry can fill it in, helpers included, because it is done
+// at the door on a phone by whoever is there. Nothing in it is public.
 //
 // Badge boards: one document per section, badges/<key>, holds the section's
 // young people and the stage each holds in the nine Adventure Skills. Names
@@ -267,6 +276,7 @@ const canEditBoard = (me, canManage, k) => canSeeBoard(me, canManage, k) && (can
 const byNumber = (youth) => [...youth].sort((x, y) => x.n - y.n);
 const boardFor = (doc) => ({ next: doc.next, youth: byNumber(doc.youth), stages: doc.stages, updatedAt: doc.updatedAt || null });
 // What the public site gets: numbers and stages, nothing that names anyone.
+const attendanceFallback = () => ({ meetings: {} });
 const publicBoard = (k, doc) => ({ section: k, updatedAt: doc.updatedAt || null, rows: byNumber(doc.youth).map((y) => ({ n: y.n, stages: doc.stages[y.id] || {} })) });
 const pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, ...(withCode ? { code: p.code || null } : {}) });
 const isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
@@ -327,6 +337,18 @@ export function createHandler(storeFactory) {
         const boards = {}, canEdit = {};
         for (const k of keys) { const { doc } = await readDoc(store, "badges/" + k, badgesFallback); boards[k] = boardFor(doc); canEdit[k] = canEditBoard(me, canManage, k); }
         return json(200, { me: pub(me, canManage), boards, canEdit });
+      }
+
+      if (req.method === "GET" && a === "attendance") {
+        const keys = (url.searchParams.get("sections") || "").split(",").map((s) => s.trim()).filter(isKey).filter((k) => canSeeBoard(me, canManage, k));
+        const sections = {}, canEdit = {}, canAdd = {};
+        for (const k of keys) {
+          const { doc: board } = await readDoc(store, "badges/" + k, badgesFallback);
+          const { doc: att } = await readDoc(store, "attendance/" + k, attendanceFallback);
+          sections[k] = { youth: byNumber(board.youth).map(({ id, n, name }) => ({ id, n, name })), meetings: att.meetings, updatedAt: att.updatedAt || null };
+          canEdit[k] = true; canAdd[k] = canEditBoard(me, canManage, k);
+        }
+        return json(200, { me: pub(me, canManage), sections, canEdit, canAdd });
       }
 
       if (req.method === "GET") {
@@ -425,6 +447,23 @@ export function createHandler(storeFactory) {
         });
         if (problem) return fail(400, problem);
         return json(200, { board: boardFor(doc) });
+      }
+
+      if (a === "attend" || a === "attend-remove") {
+        const k = b.section;
+        if (!isKey(k)) return fail(400, "Bad section.");
+        if (!canSeeBoard(me, canManage, k)) return fail(403, "That section is not on your roster entry.");
+        if (!isDate(b.date)) return fail(400, "Bad date.");
+        const { doc: board } = await readDoc(store, "badges/" + k, badgesFallback);
+        const known = new Set(board.youth.map((y) => y.id));
+        const doc = await update(store, "attendance/" + k, attendanceFallback, (d) => {
+          if (a === "attend-remove") { delete d.meetings[b.date]; return d; }
+          const present = [...new Set((Array.isArray(b.present) ? b.present : []).filter((id) => known.has(id)))];
+          const note = String(b.note || "").trim().slice(0, 80);
+          d.meetings[b.date] = { present, note, by: me.name, at: new Date().toISOString() };
+          return d;
+        });
+        return json(200, { meetings: doc.meetings });
       }
 
       if (a === "slot") {

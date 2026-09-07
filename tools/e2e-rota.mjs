@@ -191,6 +191,18 @@ try {
   await L2.locator("table.board tr.youth").first().locator("td.nm button:has-text('Edit')").click(); await L2.waitForTimeout(200);
   await L2.locator("tr.editor button:has-text('Remove from board')").click(); await L2.waitForTimeout(900);
   ok("removing keeps the other Scout's number", await L2.locator("table.board tr.youth td.nm small").allInnerTexts(), ["Scout 2 on the public board"]);
+
+  // ---- attendance: the helper takes it at the door, the secretary sees it ----
+  await go(Hh, "attendance.html"); await Hh.waitForTimeout(700);
+  ok("attendance opens signed in, on the helper's one section, dated today", [await Hh.locator("#chips .chip").count(), await Hh.locator("#date").inputValue() !== "", await Hh.locator("#names label").allInnerTexts()], [1, true, ["Bea Test"]]);
+  ok("a helper cannot add Scouts here", await Hh.locator("#newName").count(), 0);
+  await Hh.locator("#names label", { hasText: "Bea Test" }).locator("input").check(); await Hh.waitForTimeout(900);
+  ok("one tap marks them here and it saves", [(await Hh.locator("#count").innerText()).startsWith("1 of 1 here"), await Hh.locator("#meetings details").count()], [true, 1]);
+  ok("the tally shows one of one", (await Hh.locator("#totals").innerText()).replace(/\s+/g, " ").includes("Bea Test 1 1 100%"), true);
+  await Hh.screenshot({ path: ".e2e/attendance-390.png", fullPage: true });
+  await go(L2, "attendance.html"); await L2.waitForTimeout(700); await pickSec(L2, "Beavers");
+  ok("the secretary sees the helper's record, saved under their name", [await L2.locator("#meetings details").count(), (await L2.locator("#count").innerText()).includes("saved by Board Helper")], [1, true]);
+  ok("and may add Scouts from here", await L2.locator("#newName").count(), 1);
 } catch (e) { fail++; console.log(`FAIL  suite threw${step ? " at: " + step : ""}:`, e.message.split("\n")[0]);
   for (const p of b.contexts().flatMap((c) => c.pages())) { try { await p.screenshot({ path: `.e2e/threw-${b.contexts().flatMap((c) => c.pages()).indexOf(p)}.png` }); } catch {} } }
 await b.close(); stop();

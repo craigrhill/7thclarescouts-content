@@ -78,6 +78,7 @@ r = await call("POST", "?a=person", { token: lead, body: { name: "member one", s
   r = await call("POST", "?a=badge-add", { token: bCubs, body: { section: "cubs", name: " , " } });   ok("an empty name is refused", r.status, 400);
   r = await call("POST", "?a=badge-add", { token: lead, body: { section: "scouts", name: "Scout Kid" } });
   ok("the secretary can edit any section's board", [r.status, r.j.board.youth.length], [200, 1]);
+  const scoutKid = r.j.board.youth[0].id;
   r = await call("POST", "?a=badge-stage", { token: bCubs, body: { section: "cubs", id: aoife, skill: "camping", stage: 3 } });
   ok("a stage is set", r.j.board.stages[aoife], { camping: 3 });
   r = await call("POST", "?a=badge-stage", { token: bCubs, body: { section: "cubs", id: aoife, skill: "juggling", stage: 3 } });  ok("an unknown skill is refused", r.status, 400);
@@ -102,6 +103,27 @@ r = await call("POST", "?a=person", { token: lead, body: { name: "member one", s
   r = await call("GET", "?a=board&section=beavers");                ok("another section's public board is untouched", r.j.rows, []);
   r = await call("GET", "?a=badges&sections=cubs", { token: bCubs });
   ok("the lead's own view keeps the names and may edit", [r.j.boards.cubs.youth.map((y) => y.name), r.j.canEdit.cubs], [["Bríd", "Cian"], true]);
+
+  // ---- attendance: anyone on the section fills it in, helpers included; names come from the board ----
+  r = await call("GET", "?a=attendance&sections=scouts,cubs", { token: bMember });
+  ok("a helper gets attendance for their own section only, with names, and may fill it in but not add", [r.status, Object.keys(r.j.sections), r.j.sections.scouts.youth.map((y) => y.name), r.j.canEdit.scouts, r.j.canAdd.scouts], [200, ["scouts"], ["Scout Kid"], true, false]);
+  r = await call("POST", "?a=attend", { token: bMember, body: { section: "scouts", date: "2026-09-10", present: [scoutKid, "nope"], note: " Hike night " } });
+  ok("a helper records a meeting; unknown ids dropped, note tidied, saved by name", [r.status, r.j.meetings["2026-09-10"].present, r.j.meetings["2026-09-10"].note, r.j.meetings["2026-09-10"].by], [200, [scoutKid], "Hike night", "Member One"]);
+  r = await call("POST", "?a=attend", { token: bMember, body: { section: "cubs", date: "2026-09-10", present: [] } });
+  ok("but not for a section that is not theirs", r.status, 403);
+  r = await call("POST", "?a=attend", { token: bMember, body: { section: "scouts", date: "10/09/2026", present: [] } });   ok("a bad date is refused", r.status, 400);
+  r = await call("POST", "?a=attend", { token: bMember, body: { section: "scouts", date: "2026-09-10", present: [] } });
+  ok("a second save for the same date replaces the list", r.j.meetings["2026-09-10"].present, []);
+  r = await call("POST", "?a=attend", { token: bCubs, body: { section: "cubs", date: "2026-09-11", present: [brid, brid] } });
+  ok("the cubs lead records cubs; a repeated id counts once", r.j.meetings["2026-09-11"].present, [brid]);
+  r = await call("POST", "?a=attend", { token: lead, body: { section: "cubs", date: "2026-09-18", present: [] } });
+  ok("the secretary can record any section", [r.status, Object.keys(r.j.meetings).sort()], [200, ["2026-09-11", "2026-09-18"]]);
+  r = await call("POST", "?a=attend-remove", { token: bCubs, body: { section: "cubs", date: "2026-09-18" } });
+  ok("a meeting record can be removed", Object.keys(r.j.meetings), ["2026-09-11"]);
+  r = await call("GET", "?a=attendance&sections=cubs", { token: bCubs });
+  ok("the lead may add from the attendance page too", [r.j.canAdd.cubs, r.j.sections.cubs.meetings["2026-09-11"].present], [true, [brid]]);
+  r = await call("GET", "?a=board&section=cubs");
+  ok("attendance never reaches the public board", Object.keys(r.j).sort(), ["rows", "section", "updatedAt"]);
 }
 r = await call("POST", "?a=login", { body: { code: memberCode } }); const member = r.j.token; ok("member can log in", r.status, 200);
 

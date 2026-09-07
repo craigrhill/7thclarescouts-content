@@ -120,3 +120,14 @@ table.board tr.editor td{background:var(--stone-50);text-align:left;white-space:
   table.board td.st button{border-color:#bbb;color:#333}
   table.board td.st button.has{background:#e6eef3;color:#000}
 }
+
+/* ---- attendance (lab/attendance.html) ---- */
+.who.att{display:block}
+.who.att label{display:flex;align-items:center;gap:.7rem;padding:.6rem .8rem;margin:.35rem 0;border:1px solid var(--stone-200);border-radius:12px;background:#fff;font-size:1rem;cursor:pointer}
+.who.att label.on{background:var(--sea-100);border-color:transparent;color:var(--sea-700);font-weight:600}
+.who.att input{width:1.3rem;height:1.3rem;margin:0;flex:none}
+details.meeting{border-bottom:1px solid var(--stone-100);padding:.45rem 0}
+details.meeting:last-child{border-bottom:0}
+details.meeting summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:.6rem}
+details.meeting summary::-webkit-details-marker{display:none}
+@media print{ #addRow,.who.att input,details.meeting .btn{display:none!important} details.meeting{break-inside:avoid} details.meeting[open] summary~*{display:block} }
