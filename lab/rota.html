@@ -54,6 +54,10 @@ input[type=text]{flex:1;min-width:10rem;font:inherit;padding:.5em .7em;border:1p
 .who label{display:inline-flex;align-items:center;gap:.35rem;font-size:.95rem}
 .who input{width:18px;height:18px;accent-color:var(--sea-700)}
 .off-toggle{font-size:.85rem;color:var(--stone-600);margin-top:.5rem}
+.need{display:inline-flex;align-items:center;gap:.45rem;font-size:.85rem;color:var(--stone-600);margin:.55rem 1rem 0 0}
+.need input{width:3.4rem;padding:.25em .4em}
+.custom{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--orange-dark);background:var(--orange-soft);padding:.15em .5em;border-radius:999px}
+.slot-foot{display:flex;flex-wrap:wrap;align-items:center}
 textarea{width:100%;min-height:7rem;font:.82rem/1.4 ui-monospace,Menlo,monospace;padding:.6rem;border:1px solid var(--stone-200);border-radius:10px}
 .muted{color:var(--stone-600)}.small{font-size:.88rem}
 .empty{color:var(--stone-400);font-style:italic;padding:.6rem 0}
@@ -69,11 +73,12 @@ footer{padding:1.5rem 0 3rem;font-size:.85rem;color:var(--stone-600)}
   <div class="banner">This is a sandbox, not part of the app. Nothing you tick here is saved anywhere except this phone, and nobody else can see it. To show someone your rota, use Copy at the bottom and send them the text.</div>
 
   <h1>Who is covering what</h1>
-  <p class="muted">Pick a section. Meetings for the next eight weeks are listed with that section's events. Tick the adults who will be there. Anything below the required number shows as a gap.</p>
+  <p class="muted">Pick a section. Meetings for the next eight weeks are listed with that section's events. Tick the adults who will be there. Anything below the number needed shows as a gap, and a camp or an event can need more than a normal night.</p>
   <div class="chips" id="chips"></div>
 
   <div class="card">
-    <div class="row"><label for="req">Adults needed at each meeting</label><input type="number" id="req" min="1" max="9"></div>
+    <div class="row"><label for="req">Default adults needed</label><input type="number" id="req" min="1" max="9"></div>
+    <p class="small muted" style="margin:.5rem 0 0">Applies to every meeting and event unless you change the number on that one below.</p>
   </div>
 
   <div class="card">
@@ -137,6 +142,8 @@ function upcoming(){
   return out.sort((a, b) => a.date.localeCompare(b.date));
 }
 function entry(id){ const s = st(); s.slots[id] = s.slots[id] || { who: [], off: false }; return s.slots[id]; }
+function need(id){ const n = entry(id).need; return Number.isFinite(n) && n > 0 ? n : st().required; }
+function setNeed(id, v){ const n = Math.max(1, Math.min(9, Number(v) || 1)); const e = entry(id); if (n === st().required) delete e.need; else e.need = n; save(); render(); }
 
 function render(){
   const s = st();
@@ -144,16 +151,19 @@ function render(){
   $("req").value = s.required;
   const slots = upcoming(), names = people();
   const live = slots.filter(x => !entry(x.id).off);
-  const gaps = live.filter(x => entry(x.id).who.length < s.required);
-  $("gaps").innerHTML = (live.length ? `<div class="gap ok"><span>${live.length - gaps.length} of ${live.length} covered</span><span class="count">${s.required} needed each</span></div>` : "")
-    + (gaps.map(x => `<div class="gap"><span>${esc(fmt(x.date))}, ${esc(x.title)}</span><span class="count">${entry(x.id).who.length} of ${s.required}</span></div>`).join("") || (live.length ? "" : `<div class="empty">No meeting day set for this section.</div>`));
+  const gaps = live.filter(x => entry(x.id).who.length < need(x.id));
+  $("gaps").innerHTML = (live.length ? `<div class="gap ok"><span>${live.length - gaps.length} of ${live.length} covered</span><span class="count">default ${s.required}</span></div>` : "")
+    + (gaps.map(x => `<div class="gap"><span>${esc(fmt(x.date))}, ${esc(x.title)}</span><span class="count">${entry(x.id).who.length} of ${need(x.id)}</span></div>`).join("") || (live.length ? "" : `<div class="empty">No meeting day set for this section.</div>`));
   $("slots").innerHTML = slots.map(x => {
-    const e = entry(x.id), n = e.who.length;
-    const status = e.off ? `<span class="status off">No meeting</span>` : n >= s.required ? `<span class="status ok">Covered</span>` : `<span class="status gap">${n} of ${s.required}</span>`;
+    const e = entry(x.id), n = e.who.length, k = need(x.id), custom = Number.isFinite(e.need) && e.need > 0;
+    const status = e.off ? `<span class="status off">No meeting</span>` : n >= k ? `<span class="status ok">Covered</span>` : `<span class="status gap">${n} of ${k}</span>`;
     return `<div class="slot">
       <div class="slot-head"><div><span class="when">${esc(fmt(x.date))}</span> <span class="sub">${esc(x.title)}${x.sub ? ", " + esc(x.sub) : ""}</span></div>${status}</div>
       ${e.off ? "" : `<div class="who">${names.map(p => `<label><input type="checkbox" ${e.who.includes(p) ? "checked" : ""} onchange="toggle('${esc(x.id)}','${esc(p)}',this.checked)">${esc(p)}</label>`).join("") || `<span class="empty">Add a volunteer below.</span>`}</div>`}
-      ${x.kind === "meeting" ? `<label class="off-toggle"><input type="checkbox" ${e.off ? "checked" : ""} onchange="setOff('${esc(x.id)}',this.checked)"> No meeting this week</label>` : ""}
+      <div class="slot-foot">
+        ${e.off ? "" : `<label class="need">Adults needed <input type="number" min="1" max="9" value="${k}" onchange="setNeed('${esc(x.id)}',this.value)">${custom ? `<span class="custom">changed</span>` : ""}</label>`}
+        ${x.kind === "meeting" ? `<label class="off-toggle" style="margin-top:.55rem"><input type="checkbox" ${e.off ? "checked" : ""} onchange="setOff('${esc(x.id)}',this.checked)"> No meeting this week</label>` : ""}
+      </div>
     </div>`;
   }).join("") || `<div class="empty">Nothing coming up.</div>`;
 }
