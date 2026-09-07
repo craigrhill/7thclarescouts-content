@@ -2,17 +2,20 @@
 // Local preview. Serves the repo and stands in for the Netlify functions:
 // content is read from content.json (GET only; the admin POST path is not
 // emulated), and the rota function runs for real from its source against an
-// in-memory store that lasts for the life of the process. The admin password
-// for bootstrapping the rota locally is "local" unless ADMIN_PASSWORD is set.
+// in-memory store that lasts for the life of the process. Both rota functions
+// run, each with its own store. The admin password for bootstrapping either one
+// locally is "local" unless ADMIN_PASSWORD is set.
 //
 //   node tools/serve.mjs [port] [content-file]
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, normalize, join } from "node:path";
 import { createHandler, memoryStore } from "../netlify/src/rota.mjs";
+import { createHandler as createForoige, memoryStore as foroigeStore } from "../netlify/src/foroige.mjs";
 
 process.env.ADMIN_PASSWORD ||= "local";
 const rota = createHandler((() => { const s = memoryStore(); return () => s; })());
+const foroige = createForoige((() => { const s = foroigeStore(); return () => s; })());
 
 const port = Number(process.argv[2]) || 8899;
 const contentFile = process.argv[3] || "content.json";
@@ -23,11 +26,13 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/ja
 
 createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  if (url.pathname.includes("/.netlify/functions/rota")) {
+  const fn = url.pathname.includes("/.netlify/functions/rota") ? rota
+    : url.pathname.includes("/.netlify/functions/foroige") ? foroige : null;
+  if (fn) {
     const chunks = []; for await (const c of req) chunks.push(c);
     const init = { method: req.method, headers: req.headers };
     if (chunks.length) init.body = Buffer.concat(chunks);
-    const out = await rota(new Request(url, init));
+    const out = await fn(new Request(url, init));
     res.writeHead(out.status, Object.fromEntries(out.headers));
     return res.end(Buffer.from(await out.arrayBuffer()));
   }

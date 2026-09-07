@@ -3,8 +3,8 @@
   "private": true,
   "description": "7th Clare Scouts app. Static site plus one Netlify Function; see CLAUDE.md.",
   "scripts": {
-    "build:function": "esbuild netlify/src/content.mjs netlify/src/rota.mjs --bundle --platform=node --format=esm --outdir=netlify/functions --out-extension:.js=.mjs --log-level=warning",
-    "test:function": "node tools/test-function.mjs netlify/functions/content.mjs && node tools/test-rota.mjs",
+    "build:function": "esbuild netlify/src/content.mjs netlify/src/rota.mjs netlify/src/foroige.mjs --bundle --platform=node --format=esm --outdir=netlify/functions --out-extension:.js=.mjs --log-level=warning",
+    "test:function": "node tools/test-function.mjs netlify/functions/content.mjs && node tools/test-rota.mjs && node tools/test-foroige.mjs",
     "serve": "node tools/serve.mjs"
   },
   "devDependencies": {

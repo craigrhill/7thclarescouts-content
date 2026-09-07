@@ -68,11 +68,13 @@ warning fires correctly for leaders.
     sw.js               service worker, VERSION gates the caches
     netlify/src/content.mjs         the content function, edit this one
     netlify/src/rota.mjs            the leaders' rota function, edit this one
+    netlify/src/foroige.mjs         the Foroige club rota function (see below)
     netlify/functions/*.mjs         built from netlify/src by `npm run build:function`;
                                     self-contained so zip drops still work
     tools/test-function.mjs         offline smoke test of the built content
                                     function; pass two bundles to prove equivalence
     tools/test-rota.mjs             offline harness for the rota function
+    tools/test-foroige.mjs          offline harness for the Foroige function
     tools/apply-update.mjs          ports admin's mergeContent, --dry-run
     tools/serve.mjs                 local preview, stands in for the
                                     content function so the app loads
@@ -84,6 +86,7 @@ warning fires correctly for leaders.
     lab/roster.html     the secretary's roster: people, sections, codes
     lab/rota-lib.js     sign-in, API calls and helpers shared by both
     lab/rota.css        styles shared by both
+    foroige/            the Foroige club rota, a separate tool (see below)
     docs/Sionnach_Tips.pdf
 
 Tabs: Home, Calendar, Kit, Sections, More. Home is personalised per phone via
@@ -128,6 +131,37 @@ their token at once. The API is documented at the top of
 Local preview: `npm run serve` runs the real rota handler against an
 in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
 
+## The Foroige club rota
+
+Not part of the Scouts app. It lives here so it could be built and tested
+against the existing rota, and it is meant to move to its own repo and its
+own Netlify site. `foroige/README.md` says how to lift it out.
+
+It is the leaders' rota above, copied and then changed for one rule: every
+club night and event needs three leaders and one of them must hold the
+building specific training from the ETB. So a person carries a `trained`
+flag, a club carries `required` and `requiredTrained`, and a single night can
+override either. A night with the numbers but nobody trained reads as a
+warning, not as covered.
+
+    foroige/rota.html        coverage, everyone
+    foroige/roster.html      the coordinator's page, including bulk add
+    foroige/rota-lib.js      shared sign-in, API calls, config
+    foroige/rota.css         shared styles, a green palette of its own
+    foroige/rota-config.json the club, its night, its events, the training
+
+Differences from `lab/` worth knowing:
+
+* Store `foroige`, function `/.netlify/functions/foroige`, token key
+  `foroige-token`. Nothing is shared with the Scouts rota.
+* **No password hash is committed.** `ADMIN_PASSWORD` must be set in Netlify,
+  scoped to Functions. Unset means first-time setup returns 503 saying so.
+* The pages read `rota-config.json` beside them, not the content function.
+* Roles are the same flags in the store (`secretary`, `lead`) so the two
+  functions stay diffable. The words shown are coordinator and club leader.
+* Names never go in the repo. The coordinator pastes the list into the
+  roster page and it goes straight to the store.
+
 ## Gotchas
 
 * **The shell cache is cache-first.** `sw.js` does `return cached || net`, so a
@@ -140,6 +174,11 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
   keeps the deployed function self-contained so the zip-drop fallback works.
   `@netlify/blobs` is pinned exactly in package.json; bumping it changes the
   vendor code, so re-run the equivalence check before committing.
+* **Two rota functions, one shape.** `netlify/src/rota.mjs` and
+  `netlify/src/foroige.mjs` are the same design and diff cleanly against each
+  other. A fix to the store access, the token logic or the conditional-write
+  retry in one almost certainly belongs in the other. They are separate files
+  on purpose: the Foroige one is leaving.
 * **Duplicated on purpose, change together.** `mergeContent` lives in both
   `admin.html` and `tools/apply-update.mjs`. `mergeBuiltInKits` lives in both
   `index.html` and `admin.html`. The admin password check (`BUILT_IN_HASH`

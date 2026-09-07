@@ -1,0 +1,22 @@
+{
+  "club": {
+    "name": "Foroige club"
+  },
+  "training": {
+    "label": "Building training",
+    "short": "Building",
+    "note": "Building specific training from the ETB. One leader on every club night and event must hold it."
+  },
+  "settings": {
+    "sections": [
+      {
+        "key": "club",
+        "name": "Club night",
+        "day": "Wednesday",
+        "time": "7:30 to 9:00 pm",
+        "venue": "The Hall"
+      }
+    ]
+  },
+  "events": []
+}
