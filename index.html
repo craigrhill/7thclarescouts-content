@@ -470,10 +470,11 @@ const MORE = [
   ["team","Our team","Group leaders and section leaders",'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 18a4 4 0 0 1 7 0"/></svg>'],
   ["contact","Contact and venues","Email, maps and directions",'<svg viewBox="0 0 24 24"><path d="M12 22s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>'],
   ["join","How to join","Places, taster nights and registration",'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0M19 8h4M21 6v4"/></svg>'],
-  ["about","About the group","Who we are",'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>']
+  ["about","About the group","Who we are",'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>'],
+  ["rota","Leaders' area","Volunteer rota, roster and county events, with your personal code",'<svg viewBox="0 0 24 24"><path d="M9 4h6v3H9z"/><path d="M7 5H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2"/><path d="M8 13l2 2 4-4"/></svg>',"lab/rota.html"]
 ];
 function showMoreIndex(){ $("moreDetail").style.display = "none"; $("moreIndex").style.display = "block";
-  $("moreMenu").innerHTML = `<div class="menu">${MORE.map(([k,t,d,i]) => `<a href="#more/${k}">${i}<span class="grow"><strong>${t}</strong><small>${d}</small></span><span class="chev">${ICON.chev}</span></a>`).join("")}</div>`; }
+  $("moreMenu").innerHTML = `<div class="menu">${MORE.map(([k,t,d,i,href]) => `<a href="${href||`#more/${k}`}">${i}<span class="grow"><strong>${t}</strong><small>${d}</small></span><span class="chev">${ICON.chev}</span></a>`).join("")}</div>`; }
 const SKILLS = [
   ["Camping","Pitching, cooking, keeping yourself and your patrol dry and fed: from a first night in a tent to running a lightweight camp in wild country."],
   ["Backwoods","Fire lighting, shelters, cooking without pots, knife and axe safety, and living comfortably with what the woods give you."],

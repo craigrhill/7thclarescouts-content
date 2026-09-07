@@ -101,7 +101,9 @@ warning fires correctly for leaders.
     docs/Sionnach_Tips.pdf
 
 Tabs: Home, Calendar, Kit, Sections, More. Home is personalised per phone via
-localStorage `my-sections`.
+localStorage `my-sections`. The More menu's last row links out to the
+leaders' area; an entry there may carry a fifth item, an href, for anything
+that is not a `#more` route.
 
 Style: Burren palette, limestone greys and sea blue `#1B4A63`, with the logo
 orange `#F07800` as accent. Fraunces headings, Inter body. Logo is a
