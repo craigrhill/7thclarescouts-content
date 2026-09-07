@@ -47,62 +47,81 @@
     <p class="muted" id="intro"></p>
 
     <div class="card">
-      <h2>Scouters</h2>
-      <div id="people"></div>
-      <div class="add" id="addForm" hidden>
+      <table class="roster">
+        <thead><tr><th>Name</th><th>Sections</th><th>Role</th><th id="codeHead">Code</th><th></th></tr></thead>
+        <tbody id="people"></tbody>
+      </table>
+    </div>
+
+    <div class="card" id="addCard" hidden>
+      <h2>Add a Scouter</h2>
+      <div class="add">
         <input type="text" id="newName" placeholder="Name" autocomplete="off">
         <div class="secs" id="newSecs"></div>
-        <label class="small"><input type="checkbox" id="newLead"> Section lead: sets adults needed and can tick anyone in their sections</label>
+        <label class="small"><input type="checkbox" id="newLead"> Section lead: sets adults needed and can tick anyone</label>
         <label class="small"><input type="checkbox" id="newSecretary"> Secretary: can change this roster</label>
-        <div><button class="btn" onclick="addPerson()">Add and get a code</button></div>
+        <div><button class="btn primary" onclick="addPerson()">Add and get a code</button></div>
       </div>
     </div>
   </section>
 </main>
-<footer class="wrap">Nothing on this page is public. Codes are personal and shown once.</footer>
+<footer class="wrap">Nothing on this page is public. Codes are personal.</footer>
 
 <script src="rota-lib.js"></script>
 <script>
-let C = null, D = null;
+let C = null, D = null, editing = null;
 function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
-function sectionName(k){ return (C.settings.sections.find(x => x.key === k) || {}).name || k; }
 const personById = id => (D.people || []).find(p => p.id === id);
 const canManage = () => !!D.me.secretary || (!(D.people || []).some(p => p.secretary) && !!D.me.lead);
-// onchange, if given, is a function of the section key returning the handler text.
 function chips(checked, onchange){ return C.settings.sections.map(x => `<label><input type="checkbox" ${checked.includes(x.key) ? "checked" : ""} data-key="${esc(x.key)}" ${onchange ? `onchange="${onchange(esc(x.key))}"` : ""}>${esc(x.name)}</label>`).join(""); }
+const roleBadges = p => (p.secretary ? `<span class="rbadge">secretary</span>` : "") + (p.lead ? `<span class="rbadge">lead</span>` : "") || `<span class="small muted">helper</span>`;
 
 function render(){
   const me = D.me, manage = canManage();
   $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
   $("intro").textContent = manage
-    ? "Everyone who can be on a rota, and the sections each can cover. Section leads see this list on the rota page but cannot change it. Add someone, tick their sections, and give them the code that appears."
+    ? "Everyone who can be on a rota, the sections each can cover, and their code. Section leads see this list on the rota page but cannot change it. Edit a row to change sections, roles or the code."
     : "Only the secretary can change the roster. This is the list as it stands.";
-  $("addForm").hidden = !manage;
+  $("addCard").hidden = !manage; $("codeHead").hidden = !manage;
   const people = D.people || [];
-  $("people").innerHTML = people.length ? people.map(p => manage
-    ? `<div class="person"><span class="nm">${esc(p.name)}${p.secretary ? "<small>secretary</small>" : ""}${p.lead ? "<small>lead</small>" : ""}</span><span class="secs">${chips(p.sections || [], k => `setSections('${esc(p.id)}','${k}',this.checked)`)}</span><span class="tools"><label><input type="checkbox" ${p.lead ? "checked" : ""} onchange="setFlag('${esc(p.id)}','lead',this.checked)"> lead</label><label><input type="checkbox" ${p.secretary ? "checked" : ""} onchange="setFlag('${esc(p.id)}','secretary',this.checked)"> secretary</label><button class="btn quiet" onclick="recode('${esc(p.id)}')">New code</button><button class="btn quiet" title="Remove" onclick="removePerson('${esc(p.id)}')">&#x2715;</button></span></div>`
-    : `<div class="person"><span class="nm">${esc(p.name)}${p.secretary ? "<small>secretary</small>" : ""}${p.lead ? "<small>lead</small>" : ""}</span><span class="small muted">${(p.sections || []).map(sectionName).join(", ") || "no sections"}</span></div>`
-  ).join("") : `<div class="empty">Nobody yet.</div>`;
+  $("people").innerHTML = people.length ? people.map(p => {
+    const row = `<tr class="person" data-id="${esc(p.id)}">
+      <td class="nm">${esc(p.name)}${p.id === me.id ? ` <span class="small muted">(you)</span>` : ""}</td>
+      <td>${pills(C, p.sections)}</td>
+      <td>${roleBadges(p)}</td>
+      ${manage ? `<td class="code-cell">${p.code ? `<code>${esc(p.code)}</code> <button class="btn quiet" onclick="copyText('${esc(p.code)}', this)">Copy</button>` : `<span class="small muted">none yet</span>`}</td>` : ""}
+      <td class="act">${manage ? `<button class="btn quiet" onclick="edit('${esc(p.id)}')">${editing === p.id ? "Close" : "Edit"}</button>` : ""}</td>
+    </tr>`;
+    if (!manage || editing !== p.id) return row;
+    return row + `<tr class="editor"><td colspan="5"><div class="edrow">
+      <div class="row"><input type="text" id="edName" value="${esc(p.name)}"><button class="btn" onclick="saveName('${esc(p.id)}')">Save name</button></div>
+      <div class="secs">${chips(p.sections || [], k => `setSections('${esc(p.id)}','${k}',this.checked)`)}</div>
+      <div class="row"><label><input type="checkbox" ${p.lead ? "checked" : ""} onchange="setFlag('${esc(p.id)}','lead',this.checked)"> Section lead</label><label><input type="checkbox" ${p.secretary ? "checked" : ""} onchange="setFlag('${esc(p.id)}','secretary',this.checked)"> Secretary</label></div>
+      <div class="row"><button class="btn" onclick="recode('${esc(p.id)}')">New code</button><button class="btn quiet" onclick="removePerson('${esc(p.id)}')">Remove from roster</button></div>
+    </div></td></tr>`;
+  }).join("") : `<tr><td colspan="5" class="empty">Nobody yet. Add the first Scouter below.</td></tr>`;
   if (manage) $("newSecs").innerHTML = chips([], null);
 }
 async function load(){ showErr(""); D = await api("GET", "?sections="); $("gate").hidden = true; $("app").hidden = false; render(); }
 async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); await load().catch(() => {}); } }
+function edit(id){ editing = editing === id ? null : id; render(); }
 const addPerson = () => guarded(async () => {
   const name = $("newName").value.trim(); if (!name) return;
   const sections = [...$("newSecs").querySelectorAll("input:checked")].map(i => i.dataset.key);
   const r = await api("POST", "?a=person", { name, sections, lead: $("newLead").checked, secretary: $("newSecretary").checked });
   $("newName").value = ""; $("newLead").checked = false; $("newSecretary").checked = false; await load(); showCode(r.person.name, r.code);
 });
+const saveName = (id) => guarded(async () => { const name = $("edName").value.trim(); if (!name) return; await api("POST", "?a=person-update", { id, name }); await load(); });
 const setSections = (id, key, on) => guarded(async () => { const p = personById(id); const sections = on ? [...new Set([...(p.sections || []), key])] : (p.sections || []).filter(x => x !== key); await api("POST", "?a=person-update", { id, sections }); await load(); });
 const setFlag = (id, flag, on) => guarded(async () => { await api("POST", "?a=person-update", { id, [flag]: on }); await load(); });
-const recode = (id) => guarded(async () => { const p = personById(id); if (!confirm("Give " + p.name + " a new code? Their old code will stop working.")) return; const r = await api("POST", "?a=recode", { id }); showCode(p.name, r.code); });
-const removePerson = (id) => guarded(async () => { const p = personById(id); if (!confirm("Remove " + p.name + " from the roster? Their ticks on every rota are removed too.")) return; await api("POST", "?a=person-remove", { id, sections: C.settings.sections.map(x => x.key) }); await load(); });
+const recode = (id) => guarded(async () => { const p = personById(id); if (!confirm("Give " + p.name + " a new code? Their old code will stop working.")) return; const r = await api("POST", "?a=recode", { id }); await load(); showCode(p.name, r.code); });
+const removePerson = (id) => guarded(async () => { const p = personById(id); if (!confirm("Remove " + p.name + " from the roster? Their ticks on every rota are removed too.")) return; editing = null; await api("POST", "?a=person-remove", { id, sections: C.settings.sections.map(x => x.key) }); await load(); });
 async function bootstrap(){
   $("bootMsg").textContent = ""; $("bootMsg").className = "msg";
   try { const r = await api("POST", "?a=bootstrap", { name: $("bootName").value }, { "x-admin-password": $("bootPw").value }); $("bootPw").value = ""; await signIn(r.code, "bootMsg", load); showCode(r.person.name, r.code); }
   catch (e) { $("bootMsg").textContent = e.message; $("bootMsg").className = "msg err"; }
 }
-function signOut(msg){ setToken(null); D = null; $("app").hidden = true; $("gate").hidden = false; $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
+function signOut(msg){ setToken(null); D = null; editing = null; $("app").hidden = true; $("gate").hidden = false; $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
 onUnauthorized = signOut;
 async function boot(){
   C = await loadContent();

@@ -65,6 +65,10 @@ r = await call("GET", "?sections=scouts", { token: member });
 ok("member sees only people sharing a section (the secretary has none, the helper is Beavers)", r.j.people.map(p => p.name), ["Member One"]);
 ok("member does not see the Beaver helper", r.j.people.some(p => p.id === beaverId), false);
 r = await call("GET", "?sections=scouts", { token: cubsLead }); ok("a lead sees everyone", r.j.people.some(p => p.id === beaverId), true);
+ok("but a lead is not given anyone's code", r.j.people.some(p => "code" in p) || "code" in r.j.me, false);
+r = await call("GET", "?sections=scouts", { token: member }); ok("nor is a member", r.j.people.some(p => "code" in p), false);
+r = await call("GET", "?sections=scouts", { token: lead });
+ok("the secretary sees every code, and they are the ones issued", [r.j.people.find(p => p.id === memberId).code, r.j.people.find(p => p.id === cubsLeadId).code, r.j.me.code], [memberCode, cubsLeadCode, leadCode]);
 r = await call("POST", "?a=slot", { token: lead, body: { section: "scouts", id: slot, add: [leadId], need: 3 } });
 ok("lead ticks self and sets need", [r.j.section.slots[slot].who.length, r.j.section.slots[slot].need], [2, 3]);
 r = await call("POST", "?a=slot", { token: lead, body: { section: "scouts", id: "m:2030-01-10", off: true } }); ok("lead marks a week off", r.j.section.slots["m:2030-01-10"].off, true);
@@ -84,6 +88,7 @@ r = await call("POST", "?a=recode", { token: lead, body: { id: memberId } }); co
 ok("recode returns a fresh code", /^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(newCode) && newCode !== memberCode, true);
 r = await call("POST", "?a=login", { body: { code: memberCode } }); ok("old code no longer works", r.status, 401);
 r = await call("POST", "?a=login", { body: { code: newCode } });    ok("new code works", r.status, 200);
+r = await call("GET", "?sections=scouts", { token: lead }); ok("the roster shows the new code from then on", r.j.people.find(p => p.id === memberId).code, newCode);
 r = await call("POST", "?a=person-update", { token: lead, body: { id: leadId, secretary: false } }); ok("cannot demote the only secretary", r.status, 409);
 r = await call("POST", "?a=person-remove", { token: lead, body: { id: leadId, sections: [] } });     ok("cannot remove the only secretary", r.status, 409);
 r = await call("POST", "?a=person-update", { token: lead, body: { id: leadId, lead: false } });      ok("the only lead can step down as lead (a secretary can re-promote)", r.status, 200);

@@ -110,7 +110,7 @@ function render(){
   // The roster is the secretary's. Here it is read-only: who can cover this section.
   $("peopleTitle").textContent = "Scouters for " + sectionName(k);
   $("peopleNote").textContent = lead ? "From the roster the secretary keeps. To add someone or change their sections, ask the secretary." : "Your sections: " + ((me.sections || []).map(sectionName).join(", ") || "none yet") + ". To change them, ask the secretary.";
-  $("people").innerHTML = lead ? (names.map(p => `<div class="person"><span class="nm">${esc(p.name)}${p.lead ? "<small>lead</small>" : ""}</span><span class="small muted">${(p.sections || []).map(sectionName).join(", ")}</span></div>`).join("") || `<div class="empty">Nobody on the roster for ${esc(sectionName(k))} yet.</div>`) : "";
+  $("people").innerHTML = lead ? (names.map(p => `<div class="person"><span class="nm">${esc(p.name)}${p.lead ? "<small>lead</small>" : ""}</span><span>${pills(C, p.sections)}</span></div>`).join("") || `<div class="empty">Nobody on the roster for ${esc(sectionName(k))} yet.</div>`) : "";
 }
 async function load(){ showErr(""); D = await api("GET", "?sections=" + keys().join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
 async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); } }

@@ -27,7 +27,7 @@ const go = async (p, f) => { await p.goto(H + f, { waitUntil: "load" }); await p
 const signInBtn = (p) => p.getByRole("button", { name: "Sign in", exact: true });
 const status = (p, i) => p.locator(".slot").nth(i).locator(".status").innerText().then((t) => t.trim());
 const pickSec = async (p, n) => { await p.getByRole("button", { name: n, exact: true }).first().click(); await p.waitForTimeout(150); };
-const names = async (p) => (await p.locator("#people .person .nm").allInnerTexts()).map((t) => t.split("\n")[0]);
+const names = async (p) => (await p.locator("#people .person .nm").allInnerTexts()).map((t) => t.split("\n")[0].replace(/\s*\(you\)\s*$/, "").trim());
 const addOnRoster = async (p, name, secs, lead) => { await p.fill("#newName", name); for (const s of secs) await p.locator(`#newSecs input[data-key=${s}]`).check(); if (lead) await p.check("#newLead"); await p.getByRole("button", { name: "Add and get a code" }).click(); await p.waitForTimeout(800); return p.locator("#codeText").innerText(); };
 
 try {
@@ -44,6 +44,10 @@ try {
   const memberCode = await addOnRoster(S, "Member Test", ["scouts"], false);
   await addOnRoster(S, "Beaver Helper", ["beavers"], false);
   ok("roster lists all four", await names(S), ["Sec Test", "Lead Test", "Member Test", "Beaver Helper"]);
+  ok("secretary sees a code for everyone", await S.locator("#people tr.person td.code-cell code").count(), 4);
+  ok("the lead's shown code is the one issued", (await S.locator("#people tr.person", { hasText: "Lead Test" }).locator("td.code-cell code").innerText()).trim(), leadCode);
+  ok("section pills rendered, one per section held (the secretary has none)", await S.locator("#people .spill").count(), 3);
+  ok("no editor open until Edit is tapped", await S.locator("#people tr.editor").count(), 0);
   await S.screenshot({ path: ".e2e/roster-390.png", fullPage: true });
 
   const R0 = await page(1280, 900); await go(R0, "rota.html");
@@ -56,6 +60,7 @@ try {
   ok("lead has no Roster link", await L.locator("#rosterLink").isVisible(), false);
   await pickSec(L, "Scouts");
   ok("lead sees the Scouts roster read-only", await names(L), ["Lead Test", "Member Test"]);
+  ok("with section pills", await L.locator("#people .spill").count(), 2);
   ok("no roster controls on the rota page", await L.locator("#newName, #addForm, button:has-text('New code')").count(), 0);
   ok("first slot offers Scouts people only", (await L.locator(".slot").first().locator(".who label").allInnerTexts()).map((t) => t.trim()), ["Lead Test (you)", "Member Test"]);
   await L.locator(".slot").first().locator(".who label", { hasText: "(you)" }).locator("input").check(); await L.waitForTimeout(500);
@@ -77,11 +82,17 @@ try {
 
   await L.reload({ waitUntil: "load" }); await L.waitForTimeout(700); await pickSec(L, "Scouts");
   ok("lead sees the member's tick after reload", await status(L, 0), "2 OF 3");
-  await S.locator("#people .person", { hasText: "Member Test" }).locator("button:has-text('New code')").click(); await S.waitForTimeout(800);
-  ok("secretary issues a new code", (await S.locator("#codeText").innerText()) !== memberCode, true);
-  await S.locator("#people .person", { hasText: "Beaver Helper" }).locator("button[title=Remove]").click(); await S.waitForTimeout(800);
+  await S.locator("#people tr.person", { hasText: "Member Test" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(200);
+  ok("Edit opens one editor row", await S.locator("#people tr.editor").count(), 1);
+  await S.locator("#people tr.editor button:has-text('New code')").click(); await S.waitForTimeout(800);
+  const newCode = await S.locator("#codeText").innerText();
+  ok("secretary issues a new code", newCode !== memberCode, true);
+  ok("the table shows the new code straight away", (await S.locator("#people tr.person", { hasText: "Member Test" }).locator("td.code-cell code").innerText()).trim(), newCode);
+  await S.locator("#people tr.person", { hasText: "Beaver Helper" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(200);
+  await S.locator("#people tr.editor button:has-text('Remove from roster')").click(); await S.waitForTimeout(800);
   ok("secretary removes the helper", (await names(S)).includes("Beaver Helper"), false);
-  await S.locator("#people .person", { hasText: "Member Test" }).locator("button[title=Remove]").click(); await S.waitForTimeout(800);
+  await S.locator("#people tr.person", { hasText: "Member Test" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(200);
+  await S.locator("#people tr.editor button:has-text('Remove from roster')").click(); await S.waitForTimeout(800);
   await M.reload({ waitUntil: "load" }); await M.waitForTimeout(800);
   ok("removed member is signed out on reload", [await M.locator("#gate").isVisible(), (await M.locator("#gateMsg").innerText()).includes("removed")], [true, true]);
   await L.reload({ waitUntil: "load" }); await L.waitForTimeout(700); await pickSec(L, "Scouts");
@@ -89,6 +100,9 @@ try {
 
   const S2 = await page(1280, 900); await go(S2, "rota.html"); await S2.fill("#code", secCode); await signInBtn(S2).click(); await S2.waitForTimeout(900);
   ok("secretary on the rota page gets a Roster link", await S2.locator("#rosterLink").isVisible(), true);
+  await go(S2, "roster.html"); ok("secretary is signed in on the roster page too (shared token)", await S2.locator("#app").isVisible(), true);
+  await S2.locator("#people tr.person", { hasText: "Lead Test" }).locator("button:has-text('Edit')").click(); await S2.waitForTimeout(200);
+  await S2.screenshot({ path: ".e2e/roster-1280.png" });
   await L.click("text=Sign out"); await L.waitForTimeout(300);
   ok("sign out returns to the gate", await L.locator("#gate").isVisible(), true);
 } catch (e) { fail++; console.log("FAIL  suite threw:", e.message); }

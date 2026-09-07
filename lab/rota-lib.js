@@ -21,8 +21,15 @@ async function loadContent(){
   catch { return { settings: { sections: [{ key: "scouts", name: "Scouts", day: "Thursday", time: "6:00 to 7:30 pm" }] }, events: [] }; }
 }
 const roleText = me => [me.secretary && "secretary", me.lead && "section lead"].filter(Boolean).join(", ");
+// One colour per section, from the site's own accent palette. Unknown keys
+// cycle through a neutral set so a new section never renders unstyled.
+const SECTION_COLOURS = { beavers: ["#DEE5F7", "#22407F"], cubs: ["#E3ECDC", "#3B5230"], scouts: ["#FDE8D3", "#9A4B00"], ventures: ["#F6DCE8", "#7E2049"] };
+const FALLBACK_COLOURS = [["#E8E4DA", "#2F3134"], ["#DCEAF0", "#1B4A63"], ["#FBE9EC", "#7A1F2E"], ["#FFF4D6", "#7A5A00"]];
+function pill(C, key){ const i = C.settings.sections.findIndex(x => x.key === key); const c = SECTION_COLOURS[key] || FALLBACK_COLOURS[(i < 0 ? 0 : i) % FALLBACK_COLOURS.length]; const name = (C.settings.sections[i] || {}).name || key; return `<span class="spill" style="background:${c[0]};color:${c[1]}">${esc(name)}</span>`; }
+const pills = (C, keys) => C.settings.sections.filter(x => (keys || []).includes(x.key)).map(x => pill(C, x.key)).join("") || `<span class="small muted">none</span>`;
+async function copyText(t, btn){ try { await navigator.clipboard.writeText(t); if (btn) { const o = btn.textContent; btn.textContent = "Copied"; setTimeout(() => btn.textContent = o, 1200); } } catch {} }
 function showCode(name, code){
-  $("codeBox").innerHTML = `<b>Code for ${esc(name)}</b><br><span class="code" id="codeText">${esc(code)}</span><br><span class="small">Send it to them now. It is shown only once; use New code if it is lost.</span> <button class="btn" onclick="copyCode()">Copy</button> <button class="btn quiet" onclick="$('codeBox').hidden=true">Close</button>`;
+  $("codeBox").innerHTML = `<b>Code for ${esc(name)}</b><br><span class="code" id="codeText">${esc(code)}</span><br><span class="small">Send it to them now. It stays visible on the roster.</span> <button class="btn" onclick="copyCode()">Copy</button> <button class="btn quiet" onclick="$('codeBox').hidden=true">Close</button>`;
   $("codeBox").hidden = false; $("codeBox").scrollIntoView({ block: "center" });
 }
 async function copyCode(){ try { await navigator.clipboard.writeText($("codeText").textContent); } catch {} }

@@ -889,7 +889,7 @@ function readToken(sec, token) {
 }
 var rosterFallback = () => ({ people: [] });
 var sectionFallback = () => ({ required: 2, slots: {} });
-var pub = (p) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary });
+var pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, ...withCode ? { code: p.code || null } : {} });
 var isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
 var isSlotId = (s) => typeof s === "string" && /^[me]:\d{4}-\d{2}-\d{2}(:.{1,140})?$/.test(s);
 var cleanName = (n) => String(n || "").trim().replace(/\s+/g, " ").slice(0, 60);
@@ -922,9 +922,10 @@ function createHandler(storeFactory) {
           if (person) {
             person.lead = true;
             person.secretary = true;
+            person.code = code;
             person.codeHash = codeHash(sec, code);
           } else {
-            person = { id: randomBytes(4).toString("hex"), name, sections: [], lead: true, secretary: true, codeHash: codeHash(sec, code), createdAt: (/* @__PURE__ */ new Date()).toISOString() };
+            person = { id: randomBytes(4).toString("hex"), name, sections: [], lead: true, secretary: true, code, codeHash: codeHash(sec, code), createdAt: (/* @__PURE__ */ new Date()).toISOString() };
             doc.people.push(person);
           }
           return doc;
@@ -958,7 +959,7 @@ function createHandler(storeFactory) {
         }
         const mine = new Set(me.sections || []);
         const visible = me.lead || canManage ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
-        return json(200, { me: pub(me), people: visible.map(pub), sections });
+        return json(200, { me: pub(me, canManage), people: visible.map((p) => pub(p, canManage)), sections });
       }
       if (req.method !== "POST") return fail(405, "Method not allowed.");
       const b = await body(req);
@@ -1005,7 +1006,7 @@ function createHandler(storeFactory) {
         let person;
         await update(store, "roster", rosterFallback, (d) => {
           if (d.people.some((p) => p.name.toLowerCase() === name.toLowerCase())) return false;
-          person = { id: randomBytes(4).toString("hex"), name, sections: cleanSections(b.sections), lead: !!b.lead, secretary: !!b.secretary, codeHash: codeHash(sec, code), createdAt: (/* @__PURE__ */ new Date()).toISOString() };
+          person = { id: randomBytes(4).toString("hex"), name, sections: cleanSections(b.sections), lead: !!b.lead, secretary: !!b.secretary, code, codeHash: codeHash(sec, code), createdAt: (/* @__PURE__ */ new Date()).toISOString() };
           d.people.push(person);
           return d;
         });
@@ -1023,6 +1024,7 @@ function createHandler(storeFactory) {
           await update(store, "roster", rosterFallback, (d) => {
             const p = d.people.find((x) => x.id === b.id);
             if (!p) return false;
+            p.code = code;
             p.codeHash = codeHash(sec, code);
             return d;
           });

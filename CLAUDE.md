@@ -110,7 +110,7 @@ Shared, private data behind a personal code. Nothing in it is published.
 
 Store keys: `secret` (HMAC key, generated on first use, never leaves the
 server), `roster` (people with `id`, `name`, `sections`, `lead`, `secretary`,
-`codeHash`), `section/<key>` (`required` and `slots`, each slot `who` as
+`code`, `codeHash`), `section/<key>` (`required` and `slots`, each slot `who` as
 person ids, `off`, optional `need`). Every write is guarded by the document's
 etag and retried on conflict, so concurrent edits do not overwrite each other.
 
@@ -118,7 +118,9 @@ Roles are flags on a person, and the function enforces them, not the pages:
 
 * **secretary** keeps the roster on `roster.html`: who is on it, which
   sections each can cover, codes. Done once, by the group secretary. The
-  roster always keeps at least one secretary.
+  roster always keeps at least one secretary. Codes are kept in the store
+  so the secretary can see them again; GET returns them to secretaries
+  only, never to leads or helpers.
 * **lead** runs coverage on `rota.html`: adults needed per section and per
   meeting, anyone's ticks, weeks off. Leads see the roster there read-only.
 * neither: sees the rota, ticks only themselves, and sees only people who

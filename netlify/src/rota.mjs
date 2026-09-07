@@ -14,7 +14,9 @@
 //
 // Keys in the store:
 //   secret          HMAC key, generated on first use, never leaves the server
-//   roster          { people: [{ id, name, sections, lead, secretary, codeHash }] }
+//   roster          { people: [{ id, name, sections, lead, secretary, code, codeHash }] }
+//                   The code itself is kept so the secretary can see it again;
+//                   the store is private, and GET returns codes to secretaries only.
 //   section/<key>   { required, slots: { <slotId>: { who: [personId], off, need } } }
 //
 // Every write is read-modify-write guarded by the document's etag, retried on
@@ -113,7 +115,7 @@ function readToken(sec, token) {
 // ---- shapes and validation ----
 const rosterFallback = () => ({ people: [] });
 const sectionFallback = () => ({ required: 2, slots: {} });
-const pub = (p) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary });
+const pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, ...(withCode ? { code: p.code || null } : {}) });
 const isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
 const isSlotId = (s) => typeof s === "string" && /^[me]:\d{4}-\d{2}-\d{2}(:.{1,140})?$/.test(s);
 const cleanName = (n) => String(n || "").trim().replace(/\s+/g, " ").slice(0, 60);
@@ -137,8 +139,8 @@ export function createHandler(storeFactory) {
         const code = newCode(); let person;
         await update(store, "roster", rosterFallback, (doc) => {
           person = doc.people.find((p) => p.name.toLowerCase() === name.toLowerCase());
-          if (person) { person.lead = true; person.secretary = true; person.codeHash = codeHash(sec, code); }
-          else { person = { id: randomBytes(4).toString("hex"), name, sections: [], lead: true, secretary: true, codeHash: codeHash(sec, code), createdAt: new Date().toISOString() }; doc.people.push(person); }
+          if (person) { person.lead = true; person.secretary = true; person.code = code; person.codeHash = codeHash(sec, code); }
+          else { person = { id: randomBytes(4).toString("hex"), name, sections: [], lead: true, secretary: true, code, codeHash: codeHash(sec, code), createdAt: new Date().toISOString() }; doc.people.push(person); }
           return doc;
         });
         return json(200, { person: pub(person), code });
@@ -167,7 +169,7 @@ export function createHandler(storeFactory) {
         // Leads and the secretary see everyone. Others see the people who share a section with them, which is all coverage needs.
         const mine = new Set(me.sections || []);
         const visible = (me.lead || canManage) ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
-        return json(200, { me: pub(me), people: visible.map(pub), sections });
+        return json(200, { me: pub(me, canManage), people: visible.map((p) => pub(p, canManage)), sections });
       }
       if (req.method !== "POST") return fail(405, "Method not allowed.");
       const b = await body(req);
@@ -207,7 +209,7 @@ export function createHandler(storeFactory) {
         const code = newCode(); let person;
         await update(store, "roster", rosterFallback, (d) => {
           if (d.people.some((p) => p.name.toLowerCase() === name.toLowerCase())) return false;
-          person = { id: randomBytes(4).toString("hex"), name, sections: cleanSections(b.sections), lead: !!b.lead, secretary: !!b.secretary, codeHash: codeHash(sec, code), createdAt: new Date().toISOString() };
+          person = { id: randomBytes(4).toString("hex"), name, sections: cleanSections(b.sections), lead: !!b.lead, secretary: !!b.secretary, code, codeHash: codeHash(sec, code), createdAt: new Date().toISOString() };
           d.people.push(person); return d;
         });
         if (!person) return fail(409, "Someone with that name is already on the list.");
@@ -222,7 +224,7 @@ export function createHandler(storeFactory) {
         if (losingSecretary && secretaries <= 1) return fail(409, "Keep at least one secretary.");
         if (a === "recode") {
           const code = newCode();
-          await update(store, "roster", rosterFallback, (d) => { const p = d.people.find((x) => x.id === b.id); if (!p) return false; p.codeHash = codeHash(sec, code); return d; });
+          await update(store, "roster", rosterFallback, (d) => { const p = d.people.find((x) => x.id === b.id); if (!p) return false; p.code = code; p.codeHash = codeHash(sec, code); return d; });
           return json(200, { code });
         }
         if (a === "person-update") {
