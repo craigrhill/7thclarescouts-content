@@ -38,9 +38,10 @@
   </section>
 
   <section id="app" hidden>
-    <div class="row" style="justify-content:space-between;margin:.9rem 0 .2rem">
+    <div id="leaderNav"></div>
+    <div class="row who-bar" style="justify-content:space-between">
       <span class="small muted">Signed in as <b id="meName"></b><span id="meRole"></span></span>
-      <span><a class="btn quiet" href="rota.html">Rota</a><button class="btn quiet" onclick="signOut()">Sign out</button></span>
+      <button class="btn quiet" onclick="signOut()">Sign out</button>
     </div>
 
     <h1>Roster</h1>
@@ -86,7 +87,7 @@ const roleBadges = p => (p.secretary ? `<span class="rbadge">secretary</span>` :
 
 function render(){
   const me = D.me, manage = canManage();
-  $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
+  $("leaderNav").innerHTML = leaderNav(me); $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
   $("intro").textContent = manage
     ? "Type a name, tap the sections they can cover, press Add. Their code appears in the row; Copy it and send it to them. Edit a row to change anything later."
     : "Only the secretary can change the roster. This is the list as it stands.";

@@ -29,9 +29,10 @@
   </section>
 
   <section id="app" hidden>
-    <div class="row" style="justify-content:space-between;margin:.9rem 0 .2rem">
+    <div id="leaderNav"></div>
+    <div class="row who-bar" style="justify-content:space-between">
       <span class="small muted">Signed in as <b id="meName"></b><span id="meRole"></span></span>
-      <span><a class="btn quiet" href="attendance.html">Attendance</a><a class="btn quiet" href="badges.html">Badge board</a><a id="rosterLink" class="btn quiet" href="roster.html" hidden>Roster</a><button class="btn quiet" onclick="signOut()">Sign out</button></span>
+      <button class="btn quiet" onclick="signOut()">Sign out</button>
     </div>
 
     <h1>Who is covering what</h1>
@@ -84,8 +85,7 @@ const needOf = (k, id) => { const s = slotOf(k, id); return s.need > 0 ? s.need 
 
 function render(){
   const k = sec(), me = D.me, lead = !!me.lead, sect = D.sections[k] || { required: 2, slots: {} };
-  $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
-  $("rosterLink").hidden = !me.secretary;
+  $("leaderNav").innerHTML = leaderNav(me); $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
   $("chips").innerHTML = C.settings.sections.map(x => `<button class="chip ${x.key === k ? "on" : ""}" onclick="pick('${esc(x.key)}')">${esc(x.name)}</button>`).join("");
   $("req").value = sect.required; $("req").disabled = !lead;
   $("reqNote").textContent = lead ? "Applies to every meeting and event unless you change the number on that one below." : "Only a section lead can change this.";

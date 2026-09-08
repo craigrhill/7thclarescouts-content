@@ -73,7 +73,7 @@ try {
 
   const L = await page(1280, 900); await go(L, "rota.html"); await L.fill("#code", leadCode); await signInBtn(L).click(); await L.waitForTimeout(900);
   ok("lead signs in", [await L.locator("#app").isVisible(), await L.locator("#meRole").innerText()], [true, ", section lead"]);
-  ok("lead has no Roster link", await L.locator("#rosterLink").isVisible(), false);
+  ok("lead has no Roster pill, and Rota is the highlighted one", [await L.locator("#leaderNav").getByRole("link", { name: "Roster" }).isVisible(), (await L.locator("#leaderNav a.on").innerText()).trim()], [false, "Rota"]);
   await pickSec(L, "Scouts");
   ok("lead sees the Scouts roster read-only", await names(L), ["Lead Test", "Member Test"]);
   ok("with section pills", await L.locator("#people .spill").count(), 2);
@@ -114,7 +114,7 @@ try {
   ok("and their tick is gone for the lead", await status(L, 0), "1 OF 3");
 
   const S2 = await page(1280, 900); await go(S2, "rota.html"); await S2.fill("#code", secCode); await signInBtn(S2).click(); await S2.waitForTimeout(900);
-  ok("secretary on the rota page gets a Roster link", await S2.locator("#rosterLink").isVisible(), true);
+  ok("secretary on the rota page gets a Roster pill", await S2.locator("#leaderNav").getByRole("link", { name: "Roster" }).isVisible(), true);
   await go(S2, "roster.html"); ok("secretary is signed in on the roster page too (shared token)", await S2.locator("#app").isVisible(), true);
   await S2.locator("#people tr.person", { hasText: "Lead Test" }).locator("button:has-text('Edit')").click(); await S2.waitForTimeout(200);
   await S2.screenshot({ path: ".e2e/roster-1280.png" });

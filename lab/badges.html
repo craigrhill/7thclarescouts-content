@@ -29,9 +29,10 @@
   </section>
 
   <section id="app" hidden>
-    <div class="row" style="justify-content:space-between;margin:.9rem 0 .2rem">
+    <div id="leaderNav"></div>
+    <div class="row who-bar" style="justify-content:space-between">
       <span class="small muted">Signed in as <b id="meName"></b><span id="meRole"></span></span>
-      <span><a class="btn quiet" href="attendance.html">Attendance</a><a class="btn quiet" href="rota.html">Rota</a><a id="rosterLink" class="btn quiet" href="roster.html" hidden>Roster</a><button class="btn quiet" onclick="signOut()">Sign out</button></span>
+      <button class="btn quiet" onclick="signOut()">Sign out</button>
     </div>
 
     <h1>Adventure Skills badge board</h1>
@@ -68,8 +69,7 @@ const stageOf = (board, id, skill) => (board.stages[id] || {})[skill] || 0;
 
 function render(){
   const me = D.me;
-  $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
-  $("rosterLink").hidden = !me.secretary;
+  $("leaderNav").innerHTML = leaderNav(me); $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
   const v = visibleKeys();
   if (!v.length) { $("chips").innerHTML = ""; $("intro").textContent = ""; $("boardCard").hidden = true; $("none").hidden = false; return; }
   $("none").hidden = true; $("boardCard").hidden = false;
