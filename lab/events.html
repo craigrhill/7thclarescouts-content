@@ -80,7 +80,9 @@ const mine = () => canManage() ? allKeys() : allKeys().filter(k => (D.me.section
 // The county inbox is a chip of its own. The function only returns county
 // items to people who may decide on them, so helpers never see the chip.
 const canCounty = () => canManage() || !!D.me.lead;
-const countyNews = () => (D.county || []).filter(x => x.status === "pending" || x.changed || x.gone).length;
+// One county event can be waiting on several of our sections, so the badge
+// counts decisions still to make, plus anything the county has altered.
+const countyNews = () => (D.county || []).reduce((n, x) => n + x.rows.filter(r => r.status === "pending").length + (x.changed || x.gone ? 1 : 0), 0);
 const chipKeys = () => [...mine(), "all", ...(canCounty() ? ["county"] : [])];
 const canEdit = k => k === "all" ? canManage() : k === "county" ? false : (canManage() || (!!D.me.lead && (D.me.sections || []).includes(k)));
 function sec(){ let k = null; try { k = localStorage.getItem(SK); } catch {} const v = chipKeys(); return v.includes(k) ? k : v[0]; }
@@ -116,11 +118,11 @@ function render(){
     const key = evKey(e), open = editingEvent === key, gone = (e.endDate || e.date) < today;
     const row = `<tr class="person ${gone ? "past" : ""}">
       <td class="nm">${esc(fmt(e.date))}${e.endDate ? ` <span class="small muted">to ${esc(fmt(e.endDate))}</span>` : ""}</td>
-      <td>${esc(e.title)}${e.priv ? ` <span class="rbadge">leaders only</span>` : ""}</td>
+      <td>${esc(e.title)}${e.priv ? ` <span class="rbadge">leaders only</span>` : ""}${e.countyId ? ` <span class="rbadge">county</span>` : ""}</td>
       <td class="small muted">${esc([e.location, e.time].filter(Boolean).join(", "))}</td>
-      <td class="act">${can ? `<button class="btn quiet" onclick="editEvent('${esc(key)}')">${open ? "Close" : "Edit"}</button>` : ""}</td>
+      <td class="act">${can && !e.countyId ? `<button class="btn quiet" onclick="editEvent('${esc(key)}')">${open ? "Close" : "Edit"}</button>` : ""}</td>
     </tr>`;
-    if (!open || !can) return row;
+    if (!open || !can || e.countyId) return row;
     const kits = (C.kits || []).map(x => `<option value="${esc(x.id)}" ${x.id === (e.kitId || "") ? "selected" : ""}>${esc(x.title)}</option>`).join("");
     const secs = (canManage() ? `<option value="" ${e.section ? "" : "selected"}>Whole group</option>` : "") + mine().map(x => `<option value="${esc(x)}" ${x === (e.section || "") ? "selected" : ""}>${esc(sectionName(x))}</option>`).join("");
     return row + `<tr class="editor"><td colspan="4"><div class="edrow">
@@ -139,19 +141,30 @@ function render(){
 function renderCounty(){
   const items = D.county || [];
   $("countySynced").textContent = syncNote || (D.countySyncedAt ? "Last checked " + fmt(D.countySyncedAt.slice(0, 10)) : "Not checked yet");
-  const order = { pending: 0, approved: 1, declined: 2 };
-  const list = [...items].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9) || a.event.start.localeCompare(b.event.start));
-  $("countyList").innerHTML = list.length ? `<table class="roster"><tbody>${list.map(it => {
-    const e = it.event, secs = (e.sections || []).map(s => sectionName(s)).filter(Boolean).join(", ");
+  // Sort by what still needs a decision, then by date.
+  const waiting = it => it.rows.some(r => r.status === "pending") || it.changed || it.gone;
+  const list = [...items].sort((a, b) => (waiting(b) - waiting(a)) || a.event.start.localeCompare(b.event.start));
+  $("countyList").innerHTML = list.length ? list.map(it => {
+    const e = it.event;
+    // Only our own sections are named: the county lists others (rovers,
+    // scouters) that mean nothing here.
+    const names = (it.targets || []).map(x => sectionName(x));
+    const offered = names.length > 1 ? names.slice(0, -1).join(", ") + " and " + names[names.length - 1] : names[0] || "";
     const flags = [it.changed ? `<span class="rbadge">changed</span>` : "", it.gone ? `<span class="rbadge">withdrawn</span>` : ""].join("");
-    const state = it.status === "approved" ? `<span class="status ok">On our calendar</span>` : it.status === "declined" ? `<span class="status off">Not going</span>` : `<span class="status gap">To decide</span>`;
-    const acts = it.status === "pending"
-      ? `<button class="btn primary" onclick="countyDecide('${esc(it.id)}','approve')">We are going</button><button class="btn quiet" onclick="countyDecide('${esc(it.id)}','decline')">Not for us</button>`
-      : `<button class="btn quiet" onclick="countyDecide('${esc(it.id)}','reset')">Undo</button>`;
-    return `<tr class="person"><td class="nm">${esc(fmt(e.start))}${e.end && e.end !== e.start ? ` <span class="small muted">to ${esc(fmt(e.end))}</span>` : ""}</td>
-      <td>${esc(e.name)} ${flags}<div class="small muted">${esc([secs || "Whole group", e.location, e.time].filter(Boolean).join(" · "))}</div>${it.by ? `<div class="small muted">Decided by ${esc(it.by)}</div>` : ""}</td>
-      <td>${state}</td><td class="act">${acts}</td></tr>`;
-  }).join("")}</tbody></table>` : `<div class="empty">Nothing from the county for your sections. Tap "Check the county" to look for new events.</div>`;
+    const rows = it.rows.map(r => {
+      const state = r.status === "approved" ? `<span class="status ok">We are going</span>` : r.status === "declined" ? `<span class="status off">Not going</span>` : `<span class="status gap">To decide</span>`;
+      const acts = r.status === "pending"
+        ? `<button class="btn primary" onclick="countyDecide('${esc(it.id)}','${esc(r.section)}','approve')">We are going</button><button class="btn quiet" onclick="countyDecide('${esc(it.id)}','${esc(r.section)}','decline')">Not for us</button>`
+        : `<button class="btn quiet" onclick="countyDecide('${esc(it.id)}','${esc(r.section)}','reset')">Undo</button>`;
+      return `<div class="crow"><span class="cname">${pill(C, r.section)}</span>${state}<span class="cacts">${acts}</span>${r.by ? `<span class="small muted">by ${esc(r.by)}</span>` : ""}</div>`;
+    }).join("");
+    return `<div class="cevent">
+      <div><b>${esc(fmt(e.start))}</b>${e.end && e.end !== e.start ? ` <span class="small muted">to ${esc(fmt(e.end))}</span>` : ""} ${flags}</div>
+      <div class="cname-main">${esc(e.name)}</div>
+      <div class="small muted">${esc([e.location, e.time].filter(Boolean).join(" · "))}</div>
+      <div class="small muted">${it.targets && it.targets.length > 1 ? `The county offers this to ${esc(offered)}. Each decides for itself.` : `For ${esc(offered || "the group")}.`}</div>
+      ${rows}</div>`;
+  }).join("") : `<div class="empty">Nothing from the county for your sections. Tap "Check the county" to look for new events.</div>`;
 }
 const countySync = () => guarded(async () => {
   const b = $("countySyncBtn"); b.disabled = true; b.textContent = "Checking…";
@@ -162,7 +175,7 @@ const countySync = () => guarded(async () => {
   } finally { b.disabled = false; b.textContent = "Check the county"; }
 });
 // Approving writes the event onto the group calendar, so reload that too.
-const countyDecide = (id, decision) => guarded(async () => { await api("POST", "?a=county-decide", { id, decision }); await afterEvents(); });
+const countyDecide = (id, section, decision) => guarded(async () => { await api("POST", "?a=county-decide", { id, section, decision }); await afterEvents(); });
 
 function editEvent(key){ editingEvent = editingEvent === key ? null : key; render(); }
 function pickSection(k){ try { localStorage.setItem(SK, k); } catch {} editingEvent = null; syncNote = ""; render(); }

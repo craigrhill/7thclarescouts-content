@@ -146,11 +146,24 @@ Roles are flags on a person, and the function enforces them, not the pages:
   several, comma separated), section chips and Add; the code shows in the
   row.
 * **county events** are a chip of their own on `events.html`: "Check the
-  county" pulls the feed, and a lead decides for their sections while the
-  secretary decides for any. Approving writes the event onto the group
-  calendar and the county's later changes then follow it automatically.
-  This was on the public `/calendar` page behind a County button until it
-  moved here, so the whole event workflow sits in one place.
+  county" pulls the feed, and the decision is **per section**. The county
+  naming several sections is an offer to each of them, not one group event
+  for us: Craig's rule is that a county-wide event is not automatically a
+  7th Clare group event, so each of our sections decides for itself. A lead
+  is asked only about their own sections, the secretary about every section
+  the event was offered to, and a helper is not asked at all. Each section
+  that says yes gets its own event on the group calendar, tagged with that
+  section, so it lands on that section's chip and on the parents' calendar;
+  undoing one leaves the others alone. `countyTargets` works out who is
+  asked: the event's sections that are ours, or every section of ours when
+  it names none. Items written before this carried one status for the whole
+  event; `countyDecisions` reads that as applying to every section it was
+  offered to, so nothing already approved drops off the calendar, and the
+  first decision rewrites that event's calendar entries from the per-section
+  decisions. A county event is rebuilt on every sync, so it cannot be hand
+  edited from a section list; it is marked "county" there and run from the
+  County chip. This was on the public `/calendar` page behind a County
+  button until it moved here, so the whole event workflow sits in one place.
 * **events** live on `events.html`: a lead adds and changes events for the
   sections on their own roster entry, the secretary for any section and for
   the whole group; helpers see their sections' events read-only. The

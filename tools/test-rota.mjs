@@ -314,24 +314,44 @@ ok("a private event can be removed", r.j.events.length, 0);
 
   r = await call("GET", "?sections=scouts,cubs", { token: cubsLead });
   ok("a lead sees only what touches their sections", r.j.county.map(x => x.id).sort(), ["c2", "c4"]);
-  r = await call("POST", "?a=county-decide", { token: cubsLead, body: { id: "c1", decision: "approve" } });
+  r = await call("POST", "?a=county-decide", { token: cubsLead, body: { id: "c1", section: "scouts", decision: "approve" } });
   ok("and cannot decide for a section that is not theirs", r.status, 403);
+  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c1", section: "beavers", decision: "approve" } });
+  ok("nor can anyone decide for a section the county did not offer it to", [r.status, /has not offered/.test(r.j.error)], [400, true]);
+  { const rows = (await call("GET", "?sections=scouts,cubs", { token: cubsLead })).j.county.find(x => x.id === "c4").rows;
+    ok("a lead is asked only about their own sections", rows.map(x => x.section), ["cubs"]); }
 
-  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c1", decision: "approve" } });
+  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c1", section: "scouts", decision: "approve" } });
   ok("the Scouts lead approves the camp", [r.status, r.j.status], [200, "approved"]);
   { const e = (await contentStore.get("content", { type: "json" })).events.find(x => x.countyId === "c1");
     ok("it lands on the group calendar in the app's own shape", e, { date: "2030-10-02", title: "Chill Camp", endDate: "2030-10-03", section: "scouts", location: "Ruan", time: "18:00", details: "County camp.\n\nHosted by County Team\n\nhttps://example.test/book", countyId: "c1" }); }
 
-  r = await call("POST", "?a=county-decide", { token: cubsLead, body: { id: "c4", decision: "approve" } });
+  // The county naming several sections is an offer to each of them, not one
+  // group event: our sections decide separately.
+  { const rows = (await call("GET", "?sections=scouts,cubs", { token: m2 })).j.county.find(x => x.id === "c4").rows;
+    ok("the secretary is asked about every section the county offered it to", rows.map(x => x.section).sort(), ["cubs", "scouts"]); }
+  r = await call("POST", "?a=county-decide", { token: cubsLead, body: { id: "c4", section: "cubs", decision: "approve" } });
+  { const evs = (await contentStore.get("content", { type: "json" })).events.filter(x => x.countyId === "c4");
+    ok("the Cubs lead approves it for Cubs alone", [r.status, evs.map(e => e.section)], [200, ["cubs"]]); }
+  { const rows = (await call("GET", "?sections=scouts,cubs", { token: m2 })).j.county.find(x => x.id === "c4").rows;
+    ok("and Scouts is left to decide for itself", rows.find(x => x.section === "scouts").status, "pending"); }
+  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c4", section: "scouts", decision: "approve" } });
+  { const evs = (await contentStore.get("content", { type: "json" })).events.filter(x => x.countyId === "c4").map(e => e.section).sort();
+    ok("Scouts joining adds its own event beside the Cubs one", evs, ["cubs", "scouts"]); }
+  r = await call("POST", "?a=county-decide", { token: cubsLead, body: { id: "c4", section: "cubs", decision: "reset" } });
+  { const evs = (await contentStore.get("content", { type: "json" })).events.filter(x => x.countyId === "c4").map(e => e.section);
+    ok("Cubs undoing leaves the Scouts one alone", evs, ["scouts"]); }
   { const e = (await contentStore.get("content", { type: "json" })).events.find(x => x.countyId === "c4");
-    ok("a multi-section event is approved by any of its leads and goes to the whole group", [r.status, "section" in e], [200, false]); }
+    ok("a county event on the calendar is tagged with the section that said yes", e.section, "scouts"); }
+  r = await call("POST", "?a=event-update", { token: m2, body: { key: "2030-09-09|County Planning Meeting", date: "2030-09-09", title: "County Planning Meeting", section: "scouts", location: "Moved" } });
+  ok("a county event cannot be hand edited, since the next sync would undo it", [r.status, /County chip/.test(r.j.error)], [403, true]);
 
-  r = await call("POST", "?a=county-decide", { token: cubsLead, body: { id: "c2", decision: "decline" } });
+  r = await call("POST", "?a=county-decide", { token: cubsLead, body: { id: "c2", section: "cubs", decision: "decline" } });
   ok("declining keeps it off the calendar", [r.j.status, (await contentStore.get("content", { type: "json" })).events.some(e => e.countyId === "c2")], ["declined", false]);
   r = await call("POST", "?a=county-sync", { token: cubsLead });
   ok("a later sync does not offer a declined event again", r.j.added, 0);
   r = await call("GET", "?sections=cubs", { token: cubsLead });
-  ok("it stays visible as declined, so it can be changed later", r.j.county.find(x => x.id === "c2").status, "declined");
+  ok("it stays visible as declined, so it can be changed later", r.j.county.find(x => x.id === "c2").rows.find(x => x.section === "cubs").status, "declined");
 
   feed = feed.map(e => e.id === "c1" ? { ...e, location: "Tulla", start: "2030-10-09", end: "2030-10-10" } : e);
   r = await call("POST", "?a=county-sync", { token: m2 });
@@ -345,12 +365,12 @@ ok("a private event can be removed", r.j.events.length, 0);
   r = await call("GET", "?sections=scouts", { token: m2 });
   ok("the flag is visible to the lead", r.j.county.find(x => x.id === "c1").gone, true);
   ok("and it is still on the calendar until someone decides", (await contentStore.get("content", { type: "json" })).events.some(e => e.countyId === "c1"), true);
-  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c1", decision: "decline" } });
+  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c1", section: "scouts", decision: "decline" } });
   ok("declining a dropped event takes it off", (await contentStore.get("content", { type: "json" })).events.some(e => e.countyId === "c1"), false);
 
   r = await call("POST", "?a=person", { token: m2, body: { name: "Plain Helper", sections: ["scouts"] } });
   const plain = (await call("POST", "?a=login", { body: { code: r.j.code } })).j.token;
-  r = await call("POST", "?a=county-decide", { token: plain, body: { id: "c4", decision: "decline" } });
+  r = await call("POST", "?a=county-decide", { token: plain, body: { id: "c4", section: "scouts", decision: "decline" } });
   ok("someone who is not a lead cannot decide at all", r.status, 403);
   r = await call("GET", "?sections=scouts", { token: plain });
   ok("and is not shown the county list", r.j.county.length, 0);
@@ -358,7 +378,7 @@ ok("a private event can be removed", r.j.events.length, 0);
   ok("an unknown county event is 404", r.status, 404);
   r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c4", decision: "sideways" } });
   ok("an unknown decision is refused", r.status, 400);
-  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c4", decision: "reset" } });
+  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c4", section: "scouts", decision: "reset" } });
   ok("reset puts it back to pending and off the calendar", [r.j.status, (await contentStore.get("content", { type: "json" })).events.some(e => e.countyId === "c4")], ["pending", false]);
 
   feedFails = true;

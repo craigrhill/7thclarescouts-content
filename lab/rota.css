@@ -144,3 +144,11 @@ details.meeting summary::-webkit-details-marker{display:none}
 /* Past events, when "Show past" is on: still readable, clearly behind us. */
 table.roster tr.person.past td{opacity:.6}
 table.roster tr.person.past td.nm{font-weight:500}
+
+/* ---- the county inbox: a card per event, a line per section ---- */
+.cevent{border-top:1px solid var(--stone-100);padding:.8rem 0}
+.cevent:first-of-type{border-top:0}
+.cname-main{font-weight:600;font-size:1.02rem}
+.crow{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem;margin-top:.55rem}
+.crow .cname{flex:none}
+.crow .cacts{display:flex;gap:.4rem;flex-wrap:wrap}
