@@ -67,7 +67,7 @@ warning fires correctly for leaders.
                         .ics download and subscribe. Reads the group calendar
                         from the content function and adapts it to the shape
                         that code was written for, so the renderers are
-                        untouched. Its "County" button is the leads' inbox.
+                        untouched.
     index.html          app shell, hash routing (#home #calendar #kit/<id>
                         #sections/<key> #more/<sub> #events/<i>)
     admin.html          the admin editor, noindexed via netlify.toml. Signing in is
@@ -145,6 +145,12 @@ Roles are flags on a person, and the function enforces them, not the pages:
   secretaries only, never to leads or helpers. Adding is a name (or
   several, comma separated), section chips and Add; the code shows in the
   row.
+* **county events** are a chip of their own on `events.html`: "Check the
+  county" pulls the feed, and a lead decides for their sections while the
+  secretary decides for any. Approving writes the event onto the group
+  calendar and the county's later changes then follow it automatically.
+  This was on the public `/calendar` page behind a County button until it
+  moved here, so the whole event workflow sits in one place.
 * **events** live on `events.html`: a lead adds and changes events for the
   sections on their own roster entry, the secretary for any section and for
   the whole group; helpers see their sections' events read-only. The

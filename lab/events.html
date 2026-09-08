@@ -39,6 +39,15 @@
     <p class="muted intro" id="intro"></p>
     <div class="chips" id="chips"></div>
 
+    <div id="countyCard" class="card" hidden>
+      <div class="row" style="justify-content:space-between;align-items:baseline">
+        <h2 style="margin:0">From the county</h2>
+        <span><span class="small muted" id="countySynced"></span> <button class="btn" id="countySyncBtn" onclick="countySync()">Check the county</button></span>
+      </div>
+      <p class="small muted" style="margin:.5rem 0 0">County events that touch your sections. Nothing is public until you approve it, and nothing is ever written back to the county. Approving puts it on the group calendar; the county's own changes then follow automatically.</p>
+      <div id="countyList"></div>
+    </div>
+
     <div id="addCard" class="card" hidden>
       <h2 id="addTitle"></h2>
       <div class="add">
@@ -48,7 +57,7 @@
       <p class="small muted" style="margin:.5rem 0 0">A public event shows on the app calendar for parents and can be rostered. A leaders-only one shows on the rota only. Tap Edit after adding for the dates, place, time, kit list and details.</p>
     </div>
 
-    <div class="card">
+    <div class="card" id="listCard">
       <div class="row" style="justify-content:space-between"><h2 id="listTitle" style="margin:0"></h2><button class="btn quiet" id="pastBtn" onclick="showPast=!showPast;render()"></button></div>
       <table class="roster"><tbody id="events"></tbody></table>
     </div>
@@ -59,17 +68,21 @@
 <script src="rota-lib.js"></script>
 <script>
 const SK = "events-section";
-let C = null, D = null, editingEvent = null, showPast = false;
+let C = null, D = null, editingEvent = null, showPast = false, syncNote = "";
 function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
 function allKeys(){ return C.settings.sections.map(x => x.key); }
-function sectionName(k){ return k === "all" ? "Whole group" : ((C.settings.sections.find(x => x.key === k) || {}).name || k); }
+function sectionName(k){ return k === "all" ? "Whole group" : k === "county" ? "County" + (countyNews() ? " (" + countyNews() + ")" : "") : ((C.settings.sections.find(x => x.key === k) || {}).name || k); }
 const canManage = () => !!D.me.secretary || (!(D.people || []).some(p => p.secretary) && !!D.me.lead);
 // The chips: the sections on my entry (all of them for the secretary), then
 // the whole-group events everyone can see. Who may change what is decided by
 // the function; the page only mirrors it.
 const mine = () => canManage() ? allKeys() : allKeys().filter(k => (D.me.sections || []).includes(k));
-const chipKeys = () => [...mine(), "all"];
-const canEdit = k => k === "all" ? canManage() : (canManage() || (!!D.me.lead && (D.me.sections || []).includes(k)));
+// The county inbox is a chip of its own. The function only returns county
+// items to people who may decide on them, so helpers never see the chip.
+const canCounty = () => canManage() || !!D.me.lead;
+const countyNews = () => (D.county || []).filter(x => x.status === "pending" || x.changed || x.gone).length;
+const chipKeys = () => [...mine(), "all", ...(canCounty() ? ["county"] : [])];
+const canEdit = k => k === "all" ? canManage() : k === "county" ? false : (canManage() || (!!D.me.lead && (D.me.sections || []).includes(k)));
 function sec(){ let k = null; try { k = localStorage.getItem(SK); } catch {} const v = chipKeys(); return v.includes(k) ? k : v[0]; }
 const allEvents = () => [
   ...((C.events || []).map(e => ({ ...e, priv: false }))),
@@ -86,6 +99,12 @@ function render(){
   $("intro").textContent = canManage() ? "Add and change events for any section, and the whole group's."
     : me.lead && mine().length ? "Add and change events for your section. Whole-group events are the secretary's."
     : "What is coming up for your section. Only a section lead can add or change events.";
+  if (k === "county") {
+    $("intro").textContent = "County events that touch your sections. Decide whether we are going; approved ones join the section's list and the parents' calendar.";
+    $("countyCard").hidden = false; $("addCard").hidden = true; $("listCard").hidden = true;
+    renderCounty(); return;
+  }
+  $("countyCard").hidden = true; $("listCard").hidden = false;
   $("addCard").hidden = !can;
   $("addTitle").textContent = k === "all" ? "Add a whole-group event" : "Add a " + sectionName(k) + " event";
   const today = new Date().toISOString().slice(0, 10);
@@ -114,9 +133,40 @@ function render(){
     </div></td></tr>`;
   }).join("") : `<tr><td colspan="4" class="empty">Nothing coming up${k === "all" ? " for the whole group" : " for " + esc(sectionName(k))}.</td></tr>`;
 }
+// ---- from the county ----
+// A lead decides for their own sections, the secretary for anything; the
+// function enforces that, so this only draws what it sent back.
+function renderCounty(){
+  const items = D.county || [];
+  $("countySynced").textContent = syncNote || (D.countySyncedAt ? "Last checked " + fmt(D.countySyncedAt.slice(0, 10)) : "Not checked yet");
+  const order = { pending: 0, approved: 1, declined: 2 };
+  const list = [...items].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9) || a.event.start.localeCompare(b.event.start));
+  $("countyList").innerHTML = list.length ? `<table class="roster"><tbody>${list.map(it => {
+    const e = it.event, secs = (e.sections || []).map(s => sectionName(s)).filter(Boolean).join(", ");
+    const flags = [it.changed ? `<span class="rbadge">changed</span>` : "", it.gone ? `<span class="rbadge">withdrawn</span>` : ""].join("");
+    const state = it.status === "approved" ? `<span class="status ok">On our calendar</span>` : it.status === "declined" ? `<span class="status off">Not going</span>` : `<span class="status gap">To decide</span>`;
+    const acts = it.status === "pending"
+      ? `<button class="btn primary" onclick="countyDecide('${esc(it.id)}','approve')">We are going</button><button class="btn quiet" onclick="countyDecide('${esc(it.id)}','decline')">Not for us</button>`
+      : `<button class="btn quiet" onclick="countyDecide('${esc(it.id)}','reset')">Undo</button>`;
+    return `<tr class="person"><td class="nm">${esc(fmt(e.start))}${e.end && e.end !== e.start ? ` <span class="small muted">to ${esc(fmt(e.end))}</span>` : ""}</td>
+      <td>${esc(e.name)} ${flags}<div class="small muted">${esc([secs || "Whole group", e.location, e.time].filter(Boolean).join(" · "))}</div>${it.by ? `<div class="small muted">Decided by ${esc(it.by)}</div>` : ""}</td>
+      <td>${state}</td><td class="act">${acts}</td></tr>`;
+  }).join("")}</tbody></table>` : `<div class="empty">Nothing from the county for your sections. Tap "Check the county" to look for new events.</div>`;
+}
+const countySync = () => guarded(async () => {
+  const b = $("countySyncBtn"); b.disabled = true; b.textContent = "Checking…";
+  try { const r = await api("POST", "?a=county-sync");
+    const bits = [r.added ? r.added + " new" : "", r.changed ? r.changed + " changed" : "", r.gone ? r.gone + " withdrawn" : ""].filter(Boolean);
+    showErr(""); syncNote = bits.length ? "County: " + bits.join(", ") : "County: nothing new";
+    await load();
+  } finally { b.disabled = false; b.textContent = "Check the county"; }
+});
+// Approving writes the event onto the group calendar, so reload that too.
+const countyDecide = (id, decision) => guarded(async () => { await api("POST", "?a=county-decide", { id, decision }); await afterEvents(); });
+
 function editEvent(key){ editingEvent = editingEvent === key ? null : key; render(); }
-function pickSection(k){ try { localStorage.setItem(SK, k); } catch {} editingEvent = null; render(); }
-async function load(){ showErr(""); D = await api("GET", "?sections="); $("gate").hidden = true; $("app").hidden = false; render(); }
+function pickSection(k){ try { localStorage.setItem(SK, k); } catch {} editingEvent = null; syncNote = ""; render(); }
+async function load(){ showErr(""); D = await api("GET", "?sections=" + allKeys().join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
 async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); } }
 // A public event changes the group content, so reload that as well as the rota data.
 async function afterEvents(){ C = await loadContent(); await load(); }

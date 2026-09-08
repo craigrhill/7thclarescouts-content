@@ -247,6 +247,8 @@ r = await call("POST", "?a=event-remove", { token: evHelper, body: { key: "2030-
 ok("nor remove one", r.status, 403);
 r = await call("POST", "?a=event-remove", { token: cubsLead, body: { key: "2030-06-08|Cubs hike" } });
 ok("the lead removes their own section's event", [r.status, r.j.events.some((e) => e.title === "Cubs hike")], [200, false]);
+r = await call("GET", "?sections=scouts,cubs", { token: evHelper });
+ok("a helper gets no county inbox at all", r.j.county, []);
 r = await call("POST", "?a=event-remove", { token: m2, body: { private: true, key: "2030-04-02|Leaders planning night" } });
 ok("a private event can be removed", r.j.events.length, 0);
 { // With no calendar configured at all, a public event fails clearly and a private one still works.

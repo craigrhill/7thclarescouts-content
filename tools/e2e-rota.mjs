@@ -138,7 +138,7 @@ try {
   step = "events as secretary";
   const evRows = async (p) => (await p.locator("#events tr.person td.nm").allInnerTexts()).map((t) => t.trim());
   await go(S, "events.html"); await S.waitForTimeout(700);
-  ok("the secretary sees a chip per section plus the whole group", (await S.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()).slice(-1), ["Whole group"]);
+  ok("the secretary sees a chip per section, plus the whole group and the county inbox", (await S.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()).slice(-2).map((t) => t.replace(/ \(\d+\)$/, "")), ["Whole group", "County"]);
   await pickSec(S, "Scouts");
   const before = (await evRows(S)).length;
   await S.fill("#evDate", "2030-03-14"); await S.fill("#evTitle", "Spring camp");
@@ -165,7 +165,7 @@ try {
   await L2.screenshot({ path: ".e2e/rota-with-events-1280.png" });
   step = "events as a lead";
   await go(L2, "events.html"); await L2.waitForTimeout(700);
-  ok("a lead gets their own section and the whole group only", (await L2.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()), ["Scouts", "Whole group"]);
+  ok("a lead gets their own section, the whole group and the county inbox", (await L2.locator("#chips .chip").allInnerTexts()).map((t) => t.trim().replace(/ \(\d+\)$/, "")), ["Scouts", "Whole group", "County"]);
   await pickSec(L2, "Scouts");
   await L2.fill("#evDate", "2030-05-10"); await L2.fill("#evTitle", "Scouts hike");
   await L2.locator("#addCard").getByRole("button", { name: "Add", exact: true }).click(); await L2.waitForTimeout(1200);
@@ -179,7 +179,7 @@ try {
   const evHelperCode = await S.evaluate(async () => { const h = { "Content-Type": "application/json", "x-rota-token": localStorage.getItem("rota-token") };
     return (await (await fetch("/.netlify/functions/rota?a=person", { method: "POST", headers: h, body: JSON.stringify({ name: "Ev Helper", sections: ["scouts"], lead: false }) })).json()).code; });
   const Hv = await page(390, 844); await go(Hv, "events.html"); await Hv.fill("#code", evHelperCode); await signInBtn(Hv).click(); await Hv.waitForTimeout(1000);
-  ok("a helper is signed in on their own section plus the whole group", (await Hv.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()), ["Scouts", "Whole group"]);
+  ok("a helper is signed in on their own section and the whole group, with no county inbox", (await Hv.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()), ["Scouts", "Whole group"]);
   ok("a helper sees their section's events read-only", [await Hv.locator("#addCard").isVisible(), await Hv.locator("#events button").count(), (await evRows(Hv)).length >= 2], [false, 0, true]);
   await Hv.screenshot({ path: ".e2e/events-390.png", fullPage: true });
   await Hv.close();

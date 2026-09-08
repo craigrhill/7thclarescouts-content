@@ -610,7 +610,6 @@ footer.site{text-align:center;color:var(--text-faint);font-size:12.5px;padding:2
 .cstate.no{color:var(--text-faint)}
 .chead{margin:14px 0 2px;font-size:.95rem}
 .cerr{background:var(--group-tint);border-left:3px solid var(--group-edge);padding:8px 10px;border-radius:8px;margin-bottom:10px}
-#btnCounty.has-news{background:var(--group-edge);color:#fff;border-color:var(--group-edge)}
 @media (max-width:640px){ .crow{grid-template-columns:1fr} .cacts{flex-direction:row;align-items:center;justify-content:flex-start} }
 
 </style>
@@ -633,7 +632,6 @@ footer.site{text-align:center;color:var(--text-faint);font-size:12.5px;padding:2
         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h2v3H7zm8 0h2v3h-2z"/><path d="M4 5h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 5v9h14v-9z"/><path d="M11 12h2v6h-2z"/><path d="M9 14h6v2H9z"/></svg>
         <span class="lbltxt"><span class="wide">Add to </span>Calendar</span>
       </button>
-      <button class="ghost-btn" id="btnCounty">County</button>
     </div>
   </div>
 </header>
@@ -766,7 +764,6 @@ footer.site{text-align:center;color:var(--text-faint);font-size:12.5px;padding:2
 /* The group's own calendar. Events come from the same content the app reads,
    so anything approved here shows on the app's Calendar tab too. */
 var API = '/.netlify/functions/content';
-var ROTA = '/.netlify/functions/rota';
 var SITE_ADDRESS = '7thclarescouts.ie/calendar';
 var HELP_CONTACT = { name:'7th Clare Scouts', phone:'', how:'7thclarescouts@gmail.com' };
 function siteAddress(){ return SITE_ADDRESS || location.host; }
@@ -3713,154 +3710,6 @@ function eventForm(id){
   setTimeout(function(){ fName.focus(); },60);
 }
 
-/* ------------------------------------------------------- from the county */
-/* Section leads see county events that touch their sections and decide
-   whether we are going. Nothing here is public until it is approved, and
-   nothing is ever written back to the county. Sign-in is the same personal
-   code as the rota, so nobody carries a second credential. */
-var TOKEN_KEY = 'rota-token';
-var county = { token:null, me:null, items:[], syncedAt:null, busy:false, err:'' };
-try { county.token = localStorage.getItem(TOKEN_KEY); } catch(e){}
-
-function countyBtn(){ return $('btnCounty'); }
-function setCountyBadge(){
-  var b = countyBtn(); if(!b) return;
-  var n = county.items.filter(function(x){ return x.status==='pending' || x.changed || x.gone; }).length;
-  b.textContent = n ? ('County (' + n + ')') : 'County';
-  b.classList.toggle('has-news', !!n);
-}
-function rota(method, q, body){
-  var h = { 'Content-Type':'application/json' };
-  if(county.token) h['x-rota-token'] = county.token;
-  return fetch(ROTA + q, { method:method, headers:h, body: body?JSON.stringify(body):undefined, cache:'no-store' })
-    .then(function(r){
-      return r.json().catch(function(){ return { error:'The server gave an unexpected reply.' }; })
-        .then(function(j){
-          if(r.status===401){ county.token=null; try{ localStorage.removeItem(TOKEN_KEY); }catch(e){} }
-          if(!r.ok) throw new Error(j.error || ('Error '+r.status));
-          return j;
-        });
-    });
-}
-function loadCounty(){
-  if(!county.token){ setCountyBadge(); return Promise.resolve(); }
-  return rota('GET', '?sections=' + ALL_SECTION_IDS.join(','))
-    .then(function(d){ county.me=d.me; county.items=d.county||[]; county.syncedAt=d.countySyncedAt||null; setCountyBadge(); })
-    .catch(function(){ county.items=[]; setCountyBadge(); });
-}
-function openCounty(){
-  $('adTitle').textContent = 'From the county';
-  open$('adScrim');
-  renderCounty();
-  if(county.token) loadCounty().then(renderCounty);
-}
-function countySignIn(){
-  var code = $('cSignInCode').value.trim();
-  if(!code) return;
-  county.err=''; county.busy=true; renderCounty();
-  rota('POST', '?a=login', { code:code })
-    .then(function(d){ county.token=d.token; try{ localStorage.setItem(TOKEN_KEY, d.token); }catch(e){} return loadCounty(); })
-    .catch(function(e){ county.err=e.message; })
-    .then(function(){ county.busy=false; renderCounty(); });
-}
-function countySync(){
-  county.err=''; county.busy=true; renderCounty();
-  rota('POST', '?a=county-sync')
-    .then(function(d){
-      var bits=[];
-      if(d.added) bits.push(d.added+' new');
-      if(d.changed) bits.push(d.changed+' changed');
-      if(d.gone) bits.push(d.gone+' withdrawn');
-      toast(bits.length ? ('County: '+bits.join(', ')) : 'County: nothing new');
-      return loadCounty();
-    })
-    .catch(function(e){ county.err=e.message; })
-    .then(function(){ county.busy=false; renderCounty(); });
-}
-function countyDecide(id, decision){
-  county.err=''; county.busy=true; renderCounty();
-  rota('POST', '?a=county-decide', { id:id, decision:decision })
-    .then(function(){ return loadCounty(); })
-    .then(function(){ load(); })
-    .catch(function(e){ county.err=e.message; })
-    .then(function(){ county.busy=false; renderCounty(); });
-}
-function countySignOut(){
-  county.token=null; county.me=null; county.items=[];
-  try{ localStorage.removeItem(TOKEN_KEY); }catch(e){}
-  setCountyBadge(); renderCounty();
-}
-function countyRow(it){
-  var ev = it.event, wrap = el('div','crow');
-  var when = el('div','cwhen', fmtRangeShort({ start:ev.start, end:ev.end||ev.start }));
-  var main = el('div','cmain');
-  main.appendChild(el('div','cname', ev.name));
-  var secs = (ev.sections||[]).filter(function(s){ return SEC_BY_ID[s]; })
-    .map(function(s){ return SEC_BY_ID[s].name; }).join(', ');
-  var meta = [secs || 'Whole group', ev.location||'', ev.time||''].filter(Boolean).join(' · ');
-  main.appendChild(el('div','cmeta', meta));
-  if(it.gone) main.appendChild(el('div','cflag', 'Withdrawn at the county'));
-  else if(it.changed) main.appendChild(el('div','cflag', 'Changed at the county'));
-  if(it.by) main.appendChild(el('div','cmeta', (it.status==='approved'?'Approved by ':'Decided by ') + it.by));
-  var acts = el('div','cacts');
-  function btn(label, decision, cls){
-    var b = el('button', 'btn ' + (cls||'sec'), label);
-    b.disabled = county.busy;
-    b.onclick = function(){ countyDecide(it.id, decision); };
-    return b;
-  }
-  if(it.status === 'pending'){ acts.appendChild(btn('We are going','approve','')); acts.appendChild(btn('Not this time','decline')); }
-  else if(it.status === 'approved'){ acts.appendChild(el('span','cstate ok','On our calendar')); acts.appendChild(btn('Take it off','decline')); }
-  else { acts.appendChild(el('span','cstate no','Not going')); acts.appendChild(btn('Change my mind','approve')); }
-  wrap.appendChild(when); wrap.appendChild(main); wrap.appendChild(acts);
-  return wrap;
-}
-function renderCounty(){
-  var b = $('adBody'); b.innerHTML='';
-  if(county.err){ var e1=el('div','cerr', county.err); b.appendChild(e1); }
-  if(!county.token){
-    b.appendChild(el('p','note','County events appear here for the sections you lead. Sign in with the code the group secretary gave you, the same one the rota uses.'));
-    var row = el('div','ctl-row');
-    var inp = el('input'); inp.id='cSignInCode'; inp.type='text'; inp.placeholder='XXXX-XXXX'; inp.autocapitalize='characters'; inp.spellcheck=false;
-    inp.onkeydown = function(ev){ if(ev.key==='Enter') countySignIn(); };
-    var go = el('button','btn','Sign in'); go.onclick=countySignIn; go.disabled=county.busy;
-    row.appendChild(inp); row.appendChild(go); b.appendChild(row);
-    return;
-  }
-  var head = el('div','ctl-row');
-  head.appendChild(el('span','note', 'Signed in as ' + (county.me?county.me.name:'') + (county.syncedAt ? ' · checked ' + fmtLong(county.syncedAt.slice(0,10)) : '')));
-  head.appendChild(el('span','spacer'));
-  var sync = el('button','btn sec', county.busy ? 'Checking…' : 'Check the county'); sync.onclick=countySync; sync.disabled=county.busy;
-  var out = el('button','linkbtn','Sign out'); out.onclick=countySignOut;
-  head.appendChild(sync); head.appendChild(out);
-  b.appendChild(head);
-
-  if(county.me && !county.me.lead && !county.me.secretary){
-    b.appendChild(el('p','note','Only section leads decide what the group goes to. Ask your section lead or the secretary.'));
-    return;
-  }
-  var order = { pending:0, approved:1, declined:2 };
-  var items = county.items.slice().sort(function(x,y){
-    var a = (x.gone||x.changed)?-1:order[x.status], c = (y.gone||y.changed)?-1:order[y.status];
-    return a-c || String(x.event.start).localeCompare(String(y.event.start));
-  });
-  if(!items.length){
-    b.appendChild(el('p','note','Nothing from the county yet. Press "Check the county" to look now.'));
-    return;
-  }
-  var groups = [['Waiting on you', function(i){ return i.status==='pending'||i.changed||i.gone; }],
-                ['We are going',   function(i){ return i.status==='approved' && !i.changed && !i.gone; }],
-                ['Not going',      function(i){ return i.status==='declined' && !i.changed && !i.gone; }]];
-  groups.forEach(function(g){
-    var list = items.filter(g[1]);
-    if(!list.length) return;
-    b.appendChild(el('h3','chead', g[0]));
-    var box = el('div','clist');
-    list.forEach(function(it){ box.appendChild(countyRow(it)); });
-    b.appendChild(box);
-  });
-}
-
 /* ---------------------------------------------------------------- wiring */
 $('prev').onclick=function(){ state.cursor=new Date(state.cursor.getFullYear(), state.cursor.getMonth()-1, 1); render(); };
 $('next').onclick=function(){ state.cursor=new Date(state.cursor.getFullYear(), state.cursor.getMonth()+1, 1); render(); };
@@ -3869,7 +3718,6 @@ $('viewCal').onclick=function(){ state.view='cal'; render(); };
 $('viewTbl').onclick=function(){ state.view='tbl'; render(); };
 $('rangeUpcoming').onclick=function(){ state.range='upcoming'; render(); };
 $('rangeAll').onclick=function(){ state.range='all'; render(); };
-$('btnCounty').onclick=openCounty;
 $('btnPrint').onclick=openPrint;
 $('btnInstall').onclick=openInstall;
 window.addEventListener('online', function(){ load(); });
@@ -3932,7 +3780,6 @@ function load(){
     .catch(function(){
       state.events=[]; state.apiDown=true; render();
     });
-  loadCounty();
 }
 
 buildControls();
