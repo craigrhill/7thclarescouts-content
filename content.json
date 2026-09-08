@@ -1527,7 +1527,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-08T05:09:41.090Z",
+  "updatedAt": "2026-09-08T06:31:03.511Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
@@ -1580,5 +1580,34 @@
     "sionnach",
     "mpc"
   ],
-  "updatedBy": "claude"
+  "updatedBy": "admin",
+  "gallery": [
+    {
+      "url": "/photo/418bc94a11694cc0da5466007c46b65f.jpg",
+      "thumb": "/photo/bc84c514664d39034d861161218ca96a.jpg",
+      "caption": "",
+      "section": "",
+      "album": "Phoenix Challenge 2026",
+      "w": 1600,
+      "h": 1200
+    },
+    {
+      "url": "/photo/3270107ae927e498641ae1d1595c98d3.jpg",
+      "thumb": "/photo/cfcaecdbab40be56a3c284421905bf46.jpg",
+      "caption": "",
+      "section": "",
+      "album": "Phoenix Challenge 2026",
+      "w": 1600,
+      "h": 1200
+    },
+    {
+      "url": "/photo/66fc48062a9995288e9ee7fa5f728a18.jpg",
+      "thumb": "/photo/737dbc3617ea5202c1b395c6ac3f4a69.jpg",
+      "caption": "",
+      "section": "",
+      "album": "Phoenix Challenge 2026",
+      "w": 1600,
+      "h": 1200
+    }
+  ]
 }
