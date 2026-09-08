@@ -130,6 +130,11 @@
       "countyId": "ev_mjzrmo5a"
     },
     {
+      "date": "2026-09-17",
+      "title": "First Meeting",
+      "section": "scouts"
+    },
+    {
       "date": "2026-09-25",
       "endDate": "2026-09-27",
       "title": "Sionnach Adventure, Maamturks",
@@ -1518,7 +1523,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-08T04:14:34.757Z",
+  "updatedAt": "2026-09-08T04:33:12.673Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
