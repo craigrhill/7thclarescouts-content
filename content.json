@@ -132,7 +132,10 @@
     {
       "date": "2026-09-17",
       "title": "First Meeting",
-      "section": "scouts"
+      "section": "scouts",
+      "location": "New Quay National School",
+      "time": "6:00pm - 7:30pm",
+      "kitId": "uniform"
     },
     {
       "date": "2026-09-25",
@@ -1523,7 +1526,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-08T04:33:12.673Z",
+  "updatedAt": "2026-09-08T04:35:01.608Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
