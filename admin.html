@@ -76,7 +76,7 @@ textarea{min-height:90px;resize:vertical}
   </div>
 
   <div class="pane" id="pane-events">
-    <div class="card"><h2>Events</h2><p class="hint">Past events disappear from the site automatically but stay here until you delete them.</p>
+    <div class="card"><h2>Events</h2><p class="hint">Past events disappear from the site automatically but stay here until you delete them. Set a start and end time and the event lands at that hour in a parent's calendar; leave both empty and it shows as an all-day one.</p>
       <div id="eventList"></div><button class="btn secondary" onclick="addEvent()">+ Add event</button></div>
   </div>
 
@@ -425,9 +425,11 @@ function renderEvents(){
     <label>Title</label><input value="${esc(e.title)}" oninput="C.events[${i}].title=this.value">
     <div class="row">
       <div><label>Location</label><input value="${esc(e.location||"")}" oninput="C.events[${i}].location=this.value"></div>
-      <div><label>Time (optional)</label><input value="${esc(e.time||"")}" oninput="C.events[${i}].time=this.value" placeholder="e.g. 10:00 at the den"></div>
+      <div><label>Starts at (optional)</label><input type="time" value="${esc(e.startTime||"")}" onchange="C.events[${i}].startTime=this.value;delete C.events[${i}].time"></div>
+      <div><label>Ends at (optional)</label><input type="time" value="${esc(e.endTime||"")}" onchange="C.events[${i}].endTime=this.value;delete C.events[${i}].time"></div>
       <div><label>Kit list (optional)</label><select onchange="C.events[${i}].kitId=this.value">${[["","None"],...(C.kits||window.DEFAULT_KITS).map(k=>[k.id,k.title])].map(([v,l])=>`<option value="${v}" ${v===(e.kitId||"")?"selected":""}>${esc(l)}</option>`).join("")}</select></div>
     </div>
+    ${e.time?`<p class="hint">Time was typed here as "${esc(e.time)}". Set a start time above and it becomes a real time, so a parent's calendar puts it at the right hour.</p>`:""}
     <label>Details</label><textarea oninput="C.events[${i}].details=this.value">${esc(e.details)}</textarea>
     <div class="actions"><button class="btn danger" onclick="C.events.splice(${i},1);renderEvents()">Delete</button></div></div>`).join("");
 }

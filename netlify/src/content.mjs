@@ -57,6 +57,21 @@ async function ghWrite(g, data, message) {
 const icsEsc = (s) => String(s ?? "").replace(/([\\,;])/g, "\\$1").replace(/\r?\n/g, "\\n");
 const icsDay = (d) => String(d).replace(/-/g, "");
 const dayAfter = (d) => { const x = new Date(d + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + 1); return x.toISOString().slice(0, 10); };
+// An event carries 24 hour times when someone has set them, and is all day when
+// nobody has. A calendar app can only put an event at the right hour if it is
+// told the hour and the zone, so a timed one is written against a VTIMEZONE for
+// Europe/Dublin rather than as a floating time that would drift for anyone
+// abroad. Legacy events have only the free text a leader typed; that still goes
+// in the description, where it is at least readable.
+const isTime = (t) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t || "");
+const icsAt = (d, t) => icsDay(d) + "T" + t.replace(":", "") + "00";
+// An event with a start and no end runs an hour, the same guess a calendar app
+// makes, held back from crossing midnight.
+const hourAfter = (t) => { const [h, m] = t.split(":").map(Number); return h >= 23 ? "23:59" : String(h + 1).padStart(2, "0") + ":" + String(m).padStart(2, "0"); };
+const DUBLIN = ["BEGIN:VTIMEZONE", "TZID:Europe/Dublin",
+  "BEGIN:DAYLIGHT", "TZOFFSETFROM:+0000", "TZOFFSETTO:+0100", "TZNAME:IST", "DTSTART:19700329T010000", "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU", "END:DAYLIGHT",
+  "BEGIN:STANDARD", "TZOFFSETFROM:+0100", "TZOFFSETTO:+0000", "TZNAME:GMT", "DTSTART:19701025T020000", "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU", "END:STANDARD",
+  "END:VTIMEZONE"];
 // RFC 5545 wants lines folded at 75 octets, continued with a leading space.
 const fold = (line) => {
   const out = []; let s = line;
@@ -69,16 +84,23 @@ const fold = (line) => {
 };
 export function toICS(events, name, host) {
   const stamp = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const usable = events.filter((e) => e && e.date && e.title);
   const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//7th Clare Scouts//Calendar//EN",
     "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:" + icsEsc(name), "X-WR-TIMEZONE:Europe/Dublin"];
-  for (const e of events) {
-    if (!e || !e.date || !e.title) continue;
+  if (usable.some((e) => isTime(e.startTime))) lines.push(...DUBLIN);
+  for (const e of usable) {
     const uid = (e.countyId || (e.date + "-" + String(e.title).toLowerCase().replace(/[^a-z0-9]+/g, "-"))) + "@" + host;
-    lines.push("BEGIN:VEVENT", "UID:" + uid, "DTSTAMP:" + stamp,
-      "DTSTART;VALUE=DATE:" + icsDay(e.date), "DTEND;VALUE=DATE:" + icsDay(dayAfter(e.endDate || e.date)),
-      "SUMMARY:" + icsEsc(e.title));
+    lines.push("BEGIN:VEVENT", "UID:" + uid, "DTSTAMP:" + stamp);
+    if (isTime(e.startTime)) {
+      const last = e.endDate || e.date;
+      const end = isTime(e.endTime) && (last > e.date || e.endTime > e.startTime) ? e.endTime : hourAfter(e.startTime);
+      lines.push("DTSTART;TZID=Europe/Dublin:" + icsAt(e.date, e.startTime), "DTEND;TZID=Europe/Dublin:" + icsAt(last, end));
+    } else {
+      lines.push("DTSTART;VALUE=DATE:" + icsDay(e.date), "DTEND;VALUE=DATE:" + icsDay(dayAfter(e.endDate || e.date)));
+    }
+    lines.push("SUMMARY:" + icsEsc(e.title));
     if (e.location) lines.push("LOCATION:" + icsEsc(e.location));
-    const desc = [e.details, e.time ? "Time: " + e.time : ""].filter(Boolean).join("\n\n");
+    const desc = [e.details, !isTime(e.startTime) && e.time ? "Time: " + e.time : ""].filter(Boolean).join("\n\n");
     if (desc) lines.push("DESCRIPTION:" + icsEsc(desc));
     lines.push("END:VEVENT");
   }

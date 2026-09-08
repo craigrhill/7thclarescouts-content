@@ -189,7 +189,10 @@ function fromCounty(ce, section) {
   if (ce.end && ce.end !== ce.start) e.endDate = ce.end;
   if (section) e.section = section;
   const location = oneLine(ce.location, 120); if (location) e.location = location;
-  const time = oneLine(ce.time, 60); if (time) e.time = time;
+  const time = oneLine(ce.time, 60);
+  const [from, to] = readTimes(time);
+  if (from) { e.startTime = from; if (to && (e.endDate || to > from)) e.endTime = to; }
+  else if (time) e.time = time;
   const bits = [ce.description, ce.host ? "Hosted by " + ce.host : "", ce.link].filter(Boolean);
   if (bits.length) e.details = bits.join("\n\n").trim().slice(0, 2000);
   e.countyId = ce.id;
@@ -284,12 +287,41 @@ function cleanEvent(b, sectionKeys, kitIds) {
   const section = oneLine(b.section, 32);
   if (section) { if (!sectionKeys.includes(section)) return { error: "Unknown section." }; e.section = section; }
   const location = oneLine(b.location, 120); if (location) e.location = location;
-  const time = oneLine(b.time, 60); if (time) e.time = time;
+  // Times are 24 hour "HH:MM" so a parent's calendar can put the event at the
+  // right hour. An event without them is all day, as they all were before.
+  if (b.startTime) { if (!isTime(b.startTime)) return { error: "That start time is not a time." }; e.startTime = b.startTime; }
+  if (b.endTime) {
+    if (!isTime(b.endTime)) return { error: "That end time is not a time." };
+    if (!e.startTime) return { error: "An end time needs a start time." };
+    if (!e.endDate && b.endTime <= e.startTime) return { error: "The end time is not after the start time." };
+    e.endTime = b.endTime;
+  }
+  const time = oneLine(b.time, 60); if (time && !e.startTime) e.time = time;
   const kitId = oneLine(b.kitId, 32);
   if (kitId) { if (!kitIds.includes(kitId)) return { error: "Unknown kit list." }; e.kitId = kitId; }
   const details = String(b.details ?? "").trim().slice(0, 2000); if (details) e.details = details;
   return { event: e };
 }
+const isTime = (t) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t || "");
+// The county's feed gives the time as free text. Read it when it is not a
+// guess ("7pm", "18:30", "6:00pm to 7:30pm") so the event lands at the right
+// hour for a parent; a bare "10:00" could be either end of the day, so that is
+// left as the text it came as.
+const TIME_RE = /(\d{1,2})[:.](\d{2})\s*(?:([ap])\.?m\.?)?|(\d{1,2})\s*([ap])\.?m\.?/gi;
+export function readTimes(text) {
+  const out = [];
+  for (const m of String(text || "").matchAll(TIME_RE)) {
+    let h = +(m[1] ?? m[4]); const min = m[2] ? +m[2] : 0, mark = (m[3] || m[5] || "").toLowerCase();
+    if (h > 23 || min > 59) continue;
+    if (mark === "p") { if (h < 12) h += 12; }
+    else if (mark === "a") { if (h === 12) h = 0; }
+    else if (h < 13) continue;
+    out.push(String(h).padStart(2, "0") + ":" + String(min).padStart(2, "0"));
+    if (out.length === 2) break;
+  }
+  return out;
+}
+
 const sectionFallback = () => ({ required: 2, slots: {} });
 
 // Coverage, like the boards, is per section: a person sees and ticks the

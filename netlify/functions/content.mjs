@@ -856,6 +856,31 @@ var dayAfter = (d) => {
   x.setUTCDate(x.getUTCDate() + 1);
   return x.toISOString().slice(0, 10);
 };
+var isTime = (t) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t || "");
+var icsAt = (d, t) => icsDay(d) + "T" + t.replace(":", "") + "00";
+var hourAfter = (t) => {
+  const [h, m] = t.split(":").map(Number);
+  return h >= 23 ? "23:59" : String(h + 1).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+};
+var DUBLIN = [
+  "BEGIN:VTIMEZONE",
+  "TZID:Europe/Dublin",
+  "BEGIN:DAYLIGHT",
+  "TZOFFSETFROM:+0000",
+  "TZOFFSETTO:+0100",
+  "TZNAME:IST",
+  "DTSTART:19700329T010000",
+  "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU",
+  "END:DAYLIGHT",
+  "BEGIN:STANDARD",
+  "TZOFFSETFROM:+0100",
+  "TZOFFSETTO:+0000",
+  "TZNAME:GMT",
+  "DTSTART:19701025T020000",
+  "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU",
+  "END:STANDARD",
+  "END:VTIMEZONE"
+];
 var fold = (line) => {
   const out = [];
   let s = line;
@@ -870,6 +895,7 @@ var fold = (line) => {
 };
 function toICS(events, name, host) {
   const stamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const usable = events.filter((e) => e && e.date && e.title);
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -879,19 +905,20 @@ function toICS(events, name, host) {
     "X-WR-CALNAME:" + icsEsc(name),
     "X-WR-TIMEZONE:Europe/Dublin"
   ];
-  for (const e of events) {
-    if (!e || !e.date || !e.title) continue;
+  if (usable.some((e) => isTime(e.startTime))) lines.push(...DUBLIN);
+  for (const e of usable) {
     const uid = (e.countyId || e.date + "-" + String(e.title).toLowerCase().replace(/[^a-z0-9]+/g, "-")) + "@" + host;
-    lines.push(
-      "BEGIN:VEVENT",
-      "UID:" + uid,
-      "DTSTAMP:" + stamp,
-      "DTSTART;VALUE=DATE:" + icsDay(e.date),
-      "DTEND;VALUE=DATE:" + icsDay(dayAfter(e.endDate || e.date)),
-      "SUMMARY:" + icsEsc(e.title)
-    );
+    lines.push("BEGIN:VEVENT", "UID:" + uid, "DTSTAMP:" + stamp);
+    if (isTime(e.startTime)) {
+      const last = e.endDate || e.date;
+      const end = isTime(e.endTime) && (last > e.date || e.endTime > e.startTime) ? e.endTime : hourAfter(e.startTime);
+      lines.push("DTSTART;TZID=Europe/Dublin:" + icsAt(e.date, e.startTime), "DTEND;TZID=Europe/Dublin:" + icsAt(last, end));
+    } else {
+      lines.push("DTSTART;VALUE=DATE:" + icsDay(e.date), "DTEND;VALUE=DATE:" + icsDay(dayAfter(e.endDate || e.date)));
+    }
+    lines.push("SUMMARY:" + icsEsc(e.title));
     if (e.location) lines.push("LOCATION:" + icsEsc(e.location));
-    const desc = [e.details, e.time ? "Time: " + e.time : ""].filter(Boolean).join("\n\n");
+    const desc = [e.details, !isTime(e.startTime) && e.time ? "Time: " + e.time : ""].filter(Boolean).join("\n\n");
     if (desc) lines.push("DESCRIPTION:" + icsEsc(desc));
     lines.push("END:VEVENT");
   }

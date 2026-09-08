@@ -3,7 +3,7 @@
 // store and real Requests, so it covers the code and token logic, permissions,
 // the last-lead guard, revocation, and the conditional-write retry. It never
 // touches Netlify.
-import { createHandler, memoryStore } from "../netlify/src/rota.mjs";
+import { createHandler, memoryStore, readTimes } from "../netlify/src/rota.mjs";
 
 process.env.ADMIN_PASSWORD = "admin-for-test";
 const store = memoryStore(), contentStore = memoryStore();
@@ -212,6 +212,24 @@ r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14" } });
 r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14", title: "X", endDate: "2030-03-01" } }); ok("an end date before the start is refused", r.status, 400);
 r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14", title: "X", section: "nope" } });       ok("an unknown section is refused", r.status, 400);
 r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14", title: "X", kitId: "nope" } });         ok("an unknown kit list is refused", r.status, 400);
+// Times, so a parent's calendar can put the event at the right hour.
+r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-20", title: "Timed", startTime: "18:30", endTime: "20:00" } });
+{ const e = r.j.events.find(x => x.title === "Timed");
+  ok("a start and end time are kept as they are", [r.status, e.startTime, e.endTime], [200, "18:30", "20:00"]); }
+r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-21", title: "Half six", startTime: "half six" } });
+ok("something that is not a time is refused", [r.status, /not a time/.test(r.j.error)], [400, true]);
+r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-21", title: "Backwards", startTime: "19:00", endTime: "18:00" } });
+ok("an end time before the start on one day is refused", [r.status, /not after/.test(r.j.error)], [400, true]);
+r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-21", endDate: "2030-03-23", title: "Camp", startTime: "18:30", endTime: "14:00" } });
+{ const e = r.j.events.find(x => x.title === "Camp");
+  ok("but a camp may end earlier in the day than it began, on a later day", [e.startTime, e.endTime], ["18:30", "14:00"]); }
+r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-21", title: "End only", endTime: "20:00" } });
+ok("an end time with no start is refused", [r.status, /needs a start/.test(r.j.error)], [400, true]);
+r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-22", title: "Both kinds", startTime: "18:00", time: "sixish" } });
+{ const e = r.j.events.find(x => x.title === "Both kinds");
+  ok("the old free text is dropped once there is a real time", [e.startTime, e.time], ["18:00", undefined]); }
+for (const [text, want] of [["7PM", ["19:00"]], ["6:00pm - 7:30pm", ["18:00", "19:30"]], ["18:30", ["18:30"]], ["10:00 at the den", []], ["from 9.30am to 4pm", ["09:30", "16:00"]], ["", []]])
+  ok(`the county's "${text}" reads as ${JSON.stringify(want)}`, readTimes(text), want);
 r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14", title: "X".repeat(200), details: "d".repeat(3000) } });
 ok("long text is capped, not rejected", [r.j.events.find(e => e.title.startsWith("XX")).title.length, r.j.events.find(e => e.title.startsWith("XX")).details.length], [120, 2000]);
 r = await call("POST", "?a=event-remove", { token: m2, body: { key: "2030-03-14|" + "X".repeat(120) } });           ok("and can be removed again", r.status, 200);
@@ -324,7 +342,7 @@ ok("a private event can be removed", r.j.events.length, 0);
   r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c1", section: "scouts", decision: "approve" } });
   ok("the Scouts lead approves the camp", [r.status, r.j.status], [200, "approved"]);
   { const e = (await contentStore.get("content", { type: "json" })).events.find(x => x.countyId === "c1");
-    ok("it lands on the group calendar in the app's own shape", e, { date: "2030-10-02", title: "Chill Camp", endDate: "2030-10-03", section: "scouts", location: "Ruan", time: "18:00", details: "County camp.\n\nHosted by County Team\n\nhttps://example.test/book", countyId: "c1" }); }
+    ok("it lands on the group calendar in the app's own shape, with the county's time read as a real one", e, { date: "2030-10-02", title: "Chill Camp", endDate: "2030-10-03", section: "scouts", location: "Ruan", startTime: "18:00", details: "County camp.\n\nHosted by County Team\n\nhttps://example.test/book", countyId: "c1" }); }
 
   // The county naming several sections is an offer to each of them, not one
   // group event: our sections decide separately.

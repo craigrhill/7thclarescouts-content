@@ -13,6 +13,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, normalize, join } from "node:path";
 import { createHandler, memoryStore } from "../netlify/src/rota.mjs";
+import { toICS } from "../netlify/src/content.mjs";
 
 const port = Number(process.argv[2]) || 8899;
 const contentFile = process.argv[3] || "content.json";
@@ -44,6 +45,14 @@ createServer(async (req, res) => {
   if (url.pathname.includes("/.netlify/functions/content")) {
     try {
       const body = (await store("site-content").get("content", { type: "json" })) || JSON.parse(await readFile(contentFile, "utf8"));
+      // The subscription feed, so the preview answers ?ics=1 as the deployed
+      // function does and the browser suite can read what a parent would get.
+      if (url.searchParams.get("ics")) {
+        const want = (url.searchParams.get("section") || "").trim().toLowerCase();
+        const list = (body.events || []).filter((e) => !want || !e.section || e.section === want);
+        res.writeHead(200, { "Content-Type": "text/calendar; charset=utf-8", "Cache-Control": "no-store" });
+        return res.end(toICS(list, "7th Clare Scouts", "7thclarescouts.ie"));
+      }
       body.source = "local";
       res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
       return res.end(JSON.stringify(body));

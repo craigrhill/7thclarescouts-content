@@ -809,6 +809,23 @@ function parseISO(s){ var p=String(s).split('-'); return new Date(+p[0], +p[1]-1
 function todayISO(){ return iso(new Date()); }
 function fmtDay(s){ var d=parseISO(s); return d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3); }
 function fmtLong(s){ var d=parseISO(s); return DAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear(); }
+// The hours an event runs, as people write them here: "6:00 to 7:30 pm",
+// "11:00 am to 1:00 pm", "7:00 pm". Events made before there were real times
+// carry only the free text a leader typed, so that is the fallback. Kept
+// identical in index.html, calendar.html and lab/rota-lib.js;
+// tools/test-times.mjs holds the three copies together.
+function eventWhen(e){
+  var ok = function(x){ return /^([01]\d|2[0-3]):[0-5]\d$/.test(x || "") ? x : ""; };
+  var s = ok(e.startTime), f = ok(e.endTime);
+  if (!s) return e.time || "";
+  var say = function(x, ampm){ var h = +x.slice(0, 2), g = ((h + 11) % 12) + 1; return g + ":" + x.slice(3) + (ampm ? (h < 12 ? " am" : " pm") : ""); };
+  if (!f) return say(s, true);
+  // The start says am or pm of its own only when the end's would not do for
+  // both: across noon, or across midnight onto a later day.
+  var half = function(x){ return +x.slice(0, 2) < 12; };
+  var days = !!e.endDate && e.endDate !== e.date;
+  return say(s, days || half(s) !== half(f)) + " to " + say(f, true);
+}
 function fmtRange(ev){
   if(!ev.end || ev.end===ev.start) return fmtLong(ev.start);
   var a=parseISO(ev.start), b=parseISO(ev.end);
@@ -2841,8 +2858,19 @@ function icsDate(s, plusDays){
   return iso(d).replace(/-/g,'');
 }
 function icsEscape(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); }
+/* A timed event has to say which zone its hours are in, or a phone abroad puts
+   it at the wrong hour. The zone is written into the file rather than named and
+   left to the reader, which is what the subscription feed does too. */
+var DUBLIN_VTZ=['BEGIN:VTIMEZONE','TZID:Europe/Dublin',
+  'BEGIN:DAYLIGHT','TZOFFSETFROM:+0000','TZOFFSETTO:+0100','TZNAME:IST','DTSTART:19700329T010000','RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU','END:DAYLIGHT',
+  'BEGIN:STANDARD','TZOFFSETFROM:+0100','TZOFFSETTO:+0000','TZNAME:GMT','DTSTART:19701025T020000','RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU','END:STANDARD',
+  'END:VTIMEZONE'];
+function icsTime(t){ return /^([01]\d|2[0-3]):[0-5]\d$/.test(t||'') ? t : ''; }
+function icsAt(d,t){ return icsDate(d)+'T'+t.replace(':','')+'00'; }
+function icsHourAfter(t){ var h=+t.slice(0,2); return h>=23 ? '23:59' : ('0'+(h+1)).slice(-2)+':'+t.slice(3); }
 function buildICS(list){
   var out=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//7th Clare Scouts//Calendar//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:7th Clare Scouts'];
+  if(list.some(function(ev){ return icsTime(ev.startTime); })) out=out.concat(DUBLIN_VTZ);
   list.forEach(function(ev){
     var desc=[];
     if(ev.description) desc.push(ev.description);
@@ -2855,8 +2883,16 @@ function buildICS(list){
     out.push('BEGIN:VEVENT');
     out.push('UID:'+ev.id+'@clare-scouting');
     out.push('DTSTAMP:'+icsDate(todayISO())+'T000000Z');
-    out.push('DTSTART;VALUE=DATE:'+icsDate(ev.start));
-    out.push('DTEND;VALUE=DATE:'+icsDate(ev.end||ev.start, 1));
+    var from=icsTime(ev.startTime), last=ev.end||ev.start;
+    if(from){
+      var to=icsTime(ev.endTime);
+      if(!to || (last===ev.start && to<=from)) to=icsHourAfter(from);
+      out.push('DTSTART;TZID=Europe/Dublin:'+icsAt(ev.start, from));
+      out.push('DTEND;TZID=Europe/Dublin:'+icsAt(last, to));
+    } else {
+      out.push('DTSTART;VALUE=DATE:'+icsDate(ev.start));
+      out.push('DTEND;VALUE=DATE:'+icsDate(last, 1));
+    }
     out.push('SUMMARY:'+icsEscape(ev.name));
     if(ev.location) out.push('LOCATION:'+icsEscape(ev.location));
     if(ev.link) out.push('URL:'+icsEscape(ev.link));
@@ -2868,7 +2904,7 @@ function buildICS(list){
     out.push('STATUS:CONFIRMED');
     out.push('CLASS:PUBLIC');
     out.push('TRANSP:TRANSPARENT');
-    out.push('X-MICROSOFT-CDO-ALLDAYEVENT:TRUE');
+    if(!from) out.push('X-MICROSOFT-CDO-ALLDAYEVENT:TRUE');
     out.push('X-MICROSOFT-CDO-BUSYSTATUS:FREE');
     out.push('X-MICROSOFT-CDO-INTENDEDSTATUS:FREE');
     out.push('END:VEVENT');
@@ -3750,7 +3786,9 @@ function fromContent(e, i){
     name: e.title || '',
     start: e.date,
     end: e.endDate || e.date,
-    time: e.time || '',
+    time: eventWhen(e),
+    startTime: e.startTime || '',
+    endTime: e.endTime || '',
     category: e.countyId ? 'county' : 'group',
     sections: e.section ? [e.section] : ALL_SECTION_IDS.slice(),
     description: e.details || '',

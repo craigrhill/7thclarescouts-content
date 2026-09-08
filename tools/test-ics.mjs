@@ -13,6 +13,16 @@ const events = [
   { date: "2026-11-01", title: "A".repeat(200) },
   { title: "No date" }, null,
 ];
+// Times, which a subscribed calendar needs if the event is to land at the right
+// hour rather than sitting across the whole day.
+const timed = [
+  { date: "2026-09-17", title: "First meeting", startTime: "18:00", endTime: "19:30" },
+  { date: "2026-09-19", endDate: "2026-09-21", title: "Autumn camp", startTime: "18:30", endTime: "14:00" },
+  { date: "2026-10-01", title: "Talk", startTime: "19:00" },
+  { date: "2026-10-02", title: "Late one", startTime: "23:30" },
+  { date: "2026-10-03", title: "Back to front", startTime: "18:00", endTime: "17:00" },
+  { date: "2026-10-04", title: "Not a time", startTime: "half six", time: "half six" },
+];
 const out = toICS(events, "7th Clare Scouts: All sections", "7thclarescouts.ie");
 const lines = out.split("\r\n");
 
@@ -31,6 +41,20 @@ ok("a folded line continues with a space", lines.some((l) => l.startsWith(" ")),
 ok("unfolding puts the long title back together", out.replace(/\r\n /g, "").includes("SUMMARY:" + "A".repeat(200)), true);
 ok("CRLF throughout", !/[^\r]\n/.test(out), true);
 ok("the calendar is named", lines.includes("X-WR-CALNAME:7th Clare Scouts: All sections"), true);
+
+{
+  const t = toICS(timed, "7th Clare Scouts", "7thclarescouts.ie");
+  const l = t.split("\r\n");
+  ok("a timed event starts at its hour, in Irish time", l.includes("DTSTART;TZID=Europe/Dublin:20260917T180000"), true);
+  ok("and ends at the hour given", l.includes("DTEND;TZID=Europe/Dublin:20260917T193000"), true);
+  ok("the zone is defined in the file, so it is not read as the reader's own", [l.includes("BEGIN:VTIMEZONE"), l.includes("TZID:Europe/Dublin"), l.filter((x) => x === "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU").length], [true, true, 1]);
+  ok("a camp runs from the first evening to the last afternoon", [l.includes("DTSTART;TZID=Europe/Dublin:20260919T183000"), l.includes("DTEND;TZID=Europe/Dublin:20260921T140000")], [true, true]);
+  ok("a start with no end runs an hour", l.includes("DTEND;TZID=Europe/Dublin:20261001T200000"), true);
+  ok("and one late at night stops before midnight rather than the day before", l.includes("DTEND;TZID=Europe/Dublin:20261002T235900"), true);
+  ok("an end before the start on the same day is ignored", l.includes("DTEND;TZID=Europe/Dublin:20261003T190000"), true);
+  ok("anything that is not a time leaves the event all day", [l.includes("DTSTART;VALUE=DATE:20261004"), t.includes("Time: half six")], [true, true]);
+  ok("an all-day feed carries no timezone block", toICS(events, "x", "y").includes("VTIMEZONE"), false);
+}
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

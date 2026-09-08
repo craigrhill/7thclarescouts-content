@@ -125,17 +125,18 @@
       "date": "2026-09-09",
       "title": "County Planning Meeting",
       "location": "Ennis Scout Hall",
-      "time": "7PM",
       "details": "NOTE:  Scout Section is having their planning meeting Thursday 3rd Sept 7pm.",
-      "countyId": "ev_mjzrmo5a"
+      "countyId": "ev_mjzrmo5a",
+      "startTime": "19:00"
     },
     {
       "date": "2026-09-17",
       "title": "First Meeting",
       "section": "scouts",
       "location": "New Quay National School",
-      "time": "6:00pm - 7:30pm",
-      "kitId": "uniform"
+      "kitId": "uniform",
+      "startTime": "18:00",
+      "endTime": "19:30"
     },
     {
       "date": "2026-09-25",
@@ -1526,7 +1527,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-08T04:35:01.608Z",
+  "updatedAt": "2026-09-08T05:09:41.090Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
@@ -1579,5 +1580,5 @@
     "sionnach",
     "mpc"
   ],
-  "updatedBy": "secretary"
+  "updatedBy": "claude"
 }

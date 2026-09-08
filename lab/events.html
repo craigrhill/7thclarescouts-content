@@ -120,7 +120,7 @@ function render(){
     const row = `<tr class="person ${gone ? "past" : ""}">
       <td class="nm">${esc(fmt(e.date))}${e.endDate ? ` <span class="small muted">to ${esc(fmt(e.endDate))}</span>` : ""}</td>
       <td>${esc(e.title)}${e.priv ? ` <span class="rbadge">leaders only</span>` : ""}${e.countyId ? ` <span class="rbadge">county</span>` : ""}</td>
-      <td class="small muted">${esc([e.location, e.time].filter(Boolean).join(", "))}</td>
+      <td class="small muted">${esc([e.location, eventWhen(e)].filter(Boolean).join(", "))}</td>
       <td class="act">${can && !e.countyId ? `<button class="btn quiet" onclick="editEvent('${esc(key)}')">${open ? "Close" : "Edit"}</button>` : ""}</td>
     </tr>`;
     if (!open || !can || e.countyId) return row;
@@ -130,7 +130,8 @@ function render(){
       <div class="row"><label>Starts <input type="date" id="edDate" value="${esc(e.date)}"></label><label>Ends <input type="date" id="edEnd" value="${esc(e.endDate || "")}"></label></div>
       <div class="row"><input type="text" id="edTitle" value="${esc(e.title)}"></div>
       <div class="row"><select id="edSection">${secs}</select><select id="edKit"><option value="">No kit list</option>${kits}</select></div>
-      <div class="row"><input type="text" id="edLocation" placeholder="Where" value="${esc(e.location || "")}"><input type="text" id="edTime" placeholder="Time" value="${esc(e.time || "")}"></div>
+      <div class="row"><input type="text" id="edLocation" placeholder="Where" value="${esc(e.location || "")}"></div>
+      <div class="row"><label class="small">Starts at <input type="time" id="edStart" value="${esc(e.startTime || "")}"></label><label class="small">Ends at <input type="time" id="edEnd2" value="${esc(e.endTime || "")}"></label><span class="small muted">${e.time ? `Was typed as "${esc(e.time)}"` : "Leave both empty for an all-day event."}</span><input type="hidden" id="edWas" value="${esc(e.time || "")}"></div>
       <div class="row"><textarea id="edDetails" placeholder="Details for parents" style="min-height:4rem">${esc(e.details || "")}</textarea></div>
       <div class="row"><button class="btn primary" onclick="saveEvent('${esc(key)}',${e.priv})">Save</button><button class="btn quiet" onclick="removeEvent('${esc(key)}',${e.priv})">Remove</button><span class="small muted">${e.priv ? "Leaders only." : "On the public calendar."}</span></div>
     </div></td></tr>`;
@@ -193,7 +194,11 @@ const addEvent = () => guarded(async () => {
 });
 const saveEvent = (key, priv) => guarded(async () => {
   await api("POST", "?a=event-update", { key, private: priv, date: $("edDate").value, endDate: $("edEnd").value, title: $("edTitle").value,
-    section: $("edSection").value, kitId: $("edKit").value, location: $("edLocation").value, time: $("edTime").value, details: $("edDetails").value });
+    section: $("edSection").value, kitId: $("edKit").value, location: $("edLocation").value,
+    startTime: $("edStart").value, endTime: $("edEnd2").value,
+    // Free text from before there were real times: kept until a start time
+    // replaces it, so editing anything else does not quietly lose it.
+    time: $("edWas").value, details: $("edDetails").value });
   editingEvent = null; await afterEvents();
 });
 const removeEvent = (key, priv) => guarded(async () => {

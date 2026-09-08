@@ -1,5 +1,5 @@
 // 7th Clare Scouts service worker: offline shell + last-known content
-const VERSION = "v0_35";
+const VERSION = "v0_36";
 const SHELL = ["./", "./index.html", "./calendar.html", "./defaults.js", "./kit-defaults.js", "./logo.png", "./icon-192.png", "./icon-512.png", "./manifest.webmanifest", "./docs/Sionnach_Tips.pdf"];
 const SHELL_CACHE = "shell-" + VERSION, DATA_CACHE = "data-" + VERSION, FONT_CACHE = "fonts";
 

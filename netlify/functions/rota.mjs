@@ -906,7 +906,11 @@ function fromCounty(ce, section) {
   const location = oneLine(ce.location, 120);
   if (location) e.location = location;
   const time = oneLine(ce.time, 60);
-  if (time) e.time = time;
+  const [from, to] = readTimes(time);
+  if (from) {
+    e.startTime = from;
+    if (to && (e.endDate || to > from)) e.endTime = to;
+  } else if (time) e.time = time;
   const bits = [ce.description, ce.host ? "Hosted by " + ce.host : "", ce.link].filter(Boolean);
   if (bits.length) e.details = bits.join("\n\n").trim().slice(0, 2e3);
   e.countyId = ce.id;
@@ -1005,8 +1009,18 @@ function cleanEvent(b, sectionKeys, kitIds) {
   }
   const location = oneLine(b.location, 120);
   if (location) e.location = location;
+  if (b.startTime) {
+    if (!isTime(b.startTime)) return { error: "That start time is not a time." };
+    e.startTime = b.startTime;
+  }
+  if (b.endTime) {
+    if (!isTime(b.endTime)) return { error: "That end time is not a time." };
+    if (!e.startTime) return { error: "An end time needs a start time." };
+    if (!e.endDate && b.endTime <= e.startTime) return { error: "The end time is not after the start time." };
+    e.endTime = b.endTime;
+  }
   const time = oneLine(b.time, 60);
-  if (time) e.time = time;
+  if (time && !e.startTime) e.time = time;
   const kitId = oneLine(b.kitId, 32);
   if (kitId) {
     if (!kitIds.includes(kitId)) return { error: "Unknown kit list." };
@@ -1015,6 +1029,24 @@ function cleanEvent(b, sectionKeys, kitIds) {
   const details = String(b.details ?? "").trim().slice(0, 2e3);
   if (details) e.details = details;
   return { event: e };
+}
+var isTime = (t) => /^([01]\d|2[0-3]):[0-5]\d$/.test(t || "");
+var TIME_RE = /(\d{1,2})[:.](\d{2})\s*(?:([ap])\.?m\.?)?|(\d{1,2})\s*([ap])\.?m\.?/gi;
+function readTimes(text) {
+  const out = [];
+  for (const m of String(text || "").matchAll(TIME_RE)) {
+    let h = +(m[1] ?? m[4]);
+    const min = m[2] ? +m[2] : 0, mark = (m[3] || m[5] || "").toLowerCase();
+    if (h > 23 || min > 59) continue;
+    if (mark === "p") {
+      if (h < 12) h += 12;
+    } else if (mark === "a") {
+      if (h === 12) h = 0;
+    } else if (h < 13) continue;
+    out.push(String(h).padStart(2, "0") + ":" + String(min).padStart(2, "0"));
+    if (out.length === 2) break;
+  }
+  return out;
 }
 var sectionFallback = () => ({ required: 2, slots: {} });
 var canSeeSection = (me, canManage, k) => canManage || (me.sections || []).includes(k);
@@ -1526,5 +1558,6 @@ var rota_default = createHandler((name) => getStore(name));
 export {
   createHandler,
   rota_default as default,
-  memoryStore
+  memoryStore,
+  readTimes
 };

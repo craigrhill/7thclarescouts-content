@@ -158,8 +158,13 @@ try {
   await S.fill("#evTitle", "");
   await S.locator("#events tr.person", { hasText: "Spring camp" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(250);
   await S.fill("#edLocation", "Ruan"); await S.selectOption("#edKit", "sionnach");
+  // Real start and end times, so a parent's calendar can put the event at the
+  // right hour instead of across the whole day.
+  await S.fill("#edStart", "18:30"); await S.fill("#edEnd2", "20:00");
   await S.locator("#events tr.editor button:has-text('Save')").click(); await S.waitForTimeout(1200);
-  ok("editing an event saves the extra fields", await S.evaluate(async () => { const e = (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).events.find((x) => x.title === "Spring camp"); return [e.location, e.kitId]; }), ["Ruan", "sionnach"]);
+  ok("editing an event saves the extra fields, times included", await S.evaluate(async () => { const e = (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).events.find((x) => x.title === "Spring camp"); return [e.location, e.kitId, e.startTime, e.endTime]; }), ["Ruan", "sionnach", "18:30", "20:00"]);
+  ok("and the list shows the hours the way the group writes them", (await S.locator("#events tr.person", { hasText: "Spring camp" }).innerText()).includes("6:30 to 8:00 pm"), true);
+  ok("the feed puts it at that hour, in Irish time", await S.evaluate(async () => (await (await fetch("/.netlify/functions/content?ics=1", { cache: "no-store" })).text()).includes("DTSTART;TZID=Europe/Dublin:20300314T183000")), true);
   await S.screenshot({ path: ".e2e/events-1280.png", fullPage: true });
   const L2 = await page(1280, 900); await go(L2, "rota.html"); await L2.fill("#code", leadCode); await signInBtn(L2).click(); await L2.waitForTimeout(900); await pickSec(L2, "Scouts");
   const slotText = (await L2.locator(".slot").allInnerTexts()).join(" | ");
@@ -253,6 +258,11 @@ try {
   await L2.waitForTimeout(2400);
   ok("and neither reverts when the replies land", (await L2.locator("#names label.on").allInnerTexts()).map((t) => t.trim()).sort(), ["Bea Test", "Bea Three", "Bea Two"]);
   ok("the line says it saved, with no error", [(await L2.locator("#count").innerText()).includes("saved by"), await L2.locator("#err").isVisible()], [true, false]);
+  // The same again from "Everyone here", which is how a full house is taken.
+  await L2.getByRole("button", { name: "Everyone here" }).click(); await L2.waitForTimeout(120);
+  await L2.locator("#names label", { hasText: "Bea Two" }).click();
+  await L2.waitForTimeout(2400);
+  ok("Everyone here, then one tapped off, leaves the rest on", (await L2.locator("#names label.on").allInnerTexts()).map((t) => t.trim()).sort(), ["Bea Test", "Bea Three"]);
   await L2.unroute("**/functions/rota?a=attend");
 
   // ---- the admin password signs the leaders' pages in as the secretary ----

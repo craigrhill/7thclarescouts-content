@@ -86,12 +86,14 @@ warning fires correctly for leaders.
     tools/test-rota.mjs             offline harness for the rota function
     tools/test-ics.mjs              the subscription feed's iCalendar output
     tools/test-kits.mjs             drift guard: mergeBuiltInKits in both files
+    tools/test-times.mjs            drift guard: eventWhen in the three pages
     tools/test-merge.mjs            drift guard: mergeContent in both files
     tools/e2e-rota.mjs              browser suite for the leaders' area
     tools/apply-update.mjs          ports admin's mergeContent, --dry-run
     tools/serve.mjs                 local preview, stands in for the
                                     content function so the app loads
-                                    content.json instead of defaults.js
+                                    content.json instead of defaults.js,
+                                    and answers ?ics=1 as the real one does
     lab/                experiments. Public on the site but not linked from
                         the app, not cached by sw.js, noindexed, and never
                         read by content.json. Delete a file to remove it.
@@ -266,6 +268,22 @@ link in the footer.
   keeps the deployed function self-contained so the zip-drop fallback works.
   `@netlify/blobs` is pinned exactly in package.json; bumping it changes the
   vendor code, so re-run the equivalence check before committing.
+* **An event's hours are fields, not prose.** `startTime` and `endTime` are 24
+  hour `HH:MM`; an event with no `startTime` is an all-day one, which is what
+  every event was before. Both editors offer them as `<input type="time">`,
+  `netlify/src/rota.mjs` refuses anything that is not a time and an end that is
+  not after the start on a single day, and a start with no end runs an hour.
+  `time` is the free text leaders used to type: still read and shown when there
+  is nothing better, dropped the moment a real start time is set. The county's
+  feed gives free text too, so `readTimes` in `rota.mjs` reads it when it is not
+  a guess ("7pm", "18:30", "6:00pm - 7:30pm"); a bare "10:00" could be either
+  end of the day and is left as text. A timed event is written into every
+  iCalendar output against a VTIMEZONE for Europe/Dublin, in the subscription
+  feed, the calendar page's download and the app's single-event download alike,
+  because a floating time drifts for anyone whose phone is set elsewhere.
+  `eventWhen` turns the pair into the way the group writes times ("6:00 to 7:30
+  pm", "11:00 am to 1:00 pm") and lives in `index.html`, `calendar.html` and
+  `lab/rota-lib.js`, held together by `tools/test-times.mjs`.
 * **The content function serves an iCalendar feed.** `?ics=1`, optionally
   `&section=<key>`, public and read only, so a parent's calendar subscribes
   once and stays current. A section feed carries that section's events plus
@@ -351,7 +369,8 @@ link in the footer.
                      campaigns: [{title, blurb, goal, raised, link, linkLabel}],
                      help, sponsors: [{name, url, logoUrl}] },
       notices: [{title, body}],
-      events: [{date, endDate?, title, section, location?, time?, kitId?, details}],
+      events: [{date, endDate?, title, section, location?,
+                startTime?, endTime?, time?, kitId?, details}],
       news: [{date, title, body}],
       gallery: [{url, caption?, section?}],
       kits: [{id, title, event, summary, imageUrl?, imageCaption?,

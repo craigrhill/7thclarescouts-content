@@ -66,6 +66,23 @@ function pill(C, key){ const i = C.settings.sections.findIndex(x => x.key === ke
 // short form for column headings. Keys match the rota function's SKILLS.
 const SKILLS = [["camping","Camping","Camp"],["backwoods","Backwoods","Back"],["pioneering","Pioneering","Pion"],["hillwalking","Hillwalking","Hill"],["emergencies","Emergencies","Emer"],["air","Air Activities","Air"],["paddling","Paddling","Padd"],["rowing","Rowing","Row"],["sailing","Sailing","Sail"]];
 // How a row is labelled on the public board, where no name is shown.
+// The hours an event runs, as people write them here: "6:00 to 7:30 pm",
+// "11:00 am to 1:00 pm", "7:00 pm". Events made before there were real times
+// carry only the free text a leader typed, so that is the fallback. Kept
+// identical in index.html, calendar.html and lab/rota-lib.js;
+// tools/test-times.mjs holds the three copies together.
+function eventWhen(e){
+  var ok = function(x){ return /^([01]\d|2[0-3]):[0-5]\d$/.test(x || "") ? x : ""; };
+  var s = ok(e.startTime), f = ok(e.endTime);
+  if (!s) return e.time || "";
+  var say = function(x, ampm){ var h = +x.slice(0, 2), g = ((h + 11) % 12) + 1; return g + ":" + x.slice(3) + (ampm ? (h < 12 ? " am" : " pm") : ""); };
+  if (!f) return say(s, true);
+  // The start says am or pm of its own only when the end's would not do for
+  // both: across noon, or across midnight onto a later day.
+  var half = function(x){ return +x.slice(0, 2) < 12; };
+  var days = !!e.endDate && e.endDate !== e.date;
+  return say(s, days || half(s) !== half(f)) + " to " + say(f, true);
+}
 const SECTION_NOUN = { beavers: "Beaver", cubs: "Cub", scouts: "Scout", ventures: "Venture" };
 const rowLabel = (k, n) => (SECTION_NOUN[k] || "Member") + " " + n;
 const pills = (C, keys) => C.settings.sections.filter(x => (keys || []).includes(x.key)).map(x => pill(C, x.key)).join("") || `<span class="small muted">none</span>`;
