@@ -251,9 +251,13 @@ table.board td.st.has{color:var(--sea-700);font-weight:700;background:var(--sea-
 .lightbox figure{margin:0;max-width:min(100%,900px);max-height:100%;display:flex;flex-direction:column;gap:.6rem}
 .lightbox img{max-height:76vh;width:auto;margin:0 auto;border-radius:10px;object-fit:contain}
 .lightbox figcaption{color:#F4F1EA;text-align:center;font-size:.9rem;min-height:1.2em}
-.lightbox .lb-btn{position:absolute;top:0;bottom:0;width:22%;border:0;background:none;color:#fff;font-size:2rem;cursor:pointer;opacity:.85;text-shadow:0 1px 6px rgba(0,0,0,.7)}
+/* The step buttons are tall strips down each side, so they start below the
+   close button and sit under it in any case: they come later in the markup, so
+   without the z-index the right hand strip covers the X and a tap on it went
+   to the next photo instead of closing. */
+.lightbox .lb-btn{position:absolute;top:3.4rem;bottom:0;width:22%;border:0;background:none;color:#fff;font-size:2rem;cursor:pointer;opacity:.85;text-shadow:0 1px 6px rgba(0,0,0,.7)}
 .lightbox .lb-prev{left:0}.lightbox .lb-next{right:0}
-.lightbox .lb-close{position:absolute;top:.5rem;right:.7rem;width:auto;height:auto;border:0;background:none;color:#fff;font-size:2rem;line-height:1;cursor:pointer}
+.lightbox .lb-close{position:absolute;z-index:2;top:.3rem;right:.4rem;width:auto;height:auto;min-width:44px;min-height:44px;border:0;background:none;color:#fff;font-size:2rem;line-height:1;cursor:pointer;text-shadow:0 1px 6px rgba(0,0,0,.7)}
 .social-row{display:flex;flex-wrap:wrap;gap:.5rem;margin:.6rem 0 0}
 .social-row a{display:inline-flex;align-items:center;gap:.4em;border:1px solid var(--stone-200);background:#fff;border-radius:999px;padding:.45em .9em;font-size:.85rem;font-weight:600;color:var(--sea-700);text-decoration:none}
 .social-row svg{width:18px;height:18px;stroke:var(--sea-500);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}

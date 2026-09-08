@@ -61,6 +61,10 @@ try {
   await A.goto(ROOT + "/admin.html", { waitUntil: "load" }); await A.waitForTimeout(500);
   await A.fill("#pw", "local"); await A.locator("#login .btn").click(); await A.waitForSelector("#editor", { state: "visible" });
   await A.getByRole("button", { name: "Photos", exact: true }).first().click(); await A.waitForTimeout(300);
+  // Start from an empty gallery whatever content.json happens to hold, so the
+  // counts below are about what this suite uploads. The preview keeps saves in
+  // memory; content.json on disk is never touched.
+  await A.evaluate(() => { C.gallery = []; renderPhotos(); });
 
   step = "upload photos";
   await A.fill("#upAlbum", "Autumn camp 2026");
@@ -106,8 +110,18 @@ try {
   await P.locator(".lb-next").click(); await P.waitForTimeout(200);
   ok("and it steps through", await P.locator("#lbCap").innerText(), "2 of 3");
   ok("the full size copy is the one on screen, not the tile", await P.locator("#lbImg").getAttribute("src"), pics[1].url);
+  // The step buttons are tall strips down each side; the right hand one used to
+  // cover the close button, so a tap on the X went to the next photo.
+  ok("nothing is covering the close button", await P.evaluate(() => {
+    const b = document.querySelector(".lb-close").getBoundingClientRect();
+    const el = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+    return el && el.className;
+  }), "lb-close");
+  await P.locator(".lb-close").click(); await P.waitForTimeout(300);
+  ok("so tapping it closes the slideshow", await P.locator("#lightbox.on").count(), 0);
+  await P.locator(".album").click(); await P.waitForTimeout(300);
   await P.keyboard.press("Escape"); await P.waitForTimeout(200);
-  ok("Escape closes it", await P.locator("#lightbox.on").count(), 0);
+  ok("and Escape closes it too", await P.locator("#lightbox.on").count(), 0);
   await P.screenshot({ path: ".e2e/gallery-390.png", fullPage: true });
   await P.goto(ROOT + "/#sections/scouts", { waitUntil: "domcontentloaded" }); await P.waitForTimeout(1200);
   ok("the section page shows the same photos, at tile size", await P.locator(".strip img").first().getAttribute("src"), pics[0].thumb);
