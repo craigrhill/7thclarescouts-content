@@ -39,6 +39,8 @@ const addOnRoster = async (p, name, secs, lead) => {
 try {
   const S = await page(390, 844); await go(S, "roster.html");
   ok("roster gate shown", await S.locator("#gate").isVisible(), true);
+  // The way back into the public app, before sign-in as well as after.
+  ok("the header and footer both lead back to the app", [await S.locator(".appbar .back").getAttribute("href"), await S.locator("footer a").getAttribute("href")], ["/", "/"]);
   ok("stylesheet applied", await S.evaluate(() => getComputedStyle(document.body).fontFamily.includes("Inter")), true);
   await S.locator("details summary").click(); await S.fill("#bootName", "Sec Test"); await S.fill("#bootPw", "wrong");
   await S.getByRole("button", { name: "Create the secretary" }).click(); await S.waitForTimeout(500);
@@ -241,6 +243,17 @@ try {
   await go(L2, "attendance.html"); await L2.waitForTimeout(700); await pickSec(L2, "Beavers");
   ok("the secretary sees the helper's record, saved under their name", [await L2.locator("#meetings details").count(), (await L2.locator("#count").innerText()).includes("saved by Board Helper")], [1, true]);
   ok("and may add Scouts from here", await L2.locator("#newName").count(), 1);
+  // Quick taps at the door, on a phone with one bar: the ticks and the count
+  // follow the taps, and a reply that lands late never puts one back.
+  await L2.fill("#newName", "Bea Two, Bea Three");
+  await L2.locator("#addRow").getByRole("button", { name: "Add", exact: true }).click(); await L2.waitForTimeout(1200);
+  await L2.route("**/functions/rota?a=attend", async (r) => { await new Promise((x) => setTimeout(x, 700)); await r.continue(); });
+  for (const n of ["Bea Two", "Bea Three"]) { await L2.locator("#names label", { hasText: n }).click(); await L2.waitForTimeout(120); }
+  ok("both taps show at once, without waiting for the save", [await L2.locator("#names label.on").count(), (await L2.locator("#count").innerText()).includes("saving")], [3, true]);
+  await L2.waitForTimeout(2400);
+  ok("and neither reverts when the replies land", (await L2.locator("#names label.on").allInnerTexts()).map((t) => t.trim()).sort(), ["Bea Test", "Bea Three", "Bea Two"]);
+  ok("the line says it saved, with no error", [(await L2.locator("#count").innerText()).includes("saved by"), await L2.locator("#err").isVisible()], [true, false]);
+  await L2.unroute("**/functions/rota?a=attend");
 
   // ---- the admin password signs the leaders' pages in as the secretary ----
   step = "sign into admin.html";

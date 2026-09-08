@@ -224,7 +224,12 @@ the order the public Adventure Skills page lists them; keys match between
 `lab/attendance.html` is taken at the door on a phone: pick the section,
 the date defaults to today, tap each name as they arrive. Every tap saves
 the whole list for that date, so two phones at the door converge on
-whatever was tapped last instead of fighting over a diff. Names come from
+whatever was tapped last instead of fighting over a diff. On one phone the
+tap changes the list locally first and the save goes out behind it: saves
+are single file, one request at a time, carrying whatever the list holds
+when it goes, and a reply is taken back only when nothing newer is waiting.
+Before that the page rebuilt itself from each reply, so four quick taps on
+a slow connection left one Scout ticked and the other three marked absent. Names come from
 the badge board, which is the one list of young people; a lead can add a
 Scout from either page and both see it. Anyone signed in with the section
 on their roster entry can fill it in, helpers included, because whoever is
@@ -240,6 +245,10 @@ that exclusion if the worker is reworked.
 
 Local preview: `npm run serve` runs the real rota handler against an
 in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
+
+Every leaders' page carries a way back into the public app: an "App" button
+in the header, which is there before sign-in as well as after, and a plain
+link in the footer.
 
 ## Gotchas
 

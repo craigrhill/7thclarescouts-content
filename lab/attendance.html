@@ -11,6 +11,7 @@
 </head>
 <body>
 <header class="appbar"><div class="wrap">
+  <a class="back" href="/" aria-label="Back to the 7th Clare Scouts app"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span>App</span></a>
   <div class="brand">7th Clare Scouts<small>Attendance</small></div>
   <span class="pill">Leaders only</span>
 </div></header>
@@ -65,12 +66,18 @@
     </div>
   </section>
 </main>
-<footer class="wrap">Nothing on this page is public. Names come from the badge board.</footer>
+<footer class="wrap">Nothing on this page is public. Names come from the badge board. <a href="/">Back to the app</a></footer>
 
 <script src="rota-lib.js"></script>
 <script>
 const SK = "attendance-section";
-let C = null, D = null, date = null, saving = null;
+let C = null, D = null, date = null;
+// A tap changes the list on this phone first and saves in the background, so
+// the tick and the count never wait on the network. Saves are single file: one
+// request at a time, and only the newest list is ever sent, so quick taps at
+// the door cannot cross in flight and undo each other. The server's copy is
+// taken back only when nothing else is waiting to go.
+let sending = false, queued = null, unsaved = false;
 function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
 function keys(){ return C.settings.sections.map(x => x.key); }
 function visibleKeys(){ return keys().filter(k => D.sections[k]); }
@@ -94,7 +101,10 @@ function render(){
   if ($("date").value !== date) $("date").value = date;
   const r = rec(k, date); if (document.activeElement !== $("note")) $("note").value = r ? (r.note || "") : "";
   const here = presentSet(k, date);
-  $("count").innerHTML = youth.length ? `<b>${here.size}</b> of ${youth.length} here${r ? `<span class="muted"> · saved by ${esc(r.by)}</span>` : ""}` : "";
+  const state = (sending || queued) ? `<span class="muted"> · saving…</span>`
+    : unsaved ? `<span class="warn"> · not saved yet</span> <button class="btn quiet" onclick="retry()">Save again</button>`
+    : r && r.by ? `<span class="muted"> · saved by ${esc(r.by)}</span>` : "";
+  $("count").innerHTML = youth.length ? `<b>${here.size}</b> of ${youth.length} here${state}` : "";
   $("names").innerHTML = youth.length
     ? youth.map(y => `<label class="${here.has(y.id) ? "on" : ""}"><input type="checkbox" ${here.has(y.id) ? "checked" : ""} onchange="toggle('${esc(y.id)}', this.checked)">${esc(y.name)}</label>`).join("")
     : `<span class="empty">Nobody on the ${esc(sectionName(k))} badge board yet, so nobody to tick.${D.canAdd[k] ? "" : " Ask the section lead to add them."}</span>`;
@@ -115,14 +125,33 @@ function pickSection(k){ try { localStorage.setItem(SK, k); } catch {} render();
 function openDate(d){ date = d; render(); $("tonight").scrollIntoView({ block: "start", behavior: "smooth" }); }
 // Every change sends the whole list for the date, so two phones at the door
 // converge on whatever was tapped last rather than fighting over a diff.
-async function save(k, present){ const r = await api("POST", "?a=attend", { section: k, date, present, note: $("note").value }); D.sections[k].meetings = r.meetings; render(); }
-const toggle = (id, on) => guarded(async () => { const k = sec(), s = presentSet(k, date); if (on) s.add(id); else s.delete(id); await save(k, [...s]); });
-const setAll = (on) => guarded(async () => { const k = sec(); await save(k, on ? D.sections[k].youth.map(y => y.id) : []); });
+const local = (k, d) => { const S = D.sections[k]; S.meetings = S.meetings || {}; return (S.meetings[d] = S.meetings[d] || { present: [], note: "", by: D.me.name, at: null }); };
+function save(k, d, present, note){
+  const m = local(k, d); m.present = present; if (note !== undefined) m.note = note;
+  m.by = D.me.name; m.at = new Date().toISOString();
+  queued = { k, d }; render(); flush();
+}
+async function flush(){
+  if (sending || !queued) return;
+  const { k, d } = queued; queued = null; sending = true;
+  try {
+    const m = local(k, d);
+    const r = await api("POST", "?a=attend", { section: k, date: d, present: m.present, note: m.note });
+    // A reply is only the truth while nothing newer is waiting to be sent.
+    if (!queued) D.sections[k].meetings = r.meetings;
+    unsaved = false; showErr("");
+  } catch (e) { unsaved = true; showErr(e.message + " The ticks are on this phone but not saved yet."); }
+  sending = false; render();
+  if (queued) flush();
+}
+const retry = () => { queued = { k: sec(), d: date }; render(); flush(); };
+const toggle = (id, on) => { const k = sec(), s = presentSet(k, date); if (on) s.add(id); else s.delete(id); save(k, date, [...s]); };
+const setAll = (on) => { const k = sec(); save(k, date, on ? D.sections[k].youth.map(y => y.id) : []); };
 const removeMeeting = (d) => guarded(async () => { const k = sec(); if (!confirm(`Remove the record for ${fmt(d)}?`)) return; const r = await api("POST", "?a=attend-remove", { section: k, date: d }); D.sections[k].meetings = r.meetings; if (date === d) date = today(); render(); });
 async function add(){ const name = ($("newName").value || "").trim(); if (!name) return;
   await guarded(async () => { const k = sec(); const r = await api("POST", "?a=badge-add", { section: k, name }); D.sections[k].youth = r.board.youth.map(({ id, n, name }) => ({ id, n, name })); render(); }); }
 $("date").addEventListener("change", () => { if (isDateStr($("date").value)) { date = $("date").value; render(); } });
-$("note").addEventListener("change", () => guarded(async () => { const k = sec(); if (rec(k, date) || $("note").value.trim()) await save(k, [...presentSet(k, date)]); }));
+$("note").addEventListener("change", () => { const k = sec(); if (rec(k, date) || $("note").value.trim()) save(k, date, [...presentSet(k, date)], $("note").value); });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target && e.target.id === "newName") add(); });
 const isDateStr = s => /^\d{4}-\d{2}-\d{2}$/.test(s || "");
 function csv(){

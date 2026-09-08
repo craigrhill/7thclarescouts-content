@@ -14,9 +14,16 @@ h1{font-size:1.7rem}h2{font-size:1.25rem}
 p{margin:0 0 .9em}
 a{color:var(--sea-700)}
 .wrap{width:min(920px,100% - 2rem);margin:0 auto}
-.appbar{background:var(--sea-700);color:#fff;padding:.9rem 0 .8rem}
+.appbar{background:var(--sea-700);color:#fff;padding:.9rem 0 .8rem;position:sticky;top:0;z-index:20}
 .appbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:1rem}
 .brand{font-family:var(--serif);font-weight:700;font-size:1.1rem}
+/* The way back into the public app. It sits in the header so it is there
+   before sign-in too, when there are no page pills to carry it. */
+.appbar .back{flex:none;display:inline-flex;align-items:center;gap:.1rem;margin-right:-.35rem;padding:.5em .8em .5em .5em;min-height:40px;box-sizing:border-box;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;text-decoration:none;font-size:.8rem;font-weight:600}
+.appbar .back:hover{background:rgba(255,255,255,.24)}
+.appbar .back svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+footer a{color:var(--sea-700)}
+.warn{color:#B0306A;font-weight:600}
 .brand small{display:block;font-family:var(--sans);font-weight:500;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;opacity:.8}
 .pill{font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;background:var(--gorse);color:var(--ink);padding:.3em .7em;border-radius:999px;white-space:nowrap}
 .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:1rem 1.1rem;margin-bottom:.9rem;border:1px solid rgba(0,0,0,.03)}
