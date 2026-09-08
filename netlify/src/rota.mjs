@@ -37,6 +37,8 @@
 //   POST   ?a=event        {date,title,section?,...,private?}  { events }   secretary, or a lead for their section
 //   POST   ?a=event-update {key,...}                           { events }   secretary, or a lead for their section
 //   POST   ?a=event-remove {key,private?}                      { events }   secretary, or a lead for their section
+//   POST   ?a=county-sync                        { added, changed, gone, followed, repaired }   lead
+//   POST   ?a=county-decide {id,section,decision}  { status }   lead of that section
 //   GET    ?a=board&section=k     (no auth)     { section, updatedAt, rows: [{n, stages}] }
 //   GET    ?a=badges&sections=a,b               { me, boards, canEdit }
 //   POST   ?a=badge-add    {section,name}                      { board }   lead of it
@@ -139,7 +141,7 @@ async function withContentEvents(storeFactory, fn) {
   for (let attempt = 0; ; attempt++) {
     const { doc, sha } = await readContent(storeFactory);
     const out = fn(doc);
-    if (out.error) return out;
+    if (out.error || out.noop) return out;
     doc.events = out.events;
     doc.updatedAt = new Date().toISOString();
     doc.updatedBy = "secretary";
@@ -193,6 +195,10 @@ function fromCounty(ce, section) {
   e.countyId = ce.id;
   return e;
 }
+// Whether the calendar's entries for one county event match what the
+// decisions say they should be. Field order does not matter, only the values.
+const entryKey = (e) => JSON.stringify(Object.keys(e).sort().map((k) => [k, e[k]]));
+const sameEvents = (x, y) => x.length === y.length && x.map(entryKey).sort().join("\u0000") === y.map(entryKey).sort().join("\u0000");
 // What a lead needs to see to decide, plus enough to spot a change.
 const countyStamp = (ce) => JSON.stringify([ce.start, ce.end, ce.name, ce.time, ce.location, ce.description, ce.host, ce.link, (ce.sections || []).slice().sort()]);
 const relevant = (ce, ourSections) => {
@@ -440,22 +446,34 @@ export function createHandler(storeFactory) {
           d.syncedAt = new Date().toISOString();
           return d;
         });
-        // An approved event whose county details moved is updated in place, so
-        // the group calendar follows the county without needing approval again.
-        const following = Object.values(doc.items).filter((it) => it.changed && countyApproved(it, countyTargets(it.event, ourSections)).length);
-        if (following.length) {
-          await withContentEvents(storeFactory, (cdoc) => {
-            let list = Array.isArray(cdoc.events) ? [...cdoc.events] : [];
-            for (const it of following) {
-              list = list.filter((e) => e.countyId !== it.event.id);
-              for (const sk of countyApproved(it, countyTargets(it.event, ourSections))) list.push(fromCounty(it.event, sk));
-            }
-            list.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
-            return { events: list };
-          });
-          await update(store, "county", countyFallback, (d) => { for (const it of following) if (d.items[it.event.id]) delete d.items[it.event.id].changed; return d; });
-        }
-        return json(200, { added, changed, gone, followed: following.length, syncedAt: doc.syncedAt });
+        // Bring the group calendar back in line with the decisions. That
+        // covers an approved event whose county details moved, so the calendar
+        // follows the county without needing approval again, and an entry that
+        // drifted from its decisions any other way, so "Check the county" is a
+        // repair as much as a fetch. Entries carrying a county id we have never
+        // seen are left alone.
+        const want = new Map(Object.entries(doc.items)
+          .map(([id, it]) => [id, countyApproved(it, countyTargets(it.event, ourSections)).map((sk) => fromCounty(it.event, sk))]));
+        const following = Object.entries(doc.items).filter(([id, it]) => it.changed && want.get(id).length);
+        let repaired = 0;
+        await withContentEvents(storeFactory, (cdoc) => {
+          const keep = [], now = new Map();
+          for (const e of (Array.isArray(cdoc.events) ? cdoc.events : [])) {
+            if (e.countyId && want.has(e.countyId)) { const arr = now.get(e.countyId) || []; arr.push(e); now.set(e.countyId, arr); }
+            else keep.push(e);
+          }
+          const stale = new Set([...want.keys()].filter((id) => !sameEvents(now.get(id) || [], want.get(id))));
+          if (!stale.size) return { noop: true };
+          repaired = stale.size;
+          for (const [id, arr] of now) if (!stale.has(id)) keep.push(...arr);
+          for (const id of stale) keep.push(...want.get(id));
+          keep.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
+          return { events: keep };
+        });
+        // The calendar now matches the county, so an approved item no longer
+        // needs its "changed" flag; a pending one keeps it for the lead to see.
+        if (following.length) await update(store, "county", countyFallback, (d) => { for (const [id] of following) if (d.items[id]) delete d.items[id].changed; return d; });
+        return json(200, { added, changed, gone, followed: following.length, repaired, syncedAt: doc.syncedAt });
       }
 
       const b = await body(req);

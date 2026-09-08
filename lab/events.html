@@ -169,9 +169,9 @@ function renderCounty(){
 const countySync = () => guarded(async () => {
   const b = $("countySyncBtn"); b.disabled = true; b.textContent = "Checking…";
   try { const r = await api("POST", "?a=county-sync");
-    const bits = [r.added ? r.added + " new" : "", r.changed ? r.changed + " changed" : "", r.gone ? r.gone + " withdrawn" : ""].filter(Boolean);
+    const bits = [r.added ? r.added + " new" : "", r.changed ? r.changed + " changed" : "", r.gone ? r.gone + " withdrawn" : "", r.repaired ? r.repaired + " put back on the calendar" : ""].filter(Boolean);
     showErr(""); syncNote = bits.length ? "County: " + bits.join(", ") : "County: nothing new";
-    await load();
+    await afterEvents();
   } finally { b.disabled = false; b.textContent = "Check the county"; }
 });
 // Approving writes the event onto the group calendar, so reload that too.

@@ -381,6 +381,41 @@ ok("a private event can be removed", r.j.events.length, 0);
   r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c4", section: "scouts", decision: "reset" } });
   ok("reset puts it back to pending and off the calendar", [r.j.status, (await contentStore.get("content", { type: "json" })).events.some(e => e.countyId === "c4")], ["pending", false]);
 
+  // A decision recorded before this function knew about per-section decisions:
+  // one status for the whole event, and one section-less entry on the calendar.
+  // Reading it as approved for every section is not enough on its own, because
+  // the calendar still carries the old entry, so a sync reconciles it.
+  feed = [...feed, { id: "c5", name: "Legacy Meeting", start: "2030-09-09", sections: ["cubs", "scouts"] }];
+  r = await call("POST", "?a=county-sync", { token: m2 });
+  { const doc = await store.get("county", { type: "json" });
+    doc.items.c5 = { status: "approved", by: "Darren", at: "2026-09-08T00:00:00.000Z", stamp: doc.items.c5.stamp, event: doc.items.c5.event };
+    await store.setJSON("county", doc);
+    const content = await contentStore.get("content", { type: "json" });
+    content.events.push({ date: "2030-09-09", title: "Legacy Meeting", section: "", countyId: "c5" });
+    await contentStore.setJSON("content", content); }
+  { const rows = (await call("GET", "?sections=scouts,cubs", { token: m2 })).j.county.find(x => x.id === "c5").rows;
+    ok("an old whole-event approval reads as a yes from each section it was offered to", rows.map(x => [x.section, x.status, x.by]).sort(), [["cubs", "approved", "Darren"], ["scouts", "approved", "Darren"]]); }
+  r = await call("POST", "?a=county-sync", { token: m2 });
+  ok("and the next sync puts the calendar right", r.j.repaired, 1);
+  { const evs = (await contentStore.get("content", { type: "json" })).events.filter(e => e.countyId === "c5");
+    ok("one event per section that said yes, the section-less one gone", evs.map(e => e.section).sort(), ["cubs", "scouts"]); }
+  r = await call("POST", "?a=county-sync", { token: m2 });
+  ok("a sync with nothing to put right leaves the calendar alone", r.j.repaired, 0);
+  { const before = (await contentStore.get("content", { type: "json" })).updatedAt;
+    await call("POST", "?a=county-sync", { token: m2 });
+    ok("and does not touch updatedAt either", (await contentStore.get("content", { type: "json" })).updatedAt, before); }
+  { const content = await contentStore.get("content", { type: "json" });
+    content.events = content.events.filter(e => e.countyId !== "c5");
+    content.events.push({ date: "2031-01-01", title: "Someone else's county event", countyId: "zz9" });
+    await contentStore.setJSON("content", content);
+    await call("POST", "?a=county-sync", { token: m2 });
+    const evs = (await contentStore.get("content", { type: "json" })).events;
+    ok("an approved event deleted from the calendar by hand comes back", evs.filter(e => e.countyId === "c5").map(e => e.section).sort(), ["cubs", "scouts"]);
+    ok("and an entry from a county event we have never seen is left alone", evs.some(e => e.countyId === "zz9"), true); }
+  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c5", section: "cubs", decision: "decline" } });
+  r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c5", section: "scouts", decision: "decline" } });
+  ok("declining both takes the legacy event off entirely", (await contentStore.get("content", { type: "json" })).events.some(e => e.countyId === "c5"), false);
+
   feedFails = true;
   r = await call("POST", "?a=county-sync", { token: m2 });
   ok("a county feed that is down says so plainly", [r.status, /did not answer/.test(r.j.error)], [502, true]);

@@ -872,7 +872,7 @@ async function withContentEvents(storeFactory, fn) {
   for (let attempt = 0; ; attempt++) {
     const { doc, sha } = await readContent(storeFactory);
     const out = fn(doc);
-    if (out.error) return out;
+    if (out.error || out.noop) return out;
     doc.events = out.events;
     doc.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
     doc.updatedBy = "secretary";
@@ -912,6 +912,8 @@ function fromCounty(ce, section) {
   e.countyId = ce.id;
   return e;
 }
+var entryKey = (e) => JSON.stringify(Object.keys(e).sort().map((k) => [k, e[k]]));
+var sameEvents = (x, y) => x.length === y.length && x.map(entryKey).sort().join("\0") === y.map(entryKey).sort().join("\0");
 var countyStamp = (ce) => JSON.stringify([ce.start, ce.end, ce.name, ce.time, ce.location, ce.description, ce.host, ce.link, (ce.sections || []).slice().sort()]);
 var relevant = (ce, ourSections) => {
   const secs = ce.sections || [];
@@ -1184,23 +1186,31 @@ function createHandler(storeFactory) {
           d.syncedAt = (/* @__PURE__ */ new Date()).toISOString();
           return d;
         });
-        const following = Object.values(doc.items).filter((it) => it.changed && countyApproved(it, countyTargets(it.event, ourSections)).length);
-        if (following.length) {
-          await withContentEvents(storeFactory, (cdoc) => {
-            let list = Array.isArray(cdoc.events) ? [...cdoc.events] : [];
-            for (const it of following) {
-              list = list.filter((e) => e.countyId !== it.event.id);
-              for (const sk of countyApproved(it, countyTargets(it.event, ourSections))) list.push(fromCounty(it.event, sk));
-            }
-            list.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
-            return { events: list };
-          });
-          await update(store, "county", countyFallback, (d) => {
-            for (const it of following) if (d.items[it.event.id]) delete d.items[it.event.id].changed;
-            return d;
-          });
-        }
-        return json(200, { added, changed, gone, followed: following.length, syncedAt: doc.syncedAt });
+        const want = new Map(Object.entries(doc.items).map(([id, it]) => [id, countyApproved(it, countyTargets(it.event, ourSections)).map((sk) => fromCounty(it.event, sk))]));
+        const following = Object.entries(doc.items).filter(([id, it]) => it.changed && want.get(id).length);
+        let repaired = 0;
+        await withContentEvents(storeFactory, (cdoc) => {
+          const keep = [], now = /* @__PURE__ */ new Map();
+          for (const e of Array.isArray(cdoc.events) ? cdoc.events : []) {
+            if (e.countyId && want.has(e.countyId)) {
+              const arr = now.get(e.countyId) || [];
+              arr.push(e);
+              now.set(e.countyId, arr);
+            } else keep.push(e);
+          }
+          const stale = new Set([...want.keys()].filter((id) => !sameEvents(now.get(id) || [], want.get(id))));
+          if (!stale.size) return { noop: true };
+          repaired = stale.size;
+          for (const [id, arr] of now) if (!stale.has(id)) keep.push(...arr);
+          for (const id of stale) keep.push(...want.get(id));
+          keep.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
+          return { events: keep };
+        });
+        if (following.length) await update(store, "county", countyFallback, (d) => {
+          for (const [id] of following) if (d.items[id]) delete d.items[id].changed;
+          return d;
+        });
+        return json(200, { added, changed, gone, followed: following.length, repaired, syncedAt: doc.syncedAt });
       }
       const b = await body(req);
       if (!b) return fail(400, "Body must be JSON.");

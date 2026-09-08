@@ -158,9 +158,14 @@ Roles are flags on a person, and the function enforces them, not the pages:
   asked: the event's sections that are ours, or every section of ours when
   it names none. Items written before this carried one status for the whole
   event; `countyDecisions` reads that as applying to every section it was
-  offered to, so nothing already approved drops off the calendar, and the
-  first decision rewrites that event's calendar entries from the per-section
-  decisions. A county event is rebuilt on every sync, so it cannot be hand
+  offered to, so nothing already approved drops off the calendar. Reading it
+  that way is not enough on its own, because the calendar still holds the old
+  whole-group entry, so every sync reconciles: for each item it compares the
+  calendar's entries against what the decisions ask for and rewrites only the
+  ones that differ, leaving entries for county events it has never seen alone.
+  "Check the county" is therefore the repair as well as the fetch, and a sync
+  with nothing to put right does not write `content.json` at all. A county
+  event is rebuilt on every sync, so it cannot be hand
   edited from a section list; it is marked "county" there and run from the
   County chip. This was on the public `/calendar` page behind a County
   button until it moved here, so the whole event workflow sits in one place.
