@@ -24,6 +24,7 @@
       <div class="row"><input type="text" id="code" placeholder="XXXX-XXXX" autocapitalize="characters" autocomplete="one-time-code" spellcheck="false"><button class="btn primary" onclick="signIn($('code').value, 'gateMsg', load)">Sign in</button></div>
       <p class="msg" id="gateMsg"></p>
     </div>
+    <p class="small muted" id="adminHint" hidden>Signed in to the admin editor on this phone? <button class="btn quiet" onclick="useAdmin(load, 'gateMsg')">Use that instead of a code</button></p>
     <p class="small muted">No code? Ask the group secretary, who keeps the roster.</p>
   </section>
 
@@ -116,11 +117,13 @@ function csv(){
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/csv" })); a.download = `badge-board-${k}.csv`; a.click();
 }
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target && e.target.id === "newName") add(); if (e.key === "Enter" && e.target && e.target.id === "edName" && editing) rename(editing); });
-function signOut(msg){ setToken(null); D = null; $("app").hidden = true; $("gate").hidden = false; $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
+function signOut(msg){ leaveBridge(); setToken(null); D = null; $("app").hidden = true; $("gate").hidden = false; $("adminHint").hidden = !adminPw(); $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
 onUnauthorized = signOut;
 async function boot(){
   C = await loadContent();
+  await bridgeIfAdmin();
   if (token) { try { await load(); return; } catch (e) { if (token) showErr(e.message); } }
+  $("adminHint").hidden = !adminPw();
   $("gate").hidden = false;
 }
 boot();

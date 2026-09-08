@@ -203,6 +203,23 @@ try {
   await go(L2, "attendance.html"); await L2.waitForTimeout(700); await pickSec(L2, "Beavers");
   ok("the secretary sees the helper's record, saved under their name", [await L2.locator("#meetings details").count(), (await L2.locator("#count").innerText()).includes("saved by Board Helper")], [1, true]);
   ok("and may add Scouts from here", await L2.locator("#newName").count(), 1);
+
+  // ---- the admin password signs the leaders' pages in as the secretary ----
+  step = "sign into admin.html";
+  const A = await page(1280, 900); await A.goto(H.replace(/lab\/$/, "admin.html"), { waitUntil: "load" }); await A.waitForTimeout(600);
+  await A.fill("#pw", "local"); await A.locator("#login .btn").click(); await A.waitForSelector("#editor", { state: "visible" });
+  ok("the admin editor links to the leaders' area once signed in", await A.locator("#leadersLink").isVisible(), true);
+  step = "rota via the admin password";
+  await go(A, "rota.html");
+  ok("with the admin password on the device, the rota opens as the secretary with no code typed", [await A.locator("#app").isVisible(), await A.locator("#meName").innerText()], [true, "Lead Test"]);
+  await A.screenshot({ path: ".e2e/rota-via-admin-1280.png" });
+  await go(A, "badges.html");
+  ok("and so does the badge board", await A.locator("#app").isVisible(), true);
+  await A.locator("#app").getByRole("button", { name: "Sign out" }).click(); await A.waitForTimeout(300);
+  await go(A, "attendance.html");
+  ok("signing out there sticks, and the gate offers the admin route back", [await A.locator("#gate").isVisible(), await A.locator("#adminHint").isVisible()], [true, true]);
+  await A.locator("#adminHint button").click(); await A.waitForTimeout(900);
+  ok("one tap brings it back", await A.locator("#app").isVisible(), true);
 } catch (e) { fail++; console.log(`FAIL  suite threw${step ? " at: " + step : ""}:`, e.message.split("\n")[0]);
   for (const p of b.contexts().flatMap((c) => c.pages())) { try { await p.screenshot({ path: `.e2e/threw-${b.contexts().flatMap((c) => c.pages()).indexOf(p)}.png` }); } catch {} } }
 await b.close(); stop();

@@ -24,6 +24,7 @@
       <div class="row"><input type="text" id="code" placeholder="XXXX-XXXX" autocapitalize="characters" autocomplete="one-time-code" spellcheck="false"><button class="btn primary" onclick="signIn($('code').value, 'gateMsg', load)">Sign in</button></div>
       <p class="msg" id="gateMsg"></p>
     </div>
+    <p class="small muted" id="adminHint" hidden>Signed in to the admin editor on this phone? <button class="btn quiet" onclick="useAdmin(load, 'gateMsg')">Use that instead of a code</button></p>
     <p class="small muted">No code? Ask the group secretary, who keeps the roster. Setting this up for the first time? That happens on the <a href="roster.html">roster page</a>.</p>
   </section>
 
@@ -121,11 +122,13 @@ const tick = (k, id, pid, on) => guarded(async () => putSection(k, (await api("P
 const setNeed = (k, id, v) => guarded(async () => putSection(k, (await api("POST", "?a=slot", { section: k, id, need: Number(v) })).section));
 const setOff = (k, id, off) => guarded(async () => putSection(k, (await api("POST", "?a=slot", { section: k, id, off })).section));
 $("req").addEventListener("change", () => guarded(async () => putSection(sec(), (await api("POST", "?a=required", { section: sec(), required: Number($("req").value) })).section)));
-function signOut(msg){ setToken(null); D = null; $("app").hidden = true; $("gate").hidden = false; $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
+function signOut(msg){ leaveBridge(); setToken(null); D = null; $("app").hidden = true; $("gate").hidden = false; $("adminHint").hidden = !adminPw(); $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
 onUnauthorized = signOut;
 async function boot(){
   C = await loadContent();
+  await bridgeIfAdmin();
   if (token) { try { await load(); return; } catch (e) { if (token) showErr(e.message); } }
+  $("adminHint").hidden = !adminPw();
   $("gate").hidden = false;
 }
 boot();

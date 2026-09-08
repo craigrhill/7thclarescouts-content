@@ -14,13 +14,31 @@ async function api(method, q, body, extra = {}) {
   const h = { "Content-Type": "application/json", ...extra }; if (token) h["x-rota-token"] = token;
   const r = await fetch(API + q, { method, headers: h, body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
   const j = await r.json().catch(() => ({ error: "The server gave an unexpected reply." }));
-  if (r.status === 401 && token && q !== "?a=login") { setToken(null); onUnauthorized("Your sign-in has expired or been removed. Sign in again."); throw new Error(j.error || "Please sign in."); }
+  if (r.status === 401 && token && q !== "?a=login" && q !== "?a=admin-login") { setToken(null); onUnauthorized("Your sign-in has expired or been removed. Sign in again."); throw new Error(j.error || "Please sign in."); }
   if (!r.ok) throw new Error(j.error || ("Error " + r.status));
   return j;
 }
 async function loadContent(){
   try { const r = await fetch("/.netlify/functions/content", { cache: "no-store" }); const c = await r.json(); if (!c || !c.settings) throw 0; return c; }
   catch { return { settings: { sections: [{ key: "scouts", name: "Scouts", day: "Thursday", time: "6:00 to 7:30 pm" }] }, events: [] }; }
+}
+// The admin password, which admin.html keeps on the device, signs these
+// pages in as the current secretary without a code. It is tried on every
+// load, so a handover is picked up at once. Signing out here switches it
+// off until admin.html is signed into again, or the gate's button is tapped.
+const PW_KEY = "admin-pw", BRIDGE_OFF = "rota-bridge-off";
+function adminPw(){ try { return localStorage.getItem(PW_KEY) || ""; } catch { return ""; } }
+function bridgeOff(){ try { return !!localStorage.getItem(BRIDGE_OFF); } catch { return false; } }
+async function adminSignIn(){
+  const pw = adminPw(); if (!pw) return false;
+  const r = await api("POST", "?a=admin-login", null, { "x-admin-password": pw });
+  setToken(r.token); try { localStorage.removeItem(BRIDGE_OFF); } catch {} return true;
+}
+async function bridgeIfAdmin(){ if (adminPw() && !bridgeOff()) { try { await adminSignIn(); } catch {} } }
+function leaveBridge(){ try { if (adminPw()) localStorage.setItem(BRIDGE_OFF, "1"); } catch {} }
+async function useAdmin(after, msgId){
+  $(msgId).textContent = ""; $(msgId).className = "msg";
+  try { await adminSignIn(); await after(); } catch (e) { $(msgId).textContent = e.message; $(msgId).className = "msg err"; }
 }
 const roleText = me => [me.secretary && "secretary", me.lead && "section lead"].filter(Boolean).join(", ");
 // One colour per section, from the site's own accent palette. Unknown keys

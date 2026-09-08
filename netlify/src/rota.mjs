@@ -27,6 +27,7 @@
 //   GET    ?sections=a,b                            { me, people, sections }
 //   POST   ?a=bootstrap  x-admin-password  {name}   { person, code }   first secretary
 //   POST   ?a=login                        {code}   { token, me }
+//   POST   ?a=admin-login  x-admin-password          { token, me }   as the secretary
 //   POST   ?a=slot     {section,id,add?,remove?,off?,need?}   { section }
 //   POST   ?a=required {section,required}                     { section }   lead
 //   POST   ?a=person   {name,sections,lead,secretary}         { person, code }   secretary
@@ -307,6 +308,18 @@ export function createHandler(storeFactory) {
           return doc;
         });
         return json(200, { person: pub(person), code });
+      }
+      // The admin password stands in for the secretary's code. A device that
+      // holds it can already create or replace the secretary through
+      // bootstrap, so signing it in as the current secretary adds no power;
+      // it saves a code being typed. admin.html keeps the password on the
+      // device and the leaders' pages use it to sign in on their own.
+      if (req.method === "POST" && a === "admin-login") {
+        if (!adminOk(req)) return fail(401, "Wrong password.");
+        const { doc } = await readDoc(store, "roster", rosterFallback);
+        const person = doc.people.find((p) => p.secretary);
+        if (!person) return fail(409, "No secretary yet. Set one up on the roster page first.");
+        return json(200, { token: issueToken(sec, person.id), me: pub(person) });
       }
       if (req.method === "POST" && a === "login") {
         const b = await body(req); const h = codeHash(sec, b && b.code);

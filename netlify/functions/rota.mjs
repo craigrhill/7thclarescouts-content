@@ -1056,6 +1056,13 @@ function createHandler(storeFactory) {
         });
         return json(200, { person: pub(person), code });
       }
+      if (req.method === "POST" && a === "admin-login") {
+        if (!adminOk(req)) return fail(401, "Wrong password.");
+        const { doc } = await readDoc(store, "roster", rosterFallback);
+        const person = doc.people.find((p) => p.secretary);
+        if (!person) return fail(409, "No secretary yet. Set one up on the roster page first.");
+        return json(200, { token: issueToken(sec, person.id), me: pub(person) });
+      }
       if (req.method === "POST" && a === "login") {
         const b2 = await body(req);
         const h = codeHash(sec, b2 && b2.code);

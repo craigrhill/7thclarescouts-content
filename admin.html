@@ -40,7 +40,7 @@ textarea{min-height:90px;resize:vertical}
 </style>
 </head>
 <body>
-<div class="top"><div class="wrap"><h1 style="margin:0;font-size:1.3rem">7th Clare Scouts · Admin</h1><span><a href="#" id="signOut" onclick="signOut();return false" style="display:none;margin-right:1rem">Sign out</a><a href="index.html">← Open app</a></span></div></div>
+<div class="top"><div class="wrap"><h1 style="margin:0;font-size:1.3rem">7th Clare Scouts · Admin</h1><span><a href="lab/rota.html" id="leadersLink" style="display:none;margin-right:1rem">Leaders' area</a><a href="#" id="signOut" onclick="signOut();return false" style="display:none;margin-right:1rem">Sign out</a><a href="index.html">← Open app</a></span></div></div>
 <div class="wrap"><p class="hint" id="srcNote" style="margin:.6rem 0 0"></p></div>
 <main>
 <div class="wrap">
@@ -212,8 +212,10 @@ async function login(pw, silent){
     LOADED_AT = C.updatedAt || null; delete C.source;
     C.kits = mergeBuiltInKits(C.kits, C.knownKitIds);
     rememberPw(PW);
+    // The leaders' pages sign in with this password too; re-arm that.
+    try { localStorage.removeItem("rota-bridge-off"); } catch {}
     $("login").style.display = "none"; $("editor").style.display = "block";
-    $("signOut").style.display = "inline";
+    $("signOut").style.display = "inline"; $("leadersLink").style.display = "inline";
     $("loginMsg").textContent = ""; $("pw").value = "";
     if (data && data.source) $("srcNote").textContent = data.source === "github" ? "Content is stored in GitHub (Claude can read and edit it directly)." : "Content is stored in Netlify Blobs.";
     renderAll();
@@ -226,8 +228,10 @@ async function login(pw, silent){
 
 function signOut(){
   forgetPw(); PW = ""; C = null; LOADED_AT = null;
+  // A leaders' sign-in minted from this password goes with it.
+  try { localStorage.removeItem("rota-token"); localStorage.removeItem("rota-bridge-off"); } catch {}
   $("editor").style.display = "none"; $("login").style.display = "block";
-  $("signOut").style.display = "none";
+  $("signOut").style.display = "none"; $("leadersLink").style.display = "none";
   $("pw").value = ""; $("loginMsg").textContent = ""; $("loginMsg").className = "msg";
   $("pw").focus();
 }

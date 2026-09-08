@@ -24,6 +24,7 @@
       <div class="row"><input type="text" id="code" placeholder="XXXX-XXXX" autocapitalize="characters" autocomplete="one-time-code" spellcheck="false"><button class="btn primary" onclick="signIn($('code').value, 'gateMsg', load)">Sign in</button></div>
       <p class="msg" id="gateMsg"></p>
     </div>
+    <p class="small muted" id="adminHint" hidden>Signed in to the admin editor on this phone? <button class="btn quiet" onclick="useAdmin(load, 'gateMsg')">Use that instead of a code</button></p>
     <details class="card">
       <summary>First time setting this up?</summary>
       <p class="small muted" style="margin-top:.6rem">The admin password (the one for the leader editor) creates the secretary and gives you a code. Do this once. If you already created yourself as a lead, doing it again with the same name makes you secretary and gives you a new code.</p>
@@ -196,11 +197,13 @@ async function bootstrap(){
   try { const r = await api("POST", "?a=bootstrap", { name: $("bootName").value }, { "x-admin-password": $("bootPw").value }); $("bootPw").value = ""; await signIn(r.code, "bootMsg", load); }
   catch (e) { $("bootMsg").textContent = e.message; $("bootMsg").className = "msg err"; }
 }
-function signOut(msg){ setToken(null); D = null; editing = null; $("app").hidden = true; $("gate").hidden = false; $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
+function signOut(msg){ leaveBridge(); setToken(null); D = null; editing = null; $("app").hidden = true; $("gate").hidden = false; $("adminHint").hidden = !adminPw(); $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
 onUnauthorized = signOut;
 async function boot(){
   C = await loadContent();
+  await bridgeIfAdmin();
   if (token) { try { await load(); return; } catch (e) { if (token) showErr(e.message); } }
+  $("adminHint").hidden = !adminPw();
   $("gate").hidden = false;
 }
 boot();

@@ -28,6 +28,7 @@ async function call(method, q, { token, admin, body: b } = {}) {
 
 let r = await call("OPTIONS", "");                         ok("OPTIONS is 204", r.status, 204);
 r = await call("GET", "?sections=scouts");                  ok("GET without token is 401", r.status, 401);
+r = await call("POST", "?a=admin-login", { admin: "admin-for-test" }); ok("admin-login before a secretary exists says so", [r.status, /No secretary yet/.test(r.j.error)], [409, true]);
 r = await call("POST", "?a=bootstrap", { admin: "wrong", body: { name: "Lead One" } }); ok("bootstrap with wrong admin password is 401", r.status, 401);
 r = await call("POST", "?a=bootstrap", { admin: "admin-for-test", body: { name: "Lead One" } });
 ok("bootstrap creates a secretary who is also a lead", [r.status, r.j.person.secretary, r.j.person.lead, r.j.person.name], [200, true, true, "Lead One"]);
@@ -37,6 +38,10 @@ r = await call("POST", "?a=login", { body: { code: "AAAA-AAAA" } }); ok("login w
 r = await call("POST", "?a=login", { body: { code: leadCode.toLowerCase().replace("-", " ") } });
 ok("login tolerates case and separators", [r.status, r.j.me.secretary], [200, true]);
 const lead = r.j.token, leadId = r.j.me.id;
+r = await call("POST", "?a=admin-login", { admin: "wrong" });          ok("admin-login with a wrong password is 401", r.status, 401);
+r = await call("POST", "?a=admin-login", { admin: "admin-for-test" });
+ok("the admin password signs in as the secretary, no code needed", [r.status, r.j.me.id, r.j.me.secretary], [200, leadId, true]);
+r = await call("GET", "?sections=scouts", { token: r.j.token });      ok("and that token works like any other", r.status, 200);
 r = await call("GET", "?sections=scouts,beavers", { token: lead });
 ok("GET returns me, people and requested sections with defaults", [r.status, r.j.people.length, r.j.sections.scouts.required, Object.keys(r.j.sections).sort()], [200, 1, 2, ["beavers", "scouts"]]);
 r = await call("GET", "?sections=scouts", { token: lead.slice(0, -2) + "zz" }); ok("tampered token is 401", r.status, 401);

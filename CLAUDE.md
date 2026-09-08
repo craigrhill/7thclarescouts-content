@@ -249,7 +249,14 @@ in-memory store, with admin password `local` unless `ADMIN_PASSWORD` is set.
   way to hand a device on. Only a 401 clears the stored copy: being offline
   leaves it alone and says so, or a leader with no signal would be logged out.
   A save that hits 401 asks for the password inline rather than signing out,
-  which would throw away unsaved edits.
+  which would throw away unsaved edits. The same stored password also signs
+  the leaders' pages in: each `lab/` page's boot tries `?a=admin-login` with
+  it, which the rota function answers with a token for the current secretary
+  (a device holding the admin password can already create or replace the
+  secretary via bootstrap, so this adds no power). "Sign out" on a leaders'
+  page sets `rota-bridge-off` so it stays out; the gate then offers a button
+  to use the admin sign-in again, and signing into admin re-arms it. Admin's
+  own "Sign out" drops the leaders' token too.
 * **Two pages can carry one picture, through the same card.** `imageUrl` with
   an optional `imageCaption` on a kit list, or on `badges`, renders a
   `.card.figure`: tappable into the same lightbox the gallery uses, with a
