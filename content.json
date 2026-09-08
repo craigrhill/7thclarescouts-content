@@ -122,6 +122,14 @@
   ],
   "events": [
     {
+      "date": "2026-09-09",
+      "title": "County Planning Meeting",
+      "location": "Ennis Scout Hall",
+      "time": "7PM",
+      "details": "NOTE:  Scout Section is having their planning meeting Thursday 3rd Sept 7pm.",
+      "countyId": "ev_mjzrmo5a"
+    },
+    {
       "date": "2026-09-25",
       "endDate": "2026-09-27",
       "title": "Sionnach Adventure, Maamturks",
@@ -1510,7 +1518,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-08T04:14:27.719Z",
+  "updatedAt": "2026-09-08T04:14:34.757Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
