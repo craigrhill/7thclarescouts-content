@@ -88,6 +88,7 @@ warning fires correctly for leaders.
     tools/test-ics.mjs              the subscription feed's iCalendar output
     tools/test-kits.mjs             drift guard: mergeBuiltInKits in both files
     tools/test-times.mjs            drift guard: eventWhen in the three pages
+    tools/test-sw.mjs               the service worker's caching rules
     tools/test-merge.mjs            drift guard: mergeContent in both files
     tools/e2e-rota.mjs              browser suite for the leaders' area
     tools/e2e-photos.mjs            browser suite for uploading pictures,
@@ -369,7 +370,13 @@ link in the footer.
   does, and even that cannot un-share a copy someone already has.
   `sw.js` keeps `/photo/*` in a cache of its own, like the fonts, rather than
   the shell's: the name is the hash, so a copy is good for ever, and a VERSION
-  bump should not throw away every photo the phone has already fetched.
+  bump should not throw away every photo the phone has already fetched. It
+  stores a response only when it really is an image. While the pretty path was
+  misrouted those URLs answered 200 with the site's JSON, and a cache-first
+  store went on serving that after the route was fixed, so every photo stayed
+  blank on any device that had looked once. Renaming the store (`photos-2`)
+  threw the poisoned copies away, since a store not in the keep list is deleted
+  on activate. `tools/test-sw.mjs` pins that and the other caching rules.
 * **The stand-in store holds bytes.** `memoryStore` in `netlify/src/rota.mjs`
   is the double behind both offline harnesses and `npm run serve`, and the
   content function keeps photos in a store of that shape, so it holds Buffers

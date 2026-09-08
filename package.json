@@ -6,7 +6,7 @@
     "build:function": "esbuild netlify/src/content.mjs netlify/src/rota.mjs --bundle --platform=node --format=esm --outdir=netlify/functions --out-extension:.js=.mjs --log-level=warning",
     "test:function": "node tools/test-function.mjs netlify/functions/content.mjs && node tools/test-ics.mjs && node tools/test-photos.mjs && node tools/test-rota.mjs",
     "serve": "node tools/serve.mjs",
-    "test": "npm run test:function && node tools/test-kits.mjs && node tools/test-merge.mjs && node tools/test-times.mjs",
+    "test": "npm run test:function && node tools/test-kits.mjs && node tools/test-merge.mjs && node tools/test-times.mjs && node tools/test-sw.mjs",
     "e2e": "node tools/e2e-rota.mjs && node tools/e2e-photos.mjs",
     "e2e:photos": "node tools/e2e-photos.mjs"
   },

@@ -1,7 +1,7 @@
 // 7th Clare Scouts service worker: offline shell + last-known content
-const VERSION = "v0_37";
+const VERSION = "v0_38";
 const SHELL = ["./", "./index.html", "./calendar.html", "./defaults.js", "./kit-defaults.js", "./logo.png", "./icon-192.png", "./icon-512.png", "./manifest.webmanifest", "./docs/Sionnach_Tips.pdf"];
-const SHELL_CACHE = "shell-" + VERSION, DATA_CACHE = "data-" + VERSION, FONT_CACHE = "fonts", PHOTO_CACHE = "photos";
+const SHELL_CACHE = "shell-" + VERSION, DATA_CACHE = "data-" + VERSION, FONT_CACHE = "fonts", PHOTO_CACHE = "photos-2";
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(SHELL_CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -38,10 +38,15 @@ self.addEventListener("fetch", e => {
   // release empties: a version bump should not throw away every photo the phone
   // has already downloaded.
   if (url.origin === location.origin && url.pathname.startsWith("/photo/")) {
-    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => {
-      if (res.ok) { const copy = res.clone(); caches.open(PHOTO_CACHE).then(c => c.put(e.request, copy)); }
+    e.respondWith(caches.open(PHOTO_CACHE).then(c => c.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+      // Only ever keep an actual picture. While the pretty path was broken
+      // these answered 200 with the site's JSON, and a cache-first store went
+      // on serving that after the route was fixed, so every photo stayed blank
+      // until the cache was thrown away. Checking the type makes that
+      // impossible rather than merely unlikely.
+      if (res.ok && (res.headers.get("content-type") || "").startsWith("image/")) c.put(e.request, res.clone());
       return res;
-    })));
+    }))));
     return;
   }
   // lab/ is for experiments and is deliberately not part of the app: never
