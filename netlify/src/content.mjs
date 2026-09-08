@@ -161,8 +161,13 @@ export default async (req) => {
       return json(500, { error: String(e.message || e) });
     }
   }
-  if (req.method === "GET" && new URL(req.url).searchParams.get("photo")) {
-    const id = new URL(req.url).searchParams.get("photo");
+  // The pretty path and the query both reach here: /photo/<id> is a rewrite,
+  // and a rewrite that arrives with the path but not the query is still a
+  // request for that photo, so read the name from either.
+  const photoAsked = (() => { const u = new URL(req.url);
+    return u.searchParams.get("photo") || (u.pathname.match(/\/photo\/([^/]+)$/) || [])[1] || ""; })();
+  if (req.method === "GET" && photoAsked) {
+    const id = photoAsked;
     if (!PHOTO_ID.test(id)) return json(400, { error: "Not a photo name." });
     try {
       const got = await stores(PHOTO_STORE).getWithMetadata(id, { type: "arrayBuffer" });

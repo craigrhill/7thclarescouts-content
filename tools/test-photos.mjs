@@ -42,6 +42,8 @@ ok("the same photo again is the same file, not a second copy", [r.body.id, mem.s
 r = await call("?photo=" + id);
 ok("anyone can fetch it, no password", [r.status, r.headers.get("content-type"), Buffer.from(r.body).equals(jpeg)], [200, "image/jpeg", true]);
 ok("and it is cached forever, because the name is the hash", r.headers.get("cache-control"), "public, max-age=31536000, immutable");
+r = await handler(new Request("https://example.test/photo/" + id)).then(async (x) => ({ status: x.status, headers: x.headers, body: Buffer.from(await x.arrayBuffer()) }));
+ok("the pretty path works even if the rewrite drops the query", [r.status, r.headers.get("content-type"), Buffer.from(r.body).equals(jpeg)], [200, "image/jpeg", true]);
 r = await call("?photo=../../etc/passwd");
 ok("a name that is not a photo name is refused", r.status, 400);
 r = await call("?photo=" + "0".repeat(32) + ".jpg");
