@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // Local preview. Serves the repo and stands in for the Netlify functions:
 // the rota function runs for real from its source against in-memory stores
-// that last for the life of the process. The group content is loaded from
+// that last for the life of the process, and so do photo uploads. The group content is loaded from
 // content.json into one of those stores at startup and served from there, so
-// calendar events the rota writes show up on the content endpoint just as they
-// would live. The admin POST path is not emulated, and content.json on disk is
-// never written. The admin password
+// calendar events the rota writes, and anything saved from admin, show up on
+// the content endpoint just as they would live. content.json on disk is
+// never written, and neither is anything admin saves. The admin password
 // for bootstrapping the rota locally is "local" unless ADMIN_PASSWORD is set.
 //
 //   node tools/serve.mjs [port] [content-file]
@@ -13,7 +13,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, normalize, join } from "node:path";
 import { createHandler, memoryStore } from "../netlify/src/rota.mjs";
-import { toICS } from "../netlify/src/content.mjs";
+import contentFn, { toICS, useStore } from "../netlify/src/content.mjs";
 
 const port = Number(process.argv[2]) || 8899;
 const contentFile = process.argv[3] || "content.json";
@@ -22,6 +22,10 @@ process.env.ADMIN_PASSWORD ||= "local";
 const stores = {};
 const store = (name) => (stores[name] ||= memoryStore());
 const rota = createHandler(store);
+// Photo uploads go through the real content function, with the same in-memory
+// stores behind it, so the preview and the browser suite exercise the code that
+// is deployed rather than a stand-in of it.
+useStore(store);
 // Seed the group content so the rota can read and write its events.
 try { await store("site-content").setJSON("content", JSON.parse(await readFile(contentFile, "utf8"))); }
 catch (e) { console.warn("could not seed content from " + contentFile + ": " + e.message); }
@@ -42,7 +46,35 @@ createServer(async (req, res) => {
     res.writeHead(out.status, Object.fromEntries(out.headers));
     return res.end(Buffer.from(await out.arrayBuffer()));
   }
+  // /photo/<id> is a Netlify redirect in production; do the same here.
+  if (url.pathname.startsWith("/photo/")) url.searchParams.set("photo", url.pathname.slice(7));
+  if (url.searchParams.has("photo") || url.searchParams.has("photos")) {
+    const chunks = []; for await (const c of req) chunks.push(c);
+    const init = { method: req.method, headers: req.headers };
+    if (chunks.length) init.body = Buffer.concat(chunks);
+    const out = await contentFn(new Request(url, init));
+    res.writeHead(out.status, Object.fromEntries(out.headers));
+    return res.end(Buffer.from(await out.arrayBuffer()));
+  }
   if (url.pathname.includes("/.netlify/functions/content")) {
+    // Admin saves into the in-memory store, so an edit shows in the app while
+    // previewing. content.json on disk is never written.
+    if (req.method === "POST") {
+      const chunks = []; for await (const c of req) chunks.push(c);
+      if (req.headers["x-admin-password"] !== process.env.ADMIN_PASSWORD) { res.writeHead(401, { "Content-Type": "application/json" }); return res.end(JSON.stringify({ error: "Wrong password." })); }
+      if (url.searchParams.get("check")) { res.writeHead(200, { "Content-Type": "application/json" }); return res.end(JSON.stringify({ ok: true, source: "local" })); }
+      try {
+        const doc = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+        delete doc.source;
+        doc.updatedAt = new Date().toISOString(); doc.updatedBy = "admin";
+        await store("site-content").setJSON("content", doc);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ ok: true, updatedAt: doc.updatedAt, source: "local" }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: String(e.message || e) }));
+      }
+    }
     try {
       const body = (await store("site-content").get("content", { type: "json" })) || JSON.parse(await readFile(contentFile, "utf8"));
       // The subscription feed, so the preview answers ?ics=1 as the deployed

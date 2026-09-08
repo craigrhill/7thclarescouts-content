@@ -809,6 +809,10 @@ var getStore = (input, options) => {
 };
 
 // netlify/src/content.mjs
+var stores = (name) => getStore(name);
+function useStore(fn) {
+  stores = fn;
+}
 var BUILT_IN_HASH = "e5aea01f131ba1b26c0c87bb21822cc93e73039466bf15f6cae3a1b77ac1235d";
 var STORE = "site-content";
 var KEY = "content";
@@ -849,6 +853,12 @@ async function ghWrite(g, data, message) {
   const r = await fetch(g.url, { method: "PUT", headers: { ...ghHeaders(g.token), "Content-Type": "application/json" }, body: JSON.stringify(body) });
   if (!r.ok) throw new Error(`GitHub write failed: ${r.status} ${await r.text()}`);
 }
+var PHOTO_STORE = "photos";
+var PHOTO_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+var MAX_PHOTO = 5 * 1024 * 1024;
+var PHOTO_ID = /^[0-9a-f]{32}\.(jpg|png|webp)$/;
+var photoId = (bytes, ext) => createHash("sha256").update(bytes).digest("hex").slice(0, 32) + "." + ext;
+var PRUNE_GRACE = 60 * 60 * 1e3;
 var icsEsc = (s) => String(s ?? "").replace(/([\\,;])/g, "\\$1").replace(/\r?\n/g, "\\n");
 var icsDay = (d) => String(d).replace(/-/g, "");
 var dayAfter = (d) => {
@@ -934,7 +944,7 @@ var content_default = async (req) => {
       const want = (url.searchParams.get("section") || "").trim().toLowerCase();
       let data = null;
       if (g) data = (await ghRead(g)).data;
-      if (!data) data = await getStore(STORE).get(KEY, { type: "json" });
+      if (!data) data = await stores(STORE).get(KEY, { type: "json" });
       if (!data) return json(404, { error: "No calendar yet." });
       const all = Array.isArray(data.events) ? data.events : [];
       const list = want ? all.filter((e) => !e.section || e.section === want) : all;
@@ -948,13 +958,29 @@ var content_default = async (req) => {
       return json(500, { error: String(e.message || e) });
     }
   }
+  if (req.method === "GET" && new URL(req.url).searchParams.get("photo")) {
+    const id = new URL(req.url).searchParams.get("photo");
+    if (!PHOTO_ID.test(id)) return json(400, { error: "Not a photo name." });
+    try {
+      const got = await stores(PHOTO_STORE).getWithMetadata(id, { type: "arrayBuffer" });
+      if (!got || !got.data) return json(404, { error: "No such photo." });
+      return new Response(got.data, { status: 200, headers: {
+        "Content-Type": got.metadata && got.metadata.type || "image/jpeg",
+        // The name is the hash of the bytes, so this can never go stale.
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Access-Control-Allow-Origin": "*"
+      } });
+    } catch (e) {
+      return json(500, { error: String(e.message || e) });
+    }
+  }
   if (req.method === "GET") {
     try {
       if (g) {
         const { data: data2 } = await ghRead(g);
         if (data2) return json(200, { ...data2, source: "github" });
       }
-      const data = await getStore(STORE).get(KEY, { type: "json" });
+      const data = await stores(STORE).get(KEY, { type: "json" });
       return json(200, data ? { ...data, source: "blobs" } : { empty: true, source: g ? "github" : "blobs" });
     } catch (e) {
       return json(500, { error: String(e.message || e) });
@@ -967,6 +993,57 @@ var content_default = async (req) => {
     if (!ok) return json(401, { error: "Wrong password." });
     const url = new URL(req.url);
     if (url.searchParams.get("check")) return json(200, { ok: true, source: g ? "github" : "blobs" });
+    if (url.searchParams.get("photo")) {
+      const type = (req.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+      const ext = PHOTO_TYPES[type];
+      if (!ext) return json(415, { error: "A photo must be JPEG, PNG or WebP." });
+      const bytes = new Uint8Array(await req.arrayBuffer());
+      if (!bytes.length) return json(400, { error: "That upload was empty." });
+      if (bytes.length > MAX_PHOTO) return json(413, { error: "That photo is too big, even after resizing." });
+      const id = photoId(bytes, ext);
+      try {
+        await stores(PHOTO_STORE).set(id, bytes, { metadata: { type, size: bytes.length, at: (/* @__PURE__ */ new Date()).toISOString() } });
+        return json(200, { id, url: "/photo/" + id, size: bytes.length });
+      } catch (e) {
+        return json(500, { error: String(e.message || e) });
+      }
+    }
+    const photos = url.searchParams.get("photos");
+    if (photos === "list" || photos === "prune") {
+      try {
+        const store = stores(PHOTO_STORE);
+        const { blobs } = await store.list();
+        const keys = (blobs || []).map((b) => b.key).filter((k) => PHOTO_ID.test(k));
+        if (photos === "list") {
+          const out = [];
+          for (const key of keys) {
+            const m = await store.getMetadata(key);
+            out.push({ id: key, size: m && m.metadata && m.metadata.size || 0, at: m && m.metadata && m.metadata.at || null });
+          }
+          return json(200, { photos: out });
+        }
+        let keep;
+        try {
+          keep = (await req.json()).keep;
+        } catch {
+          keep = null;
+        }
+        if (!Array.isArray(keep)) return json(400, { error: "Send the list of photos to keep." });
+        const kept = new Set(keep.map((k) => String(k).split("/").pop()));
+        const removed = [];
+        for (const key of keys) {
+          if (kept.has(key)) continue;
+          const m = await store.getMetadata(key);
+          const at = m && m.metadata && m.metadata.at ? Date.parse(m.metadata.at) : 0;
+          if (at && Date.now() - at < PRUNE_GRACE) continue;
+          await store.delete(key);
+          removed.push(key);
+        }
+        return json(200, { removed });
+      } catch (e) {
+        return json(500, { error: String(e.message || e) });
+      }
+    }
     let body;
     try {
       body = await req.json();
@@ -979,7 +1056,7 @@ var content_default = async (req) => {
     body.updatedBy = "admin";
     try {
       if (g) await ghWrite(g, body, `Admin save ${body.updatedAt}`);
-      else await getStore(STORE).setJSON(KEY, body);
+      else await stores(STORE).setJSON(KEY, body);
       return json(200, { ok: true, updatedAt: body.updatedAt, source: g ? "github" : "blobs" });
     } catch (e) {
       return json(500, { error: String(e.message || e) });
@@ -989,5 +1066,6 @@ var content_default = async (req) => {
 };
 export {
   content_default as default,
-  toICS
+  toICS,
+  useStore
 };

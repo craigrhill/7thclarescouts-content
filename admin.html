@@ -24,6 +24,7 @@ textarea{min-height:90px;resize:vertical}
 .btn{display:inline-flex;align-items:center;gap:.4em;padding:.6em 1.1em;border-radius:999px;border:0;font:inherit;font-weight:600;cursor:pointer;background:var(--sea-700);color:#fff}
 .btn.secondary{background:var(--stone-100);color:var(--ink)}
 .btn.danger{background:transparent;color:var(--cranesbill);border:1px solid var(--cranesbill)}
+.upl{cursor:pointer}
 .btn.save{background:var(--cranesbill);font-size:1.05rem;padding:.8em 1.5em}
 .item{border:1px solid var(--stone-200);border-radius:10px;padding:1rem;margin:.8rem 0;background:var(--stone-50)}
 .item .actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.6rem}
@@ -100,9 +101,19 @@ textarea{min-height:90px;resize:vertical}
   </div>
 
   <div class="pane" id="pane-photos">
-    <div class="card" style="border-top-color:var(--gorse)"><h2>Before you add photos</h2><p class="hint">The site is public, so anything here can be seen, saved and cached by anyone. Only add photos you have the parents' permission to publish, and avoid naming young people in captions. Removing a photo later takes it off the site but cannot un-share a copy someone already has.</p></div>
-    <div class="card"><h2>Photos</h2><p class="hint">Paste an image link, or the file name if the photo is in the site itself (for example <code>photos/camp.jpg</code>). Give it a section to have it show on that section's page as well as in the gallery; leave the section blank for a group photo that shows in the gallery only.</p>
-      <div id="photoList"></div><button class="btn secondary" onclick="addPhoto()">+ Add photo</button></div>
+    <div class="card" style="border-top-color:var(--gorse)"><h2>Before you add photos</h2><p class="hint">The site is public, so anything here can be seen, saved and cached by anyone. Only add photos you have the parents' permission to publish, and avoid naming young people in captions. An uploaded photo is reachable at its own link from the moment it goes up, before you press Save. Removing a photo from this list takes it off the site; the file itself goes when you tidy up below, and neither can un-share a copy someone already has.</p></div>
+    <div class="card"><h2>Add photos from this device</h2>
+      <p class="hint">Pick as many as you like: from a camp, an outing, a meeting. They are shrunk here before they are sent, so a full size photo goes up as a few hundred kilobytes and the original stays on your phone. Give them an album name and they show as one set in the gallery, and open as a slideshow.</p>
+      <div class="row">
+        <div><label>Album (optional)</label><input id="upAlbum" list="albumNames" placeholder="Autumn camp 2026"><datalist id="albumNames"></datalist></div>
+        <div><label>Section</label><select id="upSection"></select></div>
+      </div>
+      <label class="btn primary upl" style="margin-top:.6rem">Choose photos<input type="file" id="upFiles" accept="image/*" multiple hidden onchange="addFiles(this)"></label>
+      <p class="hint" id="upMsg"></p></div>
+    <div class="card"><h2>Photos</h2><p class="hint">Uploaded ones are already here. You can also paste a link, or the file name if the picture is in the site itself (for example <code>photos/camp.jpg</code>). Give a photo a section to have it show on that section's page as well as in the gallery; leave the section blank for a group photo that shows in the gallery only.</p>
+      <div id="photoList"></div>
+      <div class="row" style="margin-top:.6rem"><button class="btn secondary" onclick="addPhoto()">+ Add photo by link</button><button class="btn secondary" onclick="tidyPhotos()">Tidy up unused files</button></div>
+      <p class="hint" id="tidyMsg">Tidying deletes uploaded files that nothing on the site points at any more. Anything uploaded in the last hour is left alone.</p></div>
   </div>
 
   <div class="pane" id="pane-badges">
@@ -113,6 +124,7 @@ textarea{min-height:90px;resize:vertical}
       <label>Note under the positions</label><textarea id="b_note"></textarea>
       <div class="row">
         <div><label>Picture (optional)</label><input id="b_imageUrl" placeholder="photos/uniform-badge-placement.jpg"></div>
+        <div><label>&nbsp;</label><span id="b_upload"></span></div>
         <div><label>Picture heading</label><input id="b_imageCaption" placeholder="On the full uniform shirt"></div>
       </div>
       <div id="b_preview"></div>
@@ -150,9 +162,9 @@ textarea{min-height:90px;resize:vertical}
     <div class="card"><h2>Social media</h2><p class="hint">Shown on the Contact page and at the bottom of More. Add a row per account: Facebook, Instagram, TikTok, YouTube, WhatsApp, X, or any other link.</p>
       <div id="socialList"></div><button class="btn secondary" onclick="addSocial()">+ Add link</button></div>
     <div class="card"><h2>Images</h2><p class="hint">Paste image URLs (e.g. from a photo hosted on the site itself: upload the file into the zip and use its name, like <code>photos/group.jpg</code>).</p>
-      <label>Logo</label><input id="s_logoUrl" placeholder="logo.png">
-      <label>About photo</label><input id="s_aboutPhotoUrl" placeholder="photos/group.jpg">
-      <label>Join photo</label><input id="s_joinPhotoUrl" placeholder="photos/camp.jpg">
+      <label>Logo</label><div class="row"><input id="s_logoUrl" placeholder="logo.png"><span id="s_logoUrl_up"></span></div>
+      <label>About photo</label><div class="row"><input id="s_aboutPhotoUrl" placeholder="photos/group.jpg"><span id="s_aboutPhotoUrl_up"></span></div>
+      <label>Join photo</label><div class="row"><input id="s_joinPhotoUrl" placeholder="photos/camp.jpg"><span id="s_joinPhotoUrl_up"></span></div>
     </div>
     <div class="card"><h2>Venue maps</h2><p class="hint">Each venue gets a small map. "Search text" is what Google Maps is asked to show; "Directions link" is optional (a maps.app.goo.gl share link works).</p><div id="venueMapList"></div></div>
     <div class="card" style="border-top-color:var(--gorse)"><h2>Reset</h2><p class="hint">Reload the built-in default content into the editor (does not save until you press Save).</p><button class="btn danger" onclick="resetDefaults()">Load defaults</button></div>
@@ -276,6 +288,74 @@ function renderSocial(){
 }
 function addSocial(){ migrateSocial(); C.settings.social.push({name:"facebook", url:""}); renderSocial(); }
 
+/* ---- pictures ----
+   Photos are shrunk here, in the browser, before they are sent. A picture off a
+   phone is four or five megabytes and twelve megapixels; the site never shows
+   one wider than about 1600, and a gallery tile is a few hundred. Shrinking
+   first saves the leader's data as well as the parents', and the original never
+   leaves the phone. A second, smaller copy is made for the tiles, so a gallery
+   of forty photos is not forty full sized ones.
+   A logo keeps PNG, and its transparency with it; a photograph becomes a JPEG,
+   which is several times smaller for the same picture. */
+const PHOTO_LONG = 1600, THUMB_LONG = 480, LOGO_LONG = 600;
+async function shrink(file, long, type, quality, budget = 400 * 1024){
+  let bmp;
+  // "from-image" turns a photo the right way up from its own EXIF orientation.
+  try { bmp = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+  catch { bmp = await createImageBitmap(file); }
+  const scale = Math.min(1, long / Math.max(bmp.width, bmp.height));
+  const w = Math.max(1, Math.round(bmp.width * scale)), h = Math.max(1, Math.round(bmp.height * scale));
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const ctx = c.getContext("2d");
+  // JPEG has no transparency, so anything see-through would come out black.
+  if (type === "image/jpeg") { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h); }
+  ctx.drawImage(bmp, 0, 0, w, h);
+  if (bmp.close) bmp.close();
+  let blob = await new Promise(r => c.toBlob(r, type, quality));
+  if (!blob) throw new Error("This browser could not resize that picture.");
+  // A very detailed picture is still large at this quality, so step the quality
+  // down until it is a sensible thing to send from a phone. JPEG only: a PNG
+  // ignores the quality setting.
+  for (let q = quality - 0.12; blob.size > budget && q >= 0.5 && type === "image/jpeg"; q -= 0.12) {
+    const smaller = await new Promise(r => c.toBlob(r, type, q));
+    if (!smaller || smaller.size >= blob.size) break;
+    blob = smaller;
+  }
+  return { blob, w, h };
+}
+async function sendPhoto(blob){
+  const r = await fetch(API + "?photo=1", { method: "POST", headers: { "x-admin-password": PW, "Content-Type": blob.type }, body: blob });
+  let j = {}; try { j = await r.json(); } catch {}
+  if (!r.ok) throw new Error(j.error || ("The upload failed (" + r.status + ")."));
+  return j.url;
+}
+async function uploadImage(file, kind){
+  if (!/^image\//.test(file.type || "")) throw new Error(`"${file.name}" is not a picture.`);
+  const png = kind === "logo" && file.type === "image/png";
+  const big = await shrink(file, kind === "logo" ? LOGO_LONG : PHOTO_LONG, png ? "image/png" : "image/jpeg", 0.82);
+  const out = { url: await sendPhoto(big.blob), w: big.w, h: big.h };
+  if (kind === "photo") out.thumb = await sendPhoto((await shrink(file, THUMB_LONG, "image/jpeg", 0.72, 90 * 1024)).blob);
+  return out;
+}
+/* One Upload button, wherever a picture can go. The path is written by the
+   same code that writes the field beside it, never typed by anyone, so it is
+   set the same way the text fields set theirs. */
+function imgUpload(path, kind, after){
+  return `<label class="btn secondary upl">Upload<input type="file" accept="image/*" hidden onchange="pickOne(this,'${kind}','${path}','${after}')"></label>`;
+}
+async function pickOne(input, kind, path, after){
+  const file = input.files && input.files[0]; input.value = "";
+  if (!file) return;
+  const label = input.parentNode, was = label.firstChild.nodeValue;
+  label.firstChild.nodeValue = "Uploading…";
+  try {
+    const r = await uploadImage(file, kind);
+    new Function("v", path + " = v")(r.url);
+    if (after && window[after]) window[after]();
+  } catch (e) { alert(e.message); }
+  finally { label.firstChild.nodeValue = was; }
+}
+
 // ---- Photos ----
 function renderPhotos(){
   C.gallery = C.gallery || [];
@@ -283,12 +363,57 @@ function renderPhotos(){
   $("photoList").innerHTML = C.gallery.map((x,i) => `<div class="item"><div class="row">
     <div><label>Image link</label><input value="${esc(x.url||"")}" oninput="C.gallery[${i}].url=this.value" placeholder="photos/camp.jpg"></div>
     <div><label>Caption (optional)</label><input value="${esc(x.caption||"")}" oninput="C.gallery[${i}].caption=this.value" placeholder="Autumn hike on Black Head"></div>
+    <div><label>Album (optional)</label><input value="${esc(x.album||"")}" list="albumNames" oninput="C.gallery[${i}].album=this.value" placeholder="Autumn camp 2026"></div>
     <div><label>Section</label><select onchange="C.gallery[${i}].section=this.value"><option value=""${x.section?"":" selected"}>Group (gallery only)</option>${secs.map(sx => `<option value="${esc(sx.key)}"${x.section===sx.key?" selected":""}>${esc(sx.name)}</option>`).join("")}</select></div></div>
-    ${x.url?`<img src="${esc(x.url)}" alt="" style="max-height:120px;width:auto;border-radius:8px;margin-top:.6rem">`:""}
-    <div class="actions"><button class="btn danger" onclick="C.gallery.splice(${i},1);renderPhotos()">Delete</button></div></div>`).join("")
+    ${x.url?`<img src="${esc(x.thumb||x.url)}" alt="" style="max-height:120px;width:auto;border-radius:8px;margin-top:.6rem">`:""}
+    <div class="actions"><label class="btn secondary upl">Replace<input type="file" accept="image/*" hidden onchange="replacePhoto(this,${i})"></label><button class="btn danger" onclick="C.gallery.splice(${i},1);renderPhotos()">Delete</button></div></div>`).join("")
     || `<p class="hint">No photos yet.</p>`;
+  const albums = [...new Set(C.gallery.map(x => (x.album||"").trim()).filter(Boolean))];
+  $("albumNames").innerHTML = albums.map(a => `<option value="${esc(a)}"></option>`).join("");
+  $("upSection").innerHTML = `<option value="">Group (gallery only)</option>` + secs.map(sx => `<option value="${esc(sx.key)}">${esc(sx.name)}</option>`).join("");
 }
-function addPhoto(){ C.gallery = C.gallery || []; C.gallery.push({url:"", caption:"", section:""}); renderPhotos(); }
+function addPhoto(){ C.gallery = C.gallery || []; C.gallery.push({url:"", caption:"", section:"", album:""}); renderPhotos(); }
+// Replacing a photo replaces its tile copy and its size with it, so a row
+// never ends up showing one picture as the tile and another full screen.
+async function replacePhoto(input, i){
+  const file = input.files && input.files[0]; input.value = "";
+  if (!file) return;
+  const label = input.parentNode, was = label.firstChild.nodeValue;
+  label.firstChild.nodeValue = "Uploading…";
+  try { const r = await uploadImage(file, "photo"); Object.assign(C.gallery[i], { url: r.url, thumb: r.thumb, w: r.w, h: r.h }); renderPhotos(); }
+  catch (e) { alert(e.message); label.firstChild.nodeValue = was; }
+}
+// Several at once, because that is how photos arrive: a camp, not a picture.
+async function addFiles(input){
+  const files = [...(input.files || [])]; input.value = "";
+  if (!files.length) return;
+  const album = $("upAlbum").value.trim(), section = $("upSection").value;
+  C.gallery = C.gallery || [];
+  let done = 0, failed = [];
+  for (const f of files) {
+    $("upMsg").textContent = `Shrinking and sending ${done + 1} of ${files.length}…`;
+    try {
+      const r = await uploadImage(f, "photo");
+      C.gallery.push({ url: r.url, thumb: r.thumb, caption: "", section, album, w: r.w, h: r.h });
+      done++;
+      renderPhotos();
+    } catch (e) { failed.push(f.name + ": " + e.message); }
+  }
+  $("upMsg").textContent = `${done} photo${done === 1 ? "" : "s"} added${album ? ' to "' + album + '"' : ""}. Remember to Save.`
+    + (failed.length ? " Not added: " + failed.join("; ") : "");
+}
+// Uploaded files nothing points at any more, gone for good.
+async function tidyPhotos(){
+  const keep = [...new Set((JSON.stringify(C).match(/\/photo\/[0-9a-f]{32}\.(?:jpg|png|webp)/g) || []))];
+  if (!confirm(`Delete uploaded pictures that nothing on the site uses?\n\nThe site currently points at ${keep.length}. Anything uploaded in the last hour is left alone. This cannot be undone.`)) return;
+  $("tidyMsg").textContent = "Tidying…";
+  try {
+    const r = await fetch(API + "?photos=prune", { method: "POST", headers: { "Content-Type": "application/json", "x-admin-password": PW }, body: JSON.stringify({ keep }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || ("Failed (" + r.status + ")"));
+    $("tidyMsg").textContent = j.removed.length ? `Removed ${j.removed.length} unused file${j.removed.length === 1 ? "" : "s"}.` : "Nothing to remove: every uploaded file is in use.";
+  } catch (e) { $("tidyMsg").textContent = e.message; }
+}
 
 // ---- Merge logic shared by import and deploy updates ----
 function mergeContent(base, patch){
@@ -329,10 +454,11 @@ function importJson(mode){
 function renderBadges(){
   C.badges = C.badges || clone(window.DEFAULT_CONTENT.badges);
   ["intro","stages","note","imageUrl","imageCaption"].forEach(k => { const el = $("b_"+k); el.value = C.badges[k]||""; el.oninput = () => { C.badges[k] = el.value; if (k === "imageUrl") badgePreview(); }; });
-  badgePreview();
+  badgePreview(); badgeUpload();
   const el = $("b_placement"); el.value = (C.badges.placement||[]).map(p => "## "+p.area+"\n"+p.items.join("\n")).join("\n\n");
   el.oninput = () => { const out=[]; let g=null; el.value.split("\n").forEach(l => { const t=l.trim(); if(!t) return; if(t.startsWith("##")){ g={area:t.replace(/^#+\s*/,""),items:[]}; out.push(g); } else { if(!g){ g={area:"Badges",items:[]}; out.push(g);} g.items.push(t);} }); C.badges.placement = out; };
 }
+function badgeUpload(){ $("b_upload").innerHTML = imgUpload("C.badges.imageUrl", "photo", "renderBadges"); }
 function badgePreview(){ const u = C.badges.imageUrl; $("b_preview").innerHTML = u ? `<img src="${esc(u)}" alt="" style="max-height:160px;width:auto;border-radius:8px;margin:.2rem 0 .6rem">` : ""; }
 
 // ---- Team ----
@@ -363,7 +489,9 @@ function renderFund(){
   $("sponsorList").innerHTML = C.fundraising.sponsors.map((x,i) => `<div class="item"><div class="row">
     <div><label>Business name</label><input value="${esc(x.name)}" oninput="C.fundraising.sponsors[${i}].name=this.value"></div>
     <div><label>Website (optional)</label><input value="${esc(x.url||"")}" oninput="C.fundraising.sponsors[${i}].url=this.value"></div>
-    <div><label>Logo path (optional)</label><input value="${esc(x.logoUrl||"")}" oninput="C.fundraising.sponsors[${i}].logoUrl=this.value"></div></div>
+    <div><label>Logo path (optional)</label><input value="${esc(x.logoUrl||"")}" oninput="C.fundraising.sponsors[${i}].logoUrl=this.value"></div>
+    <div><label>&nbsp;</label>${imgUpload(`C.fundraising.sponsors[${i}].logoUrl`, "logo", "renderFund")}</div></div>
+    ${x.logoUrl?`<img src="${esc(x.logoUrl)}" alt="" style="max-height:70px;width:auto;border-radius:8px;margin-top:.5rem">`:""}
     <div class="actions"><button class="btn danger" onclick="C.fundraising.sponsors.splice(${i},1);renderFund()">Delete</button></div></div>`).join("");
 }
 function addCampaign(){ C.fundraising.campaigns.push({title:"",blurb:"",goal:0,raised:0,link:"",linkLabel:""}); renderFund(); }
@@ -393,6 +521,7 @@ function renderKits(){
     <label>Summary</label><textarea oninput="C.kits[${i}].summary=this.value">${esc(k.summary||"")}</textarea>
     <div class="row">
       <div><label>Picture (optional)</label><input value="${esc(k.imageUrl||"")}" oninput="C.kits[${i}].imageUrl=this.value" placeholder="photos/uniform-badge-placement.jpg"></div>
+      <div><label>&nbsp;</label>${imgUpload(`C.kits[${i}].imageUrl`, "photo", "renderKits")}</div>
       <div><label>Picture heading</label><input value="${esc(k.imageCaption||"")}" oninput="C.kits[${i}].imageCaption=this.value" placeholder="Where the badges go"></div>
     </div>
     ${k.imageUrl?`<img src="${esc(k.imageUrl)}" alt="" style="max-height:160px;width:auto;border-radius:8px;margin:.2rem 0 .6rem">`:""}
@@ -456,7 +585,8 @@ function renderSections(){
 }
 
 const SETTING_KEYS = ["heroTitle","heroLede","about","email","phone","venue","logoUrl","aboutPhotoUrl","joinPhotoUrl"];
-function renderSettings(){ SETTING_KEYS.forEach(k => { const el = $("s_"+k); el.value = C.settings[k] || ""; el.oninput = () => C.settings[k] = el.value; });
+function renderSettings(){ SETTING_KEYS.forEach(k => { const el = $("s_"+k); el.value = C.settings[k] || ""; el.oninput = () => C.settings[k] = el.value;
+    const up = $("s_" + k + "_up"); if (up) up.innerHTML = imgUpload("C.settings." + k, k === "logoUrl" ? "logo" : "photo", "renderSettings"); });
   C.settings.venues = C.settings.venues || [];
   $("venueMapList").innerHTML = C.settings.venues.map((v,i) => `<div class="item">
     <label>Venue name</label><input value="${esc(v.name)}" oninput="C.settings.venues[${i}].name=this.value">

@@ -2,6 +2,14 @@
   publish = "."
   functions = "netlify/functions"
 
+# Uploaded photos live in a Blobs store, behind the content function. A tidy
+# path keeps the URL saved in content.json short and independent of the
+# function, and the id is the hash of the bytes, so it is safe to cache hard.
+[[redirects]]
+  from = "/photo/*"
+  to = "/.netlify/functions/content?photo=:splat"
+  status = 200
+
 [[headers]]
   for = "/admin.html"
   [headers.values]

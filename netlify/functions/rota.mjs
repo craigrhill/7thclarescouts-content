@@ -1529,27 +1529,39 @@ function createHandler(storeFactory) {
 }
 function memoryStore() {
   const m = /* @__PURE__ */ new Map();
+  const read = (e, type) => type === "json" ? JSON.parse(e.value.toString("utf8")) : type === "arrayBuffer" ? e.value.buffer.slice(e.value.byteOffset, e.value.byteOffset + e.value.byteLength) : e.value.toString("utf8");
+  const hold = (value) => Buffer.isBuffer(value) ? value : typeof value === "string" ? Buffer.from(value, "utf8") : ArrayBuffer.isView(value) ? Buffer.from(value.buffer, value.byteOffset, value.byteLength) : value instanceof ArrayBuffer ? Buffer.from(value) : Buffer.from(String(value), "utf8");
   return {
     _map: m,
     async getWithMetadata(key, opts = {}) {
       const e = m.get(key);
       if (!e) return null;
-      return { data: opts.type === "json" ? JSON.parse(e.value) : e.value, etag: e.etag, metadata: {} };
+      return { data: read(e, opts.type), etag: e.etag, metadata: e.metadata || {} };
     },
     async get(key, opts = {}) {
       const e = m.get(key);
       if (!e) return null;
-      return opts.type === "json" ? JSON.parse(e.value) : e.value;
+      return read(e, opts.type);
+    },
+    async getMetadata(key) {
+      const e = m.get(key);
+      return e ? { etag: e.etag, metadata: e.metadata || {} } : null;
+    },
+    async list() {
+      return { blobs: [...m.keys()].map((key) => ({ key, etag: (m.get(key) || {}).etag })) };
+    },
+    async delete(key) {
+      m.delete(key);
     },
     async setJSON(key, value) {
-      m.set(key, { value: JSON.stringify(value), etag: randomBytes(6).toString("hex") });
+      m.set(key, { value: Buffer.from(JSON.stringify(value), "utf8"), etag: randomBytes(6).toString("hex"), metadata: {} });
     },
     async set(key, value, opts = {}) {
       const cur = m.get(key);
       if (opts.onlyIfNew && cur) return { modified: false };
       if (opts.onlyIfMatch && (!cur || cur.etag !== opts.onlyIfMatch)) return { modified: false };
       const etag = randomBytes(6).toString("hex");
-      m.set(key, { value: String(value), etag });
+      m.set(key, { value: hold(value), etag, metadata: opts.metadata || {} });
       return { etag, modified: true };
     }
   };

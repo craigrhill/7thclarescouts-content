@@ -219,6 +219,15 @@ ul.plain{margin:0;padding-left:1.15em;color:var(--stone-600)}ul.plain li{margin:
 .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.5rem}
 .gallery button{padding:0;border:0;background:var(--stone-100);border-radius:12px;overflow:hidden;cursor:pointer;display:block;aspect-ratio:1}
 .gallery img{width:100%;height:100%;object-fit:cover}
+.albums{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.7rem;margin-bottom:.9rem}
+.album{padding:0;border:0;background:none;cursor:pointer;text-align:left;display:block;width:100%}
+.collage{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:var(--stone-100);position:relative}
+.collage img{width:100%;height:100%;object-fit:cover;display:block}
+.collage.n1 img,.collage.n2 img{grid-row:span 2}
+.collage.n3 img:first-child{grid-row:span 2}
+.collage .more{position:absolute;right:.4rem;bottom:.4rem;background:rgba(20,22,24,.72);color:#fff;font-size:.8rem;font-weight:600;padding:.15em .6em;border-radius:999px}
+.album-name{display:block;font-weight:600;margin:.4rem .1rem 0;color:var(--ink)}
+.album-name small{display:block;font-weight:400;color:var(--stone-600);font-size:.8rem}
 .strip{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.4rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .strip::-webkit-scrollbar{display:none}
 .strip button{flex:none;width:132px;height:132px;padding:0;border:0;border-radius:12px;overflow:hidden;background:var(--stone-100);cursor:pointer}
@@ -696,23 +705,46 @@ function openFigure(kind){
 const photos = () => (C.gallery||[]).filter(p => p && p.url);
 const sectionPhotos = key => photos().filter(p => (p.section||"") === key);
 const galleryList = () => galleryFilter === "all" ? photos() : sectionPhotos(galleryFilter);
+// An uploaded photo comes with a small copy for the tiles; one added as a link
+// has only itself. A tile is a couple of hundred pixels, so a gallery of forty
+// is a few hundred kilobytes rather than several megabytes.
+const tileSrc = p => p.thumb || p.url;
 function photoTile(p, i, listExpr){
-  return `<button onclick="${esc(`openPhoto(${listExpr}, ${i})`)}" aria-label="${esc(p.caption || "Open photo")}"><img src="${esc(p.url)}" alt="${esc(p.caption||"")}" loading="lazy"></button>`;
+  return `<button onclick="${esc(`openPhoto(${listExpr}, ${i})`)}" aria-label="${esc(p.caption || "Open photo")}"><img src="${esc(tileSrc(p))}" alt="${esc(p.caption||"")}" loading="lazy"></button>`;
 }
+/* Photos from one outing are an album: they show as a single collage that
+   opens as a slideshow, so a camp is one thing on the page rather than thirty.
+   Anything with no album is a loose photo and shows in the grid below them. */
+const albumsOf = list => { const m = new Map();
+  list.forEach(p => { const a = (p.album || "").trim(); if (a) { if (!m.has(a)) m.set(a, []); m.get(a).push(p); } });
+  return [...m.entries()]; };
+const looseOf = list => list.filter(p => !(p.album || "").trim());
+function albumCard(name, pics, listExpr){
+  const shown = pics.slice(0, 4), more = pics.length - shown.length;
+  return `<button class="album" onclick="${esc(`openPhoto(${listExpr}, 0)`)}" aria-label="${esc(name)}, ${pics.length} photos, open the slideshow">
+    <span class="collage n${shown.length}">${shown.map(p => `<img src="${esc(tileSrc(p))}" alt="" loading="lazy">`).join("")}${more > 0 ? `<span class="more">+${more}</span>` : ""}</span>
+    <span class="album-name">${esc(name)}<small>${pics.length} photo${pics.length === 1 ? "" : "s"}</small></span></button>`;
+}
+const byAlbum = name => galleryList().filter(p => (p.album || "").trim() === name);
+const albumList = name => byAlbum(name);
+const looseList = () => looseOf(galleryList());
 function galleryHtml(){
   const secs = (C.settings.sections||[]).filter(x => sectionPhotos(x.key).length);
   const chips = [["all","All"], ...secs.map(x => [x.key, x.name])];
-  const list = galleryList();
+  const list = galleryList(), albums = albumsOf(list), loose = looseOf(list);
   return `<a class="back" href="#more">‹ More</a><div class="page-head"><h1>Photo gallery</h1><p>Camps, meetings and adventures.</p></div>
     ${chips.length > 1 ? `<div class="chips">${chips.map(([k,l]) => `<button class="chip ${galleryFilter===k?"on":""}" onclick="showMore('gallery','${esc(k)}')">${esc(l)}</button>`).join("")}</div>` : ""}
-    ${list.length ? `<div class="gallery">${list.map((x,i) => photoTile(x, i, "galleryList()")).join("")}</div>`
-                  : `<div class="empty">No photos here yet.</div>`}`;
+    ${albums.length ? `<div class="albums">${albums.map(([name]) => albumCard(name, byAlbum(name), `albumList('${esc(name).replace(/'/g, "\\'")}')`)).join("")}</div>` : ""}
+    ${loose.length ? `<div class="gallery">${loose.map((x,i) => photoTile(x, i, "looseList()")).join("")}</div>` : ""}
+    ${list.length ? "" : `<div class="empty">No photos here yet.</div>`}`;
 }
 let LB = { list: [], i: 0 };
 function openPhoto(list, i){ LB = { list, i }; showPhoto(); $("lightbox").classList.add("on"); document.body.style.overflow = "hidden"; }
 function showPhoto(){ const p = LB.list[LB.i]; if (!p) return;
-  $("lbImg").src = p.url; $("lbImg").alt = p.caption || ""; $("lbCap").textContent = p.caption || "";
-  document.querySelectorAll(".lb-btn").forEach(b => b.style.display = LB.list.length > 1 ? "" : "none"); }
+  $("lbImg").src = p.url; $("lbImg").alt = p.caption || "";
+  const many = LB.list.length > 1;
+  $("lbCap").textContent = [p.caption || "", many ? `${LB.i + 1} of ${LB.list.length}` : ""].filter(Boolean).join(" · ");
+  document.querySelectorAll(".lb-btn").forEach(b => b.style.display = many ? "" : "none"); }
 function stepPhoto(d){ if (!LB.list.length) return; LB.i = (LB.i + d + LB.list.length) % LB.list.length; showPhoto(); }
 function closePhoto(){ $("lightbox").classList.remove("on"); document.body.style.overflow = ""; LB = { list: [], i: 0 }; }
 document.addEventListener("keydown", e => {
@@ -721,6 +753,14 @@ document.addEventListener("keydown", e => {
   if (e.key === "ArrowLeft") stepPhoto(-1);
   if (e.key === "ArrowRight") stepPhoto(1);
 });
+// A swipe is how anyone holding a phone expects a slideshow to move.
+let lbX = null;
+$("lightbox").addEventListener("touchstart", e => { lbX = e.touches[0].clientX; }, { passive: true });
+$("lightbox").addEventListener("touchend", e => {
+  if (lbX === null) return;
+  const dx = e.changedTouches[0].clientX - lbX; lbX = null;
+  if (Math.abs(dx) > 40) stepPhoto(dx < 0 ? 1 : -1);
+}, { passive: true });
 
 /* ---------- social ---------- */
 /* settings.social is a list so a new account is a row, not a code change.

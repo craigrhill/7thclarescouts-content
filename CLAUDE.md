@@ -14,10 +14,10 @@ Owner: Craig Hill (craigrhill). Group email: 7thclarescouts@gmail.com.
 * Verify UI changes with headless Chromium screenshots at 390px and 1280px
   before reporting them done. Chromium is preinstalled; do not run
   `playwright install`.
-* `npm test` runs every offline check: both function harnesses and the
-  drift guards for the two duplicated functions. `npm run e2e` runs the
-  leaders' area in a real browser against the local preview and writes
-  screenshots to `.e2e/`. Run both before pushing anything they cover.
+* `npm test` runs every offline check: the function harnesses and the drift
+  guards for the duplicated functions. `npm run e2e` runs two browser suites
+  against the local preview, the leaders' area and the picture path, and
+  writes screenshots to `.e2e/`. Run both before pushing anything they cover.
 * `main` is production and auto-deploys. Anything committed there is public
   within about a minute.
 
@@ -84,11 +84,14 @@ warning fires correctly for leaders.
     tools/test-function.mjs         offline smoke test of the built content
                                     function; pass two bundles to prove equivalence
     tools/test-rota.mjs             offline harness for the rota function
+    tools/test-photos.mjs           offline harness for the photo endpoints
     tools/test-ics.mjs              the subscription feed's iCalendar output
     tools/test-kits.mjs             drift guard: mergeBuiltInKits in both files
     tools/test-times.mjs            drift guard: eventWhen in the three pages
     tools/test-merge.mjs            drift guard: mergeContent in both files
     tools/e2e-rota.mjs              browser suite for the leaders' area
+    tools/e2e-photos.mjs            browser suite for uploading pictures,
+                                    from the admin file picker to the gallery
     tools/apply-update.mjs          ports admin's mergeContent, --dry-run
     tools/serve.mjs                 local preview, stands in for the
                                     content function so the app loads
@@ -97,6 +100,8 @@ warning fires correctly for leaders.
     lab/                experiments. Public on the site but not linked from
                         the app, not cached by sw.js, noindexed, and never
                         read by content.json. Delete a file to remove it.
+    photo/<id>          uploaded pictures, served from the Blobs store by the
+                        content function (see the gotcha below)
     lab/rota.html       the rota: coverage per section (see below)
     lab/events.html     calendar events: a lead for their sections, the secretary for all
     lab/roster.html     the secretary's roster: people, sections, codes
@@ -339,10 +344,48 @@ link in the footer.
   packing checklist. Scouting Ireland's badge placement chart is the same file
   on both: the Full uniform kit list and the Adventure Skills page, where it
   sits under "Where badges go" beside the built-in jumper diagram.
+* **Pictures are uploaded, shrunk on the device first.** Admin has an Upload
+  button wherever a picture can go: the gallery (several at once), a sponsor's
+  logo, a kit list, the badge chart, the site logo and the about and join
+  photos. The browser does the resizing before anything is sent, because a
+  picture off a phone is four or five megabytes and the site never shows one
+  wider than about 1600: `shrink` in `admin.html` draws it onto a canvas at
+  1600 (600 for a logo), encodes JPEG at 0.82 and steps the quality down until
+  it is under 400KB, and makes a second 480px copy, under 90KB, for tiles and
+  collages. A logo that arrives as a PNG stays a PNG so it keeps its
+  transparency; everything else becomes a JPEG. `imageOrientation:
+  "from-image"` turns a phone photo the right way up.
+  The bytes go to a Blobs store, not the repo:
+  `POST /.netlify/functions/content?photo=1` with the admin password and the
+  image as the body, answered with `{ id, url }`. The name is the SHA-256 of
+  the bytes, so the same photo twice is stored once and `/photo/<id>` is served
+  `immutable` for a year. `netlify.toml` rewrites `/photo/*` onto the function.
+  `?photos=list` and `?photos=prune` (both admin) back the "Tidy up unused
+  files" button, which sends every `/photo/<id>` it can find in the content
+  document as the keep list; anything uploaded in the last hour is spared, so a
+  save that is still being typed cannot delete someone else's upload.
+  **A photo is public the moment it is uploaded, before it is saved, and
+  removing it from the gallery does not delete the file.** Only tidying up
+  does, and even that cannot un-share a copy someone already has.
+  `sw.js` keeps `/photo/*` in a cache of its own, like the fonts, rather than
+  the shell's: the name is the hash, so a copy is good for ever, and a VERSION
+  bump should not throw away every photo the phone has already fetched.
+* **The stand-in store holds bytes.** `memoryStore` in `netlify/src/rota.mjs`
+  is the double behind both offline harnesses and `npm run serve`, and the
+  content function keeps photos in a store of that shape, so it holds Buffers
+  and answers `type: "arrayBuffer"`. It used to `String(value)` everything,
+  which turned a JPEG into a mangled UTF-8 string three times the size. The
+  preview also runs the real content function for photo requests, and emulates
+  the admin save into the same in-memory store, so an upload and a save can be
+  walked through locally end to end.
 * **One photo list, two surfaces.** `gallery` is the only place photos live.
   The gallery page under More shows all of them with a chip per section; a
   section page shows the ones whose `section` matches its key, capped at eight,
-  linking on to `#more/gallery/<key>`. A photo with no `section` is group-wide
+  linking on to `#more/gallery/<key>`. Photos sharing an `album` show as one
+  collage card there, captioned with the album name and the count, which opens
+  the slideshow at the first of them; the rest show as loose tiles underneath.
+  The slideshow steps with the arrows, the keyboard or a swipe, and says where
+  in the album you are. A photo with no `section` is group-wide
   and shows in the gallery only. So leaders add a photo once, in the Photos tab
   in admin, and tag it rather than filing it twice.
 * **Social links are a list, not fields.** `settings.social` is
@@ -379,7 +422,7 @@ link in the footer.
       events: [{date, endDate?, title, section, location?,
                 startTime?, endTime?, time?, kitId?, details}],
       news: [{date, title, body}],
-      gallery: [{url, caption?, section?}],
+      gallery: [{url, thumb?, caption?, section?, album?, w?, h?}],
       kits: [{id, title, event, summary, imageUrl?, imageCaption?,
               docs: [{title, url, note}], tips[],
               groups: [{name, items: [{n, note?, must?}]}], dontBring[]}],

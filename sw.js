@@ -1,13 +1,13 @@
 // 7th Clare Scouts service worker: offline shell + last-known content
-const VERSION = "v0_36";
+const VERSION = "v0_37";
 const SHELL = ["./", "./index.html", "./calendar.html", "./defaults.js", "./kit-defaults.js", "./logo.png", "./icon-192.png", "./icon-512.png", "./manifest.webmanifest", "./docs/Sionnach_Tips.pdf"];
-const SHELL_CACHE = "shell-" + VERSION, DATA_CACHE = "data-" + VERSION, FONT_CACHE = "fonts";
+const SHELL_CACHE = "shell-" + VERSION, DATA_CACHE = "data-" + VERSION, FONT_CACHE = "fonts", PHOTO_CACHE = "photos";
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(SHELL_CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => ![SHELL_CACHE, DATA_CACHE, FONT_CACHE].includes(k)).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => ![SHELL_CACHE, DATA_CACHE, FONT_CACHE, PHOTO_CACHE].includes(k)).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
@@ -31,6 +31,17 @@ self.addEventListener("fetch", e => {
     if (url.searchParams.get("a") !== "board") return;
     e.respondWith(fetch(e.request).then(r => { const copy = r.clone(); caches.open(DATA_CACHE).then(c => c.put(e.request, copy)); return r; })
       .catch(() => caches.match(e.request)));
+    return;
+  }
+  // Uploaded pictures: the name is the hash of the bytes, so a copy can be kept
+  // for good and asked for once. Its own cache rather than the shell's, which a
+  // release empties: a version bump should not throw away every photo the phone
+  // has already downloaded.
+  if (url.origin === location.origin && url.pathname.startsWith("/photo/")) {
+    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+      if (res.ok) { const copy = res.clone(); caches.open(PHOTO_CACHE).then(c => c.put(e.request, copy)); }
+      return res;
+    })));
     return;
   }
   // lab/ is for experiments and is deliberately not part of the app: never

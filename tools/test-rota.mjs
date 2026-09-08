@@ -47,7 +47,7 @@ ok("GET returns me, people and requested sections with defaults", [r.status, r.j
 r = await call("GET", "?sections=scouts", { token: lead.slice(0, -2) + "zz" }); ok("tampered token is 401", r.status, 401);
 { // A correctly signed token whose expiry has passed is refused.
   const { createHmac } = await import("node:crypto");
-  const sec = store._map.get("secret").value;
+  const sec = store._map.get("secret").value.toString("utf8");
   const payload = Buffer.from(JSON.stringify({ id: leadId, exp: Date.now() - 1000 })).toString("base64url");
   const expired = payload + "." + createHmac("sha256", Buffer.from(sec, "hex")).update(payload).digest("base64url");
   r = await call("GET", "?sections=scouts", { token: expired }); ok("expired token is 401", r.status, 401);
