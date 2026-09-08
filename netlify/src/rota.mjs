@@ -34,9 +34,9 @@
 //   POST   ?a=person-update {id,name?,sections?,lead?,secretary?}  { person }   secretary
 //   POST   ?a=person-remove {id,sections}                     { people }   secretary
 //   POST   ?a=recode   {id}                                   { code }   secretary
-//   POST   ?a=event        {date,title,section?,...,private?}  { events }   secretary
-//   POST   ?a=event-update {key,...}                           { events }   secretary
-//   POST   ?a=event-remove {key,private?}                      { events }   secretary
+//   POST   ?a=event        {date,title,section?,...,private?}  { events }   secretary, or a lead for their section
+//   POST   ?a=event-update {key,...}                           { events }   secretary, or a lead for their section
+//   POST   ?a=event-remove {key,private?}                      { events }   secretary, or a lead for their section
 //   GET    ?a=board&section=k     (no auth)     { section, updatedAt, rows: [{n, stages}] }
 //   GET    ?a=badges&sections=a,b               { me, boards, canEdit }
 //   POST   ?a=badge-add    {section,name}                      { board }   lead of it
@@ -548,10 +548,13 @@ export function createHandler(storeFactory) {
         return json(200, { id: b.id, status });
       }
 
-      if (!canManage) return fail(403, "Only the secretary can do that.");
-
       if (a === "event" || a === "event-update" || a === "event-remove") {
         const isPrivate = !!b.private;
+        // Who may change an event: the secretary, anything; a lead, events of
+        // the sections on their own roster entry. Whole-group events (no
+        // section) are the secretary's. Helpers may only look.
+        const mayEdit = (e) => canManage || (!!me.lead && !!e.section && (me.sections || []).includes(e.section));
+        const deny = (e) => e.section ? [403, "Only a lead of that section can change its events."] : [403, "Only the secretary can change whole-group events."];
         // Apply the change to a list of events, or return an error to report.
         // Sections and kit lists are checked against the group calendar even for
         // a private event, so the two stay consistent.
@@ -559,19 +562,23 @@ export function createHandler(storeFactory) {
           const sectionKeys = ((content && content.settings.sections) || []).map((x) => x.key);
           const kitIds = ((content && content.kits) || []).map((k) => k.id);
           if (a === "event-remove") {
-            const next = list.filter((e) => !sameEvent(eventKey(e), b.key));
-            return next.length === list.length ? { error: [404, "No such event."] } : { events: next };
+            const ex = list.find((e) => sameEvent(eventKey(e), b.key));
+            if (!ex) return { error: [404, "No such event."] };
+            if (!mayEdit(ex)) return { error: deny(ex) };
+            return { events: list.filter((e) => e !== ex) };
           }
           const { event, error } = cleanEvent(b, sectionKeys, kitIds);
           if (error) return { error: [400, error] };
           const key = eventKey(event);
           const clash = (skip) => list.some((e, i) => i !== skip && sameEvent(eventKey(e), key));
+          if (!mayEdit(event)) return { error: deny(event) };
           if (a === "event") {
             if (clash(-1)) return { error: [409, "There is already an event with that date and title."] };
             return { events: [...list, event] };
           }
           const i = list.findIndex((e) => sameEvent(eventKey(e), b.key));
           if (i < 0) return { error: [404, "No such event."] };
+          if (!mayEdit(list[i])) return { error: deny(list[i]) };
           if (clash(i)) return { error: [409, "There is already an event with that date and title."] };
           const next = [...list]; next[i] = event; return { events: next };
         };
@@ -600,6 +607,9 @@ export function createHandler(storeFactory) {
         }
         return json(200, { events: out.events, private: isPrivate });
       }
+
+      if (!canManage) return fail(403, "Only the secretary can do that.");
+
 
 
       if (a === "person") {

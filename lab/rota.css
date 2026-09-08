@@ -140,3 +140,7 @@ details.meeting summary::-webkit-details-marker{display:none}
 .lnav a.on{background:var(--sea-700);border-color:var(--sea-700);color:#fff;box-shadow:none}
 .lnav a svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .who-bar{margin:.2rem 0 .8rem}
+
+/* Past events, when "Show past" is on: still readable, clearly behind us. */
+table.roster tr.person.past td{opacity:.6}
+table.roster tr.person.past td.nm{font-weight:500}

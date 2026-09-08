@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Events: 7th Clare Scouts leaders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="rota.css">
+</head>
+<body>
+<header class="appbar"><div class="wrap">
+  <div class="brand">7th Clare Scouts<small>Events</small></div>
+  <span class="pill">Leaders only</span>
+</div></header>
+<main class="wrap">
+  <div id="err" class="banner err" hidden></div>
+
+  <section id="gate" hidden>
+    <h1>Sign in</h1>
+    <p class="muted">Enter the code the group secretary gave you. It signs this phone in for twelve months.</p>
+    <div class="card">
+      <div class="row"><input type="text" id="code" placeholder="XXXX-XXXX" autocapitalize="characters" autocomplete="one-time-code" spellcheck="false"><button class="btn primary" onclick="signIn($('code').value, 'gateMsg', load)">Sign in</button></div>
+      <p class="msg" id="gateMsg"></p>
+    </div>
+    <p class="small muted" id="adminHint" hidden>Signed in to the admin editor on this phone? <button class="btn quiet" onclick="useAdmin(load, 'gateMsg')">Use that instead of a code</button></p>
+    <p class="small muted">No code? Ask the group secretary, who keeps the roster.</p>
+  </section>
+
+  <section id="app" hidden>
+    <div id="leaderNav"></div>
+    <div class="row who-bar" style="justify-content:space-between">
+      <span class="small muted">Signed in as <b id="meName"></b><span id="meRole"></span></span>
+      <button class="btn quiet" onclick="signOut()">Sign out</button>
+    </div>
+
+    <h1>Events</h1>
+    <p class="muted intro" id="intro"></p>
+    <div class="chips" id="chips"></div>
+
+    <div id="addCard" class="card" hidden>
+      <h2 id="addTitle"></h2>
+      <div class="add">
+        <div class="row"><input type="date" id="evDate"><input type="text" id="evTitle" placeholder="What is it?" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addEvent()}"></div>
+        <div class="row"><label class="small"><input type="checkbox" id="evPrivate"> Leaders only</label><button class="btn primary" onclick="addEvent()">Add</button><span class="small muted" id="evMsg"></span></div>
+      </div>
+      <p class="small muted" style="margin:.5rem 0 0">A public event shows on the app calendar for parents and can be rostered. A leaders-only one shows on the rota only. Tap Edit after adding for the dates, place, time, kit list and details.</p>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2 id="listTitle" style="margin:0"></h2><button class="btn quiet" id="pastBtn" onclick="showPast=!showPast;render()"></button></div>
+      <table class="roster"><tbody id="events"></tbody></table>
+    </div>
+  </section>
+</main>
+<footer class="wrap">Leaders-only events never leave this area. Public ones go on the app calendar for parents.</footer>
+
+<script src="rota-lib.js"></script>
+<script>
+const SK = "events-section";
+let C = null, D = null, editingEvent = null, showPast = false;
+function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
+function allKeys(){ return C.settings.sections.map(x => x.key); }
+function sectionName(k){ return k === "all" ? "Whole group" : ((C.settings.sections.find(x => x.key === k) || {}).name || k); }
+const canManage = () => !!D.me.secretary || (!(D.people || []).some(p => p.secretary) && !!D.me.lead);
+// The chips: the sections on my entry (all of them for the secretary), then
+// the whole-group events everyone can see. Who may change what is decided by
+// the function; the page only mirrors it.
+const mine = () => canManage() ? allKeys() : allKeys().filter(k => (D.me.sections || []).includes(k));
+const chipKeys = () => [...mine(), "all"];
+const canEdit = k => k === "all" ? canManage() : (canManage() || (!!D.me.lead && (D.me.sections || []).includes(k)));
+function sec(){ let k = null; try { k = localStorage.getItem(SK); } catch {} const v = chipKeys(); return v.includes(k) ? k : v[0]; }
+const allEvents = () => [
+  ...((C.events || []).map(e => ({ ...e, priv: false }))),
+  ...(((D && D.events) || []).map(e => ({ ...e, priv: true }))),
+].sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
+const evKey = e => e.date + "|" + e.title;
+const forChip = k => allEvents().filter(e => k === "all" ? !e.section : e.section === k);
+
+function render(){
+  const me = D.me;
+  $("leaderNav").innerHTML = leaderNav(me); $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
+  const k = sec(), can = canEdit(k), v = chipKeys();
+  $("chips").innerHTML = v.map(x => `<button class="chip ${x === k ? "on" : ""}" onclick="pickSection('${esc(x)}')">${esc(sectionName(x))}</button>`).join("");
+  $("intro").textContent = canManage() ? "Add and change events for any section, and the whole group's."
+    : me.lead && mine().length ? "Add and change events for your section. Whole-group events are the secretary's."
+    : "What is coming up for your section. Only a section lead can add or change events.";
+  $("addCard").hidden = !can;
+  $("addTitle").textContent = k === "all" ? "Add a whole-group event" : "Add a " + sectionName(k) + " event";
+  const today = new Date().toISOString().slice(0, 10);
+  const all = forChip(k), soon = all.filter(e => (e.endDate || e.date) >= today), past = all.filter(e => (e.endDate || e.date) < today);
+  const list = showPast ? [...past.slice().reverse(), ...soon] : soon;
+  $("listTitle").textContent = (k === "all" ? "Whole group" : sectionName(k)) + ": " + (showPast ? "all events" : "coming up");
+  $("pastBtn").textContent = showPast ? "Hide past" : (past.length ? `Show ${past.length} past` : ""); $("pastBtn").hidden = !past.length;
+  $("events").innerHTML = list.length ? list.map(e => {
+    const key = evKey(e), open = editingEvent === key, gone = (e.endDate || e.date) < today;
+    const row = `<tr class="person ${gone ? "past" : ""}">
+      <td class="nm">${esc(fmt(e.date))}${e.endDate ? ` <span class="small muted">to ${esc(fmt(e.endDate))}</span>` : ""}</td>
+      <td>${esc(e.title)}${e.priv ? ` <span class="rbadge">leaders only</span>` : ""}</td>
+      <td class="small muted">${esc([e.location, e.time].filter(Boolean).join(", "))}</td>
+      <td class="act">${can ? `<button class="btn quiet" onclick="editEvent('${esc(key)}')">${open ? "Close" : "Edit"}</button>` : ""}</td>
+    </tr>`;
+    if (!open || !can) return row;
+    const kits = (C.kits || []).map(x => `<option value="${esc(x.id)}" ${x.id === (e.kitId || "") ? "selected" : ""}>${esc(x.title)}</option>`).join("");
+    const secs = (canManage() ? `<option value="" ${e.section ? "" : "selected"}>Whole group</option>` : "") + mine().map(x => `<option value="${esc(x)}" ${x === (e.section || "") ? "selected" : ""}>${esc(sectionName(x))}</option>`).join("");
+    return row + `<tr class="editor"><td colspan="4"><div class="edrow">
+      <div class="row"><label>Starts <input type="date" id="edDate" value="${esc(e.date)}"></label><label>Ends <input type="date" id="edEnd" value="${esc(e.endDate || "")}"></label></div>
+      <div class="row"><input type="text" id="edTitle" value="${esc(e.title)}"></div>
+      <div class="row"><select id="edSection">${secs}</select><select id="edKit"><option value="">No kit list</option>${kits}</select></div>
+      <div class="row"><input type="text" id="edLocation" placeholder="Where" value="${esc(e.location || "")}"><input type="text" id="edTime" placeholder="Time" value="${esc(e.time || "")}"></div>
+      <div class="row"><textarea id="edDetails" placeholder="Details for parents" style="min-height:4rem">${esc(e.details || "")}</textarea></div>
+      <div class="row"><button class="btn primary" onclick="saveEvent('${esc(key)}',${e.priv})">Save</button><button class="btn quiet" onclick="removeEvent('${esc(key)}',${e.priv})">Remove</button><span class="small muted">${e.priv ? "Leaders only." : "On the public calendar."}</span></div>
+    </div></td></tr>`;
+  }).join("") : `<tr><td colspan="4" class="empty">Nothing coming up${k === "all" ? " for the whole group" : " for " + esc(sectionName(k))}.</td></tr>`;
+}
+function editEvent(key){ editingEvent = editingEvent === key ? null : key; render(); }
+function pickSection(k){ try { localStorage.setItem(SK, k); } catch {} editingEvent = null; render(); }
+async function load(){ showErr(""); D = await api("GET", "?sections="); $("gate").hidden = true; $("app").hidden = false; render(); }
+async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); } }
+// A public event changes the group content, so reload that as well as the rota data.
+async function afterEvents(){ C = await loadContent(); await load(); }
+const addEvent = () => guarded(async () => {
+  const date = $("evDate").value, title = $("evTitle").value.trim(), k = sec();
+  if (!date || !title) { $("evMsg").textContent = "A date and a title, please."; return; }
+  $("evMsg").textContent = "";
+  await api("POST", "?a=event", { date, title, section: k === "all" ? "" : k, private: $("evPrivate").checked });
+  $("evTitle").value = ""; await afterEvents();
+});
+const saveEvent = (key, priv) => guarded(async () => {
+  await api("POST", "?a=event-update", { key, private: priv, date: $("edDate").value, endDate: $("edEnd").value, title: $("edTitle").value,
+    section: $("edSection").value, kitId: $("edKit").value, location: $("edLocation").value, time: $("edTime").value, details: $("edDetails").value });
+  editingEvent = null; await afterEvents();
+});
+const removeEvent = (key, priv) => guarded(async () => {
+  if (!confirm("Remove this event?" + (priv ? "" : " It will disappear from the app calendar too."))) return;
+  editingEvent = null; await api("POST", "?a=event-remove", { key, private: priv }); await afterEvents();
+});
+function signOut(msg){ leaveBridge(); setToken(null); D = null; $("app").hidden = true; $("gate").hidden = false; $("adminHint").hidden = !adminPw(); $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
+onUnauthorized = signOut;
+async function boot(){
+  C = await loadContent();
+  await bridgeIfAdmin();
+  if (token) { try { await load(); return; } catch (e) { if (token) showErr(e.message); } }
+  $("adminHint").hidden = !adminPw();
+  $("gate").hidden = false;
+}
+boot();
+</script>
+</body>
+</html>

@@ -134,36 +134,60 @@ try {
   await S2.screenshot({ path: ".e2e/roster-1280.png" });
   await L.click("text=Sign out"); await L.waitForTimeout(300);
   ok("sign out returns to the gate", await L.locator("#gate").isVisible(), true);
-  // ---- calendar ----
+  // ---- events: their own page now; the secretary any section, a lead their own ----
+  step = "events as secretary";
   const evRows = async (p) => (await p.locator("#events tr.person td.nm").allInnerTexts()).map((t) => t.trim());
-  ok("only the secretary sees the calendar card", [await S.locator("#eventsCard").isVisible(), await L.locator("#eventsCard").count(), await M.locator("#eventsCard").count()], [true, 0, 0]);
+  await go(S, "events.html"); await S.waitForTimeout(700);
+  ok("the secretary sees a chip per section plus the whole group", (await S.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()).slice(-1), ["Whole group"]);
+  await pickSec(S, "Scouts");
   const before = (await evRows(S)).length;
   await S.fill("#evDate", "2030-03-14"); await S.fill("#evTitle", "Spring camp");
-  await S.selectOption("#evSection", "scouts");
-  await S.locator("#eventsCard").getByRole("button", { name: "Add", exact: true }).click(); await S.waitForTimeout(1200);
-  ok("secretary adds a public event", (await evRows(S)).length, before + 1);
-  ok("it reached the group content endpoint, so parents and the rota see it", await S.evaluate(async () => (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).events.some((e) => e.title === "Spring camp")), true);
+  await S.locator("#addCard").getByRole("button", { name: "Add", exact: true }).click(); await S.waitForTimeout(1200);
+  ok("secretary adds a public Scouts event", (await evRows(S)).length, before + 1);
+  ok("it reached the group content endpoint, so parents and the rota see it", await S.evaluate(async () => (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).events.some((e) => e.title === "Spring camp" && e.section === "scouts")), true);
   await S.fill("#evDate", "2030-04-02"); await S.fill("#evTitle", "Leaders planning night"); await S.check("#evPrivate");
-  await S.locator("#eventsCard").getByRole("button", { name: "Add", exact: true }).click(); await S.waitForTimeout(1200);
+  await S.locator("#addCard").getByRole("button", { name: "Add", exact: true }).click(); await S.waitForTimeout(1200);
   ok("a leaders-only event is marked as such", await S.locator("#events tr.person", { hasText: "Leaders planning night" }).locator(".rbadge").innerText(), "LEADERS ONLY");
   ok("and stays off the public calendar", await S.evaluate(async () => (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).events.some((e) => e.title === "Leaders planning night")), false);
   await S.uncheck("#evPrivate");
   await S.fill("#evDate", "2030-03-14"); await S.fill("#evTitle", "Spring camp");
-  await S.locator("#eventsCard").getByRole("button", { name: "Add", exact: true }).click(); await S.waitForTimeout(1000);
+  await S.locator("#addCard").getByRole("button", { name: "Add", exact: true }).click(); await S.waitForTimeout(1000);
   ok("a duplicate is refused with a reason", (await S.locator("#err").innerText()).includes("already an event"), true);
   await S.fill("#evTitle", "");
   await S.locator("#events tr.person", { hasText: "Spring camp" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(250);
   await S.fill("#edLocation", "Ruan"); await S.selectOption("#edKit", "sionnach");
   await S.locator("#events tr.editor button:has-text('Save')").click(); await S.waitForTimeout(1200);
   ok("editing an event saves the extra fields", await S.evaluate(async () => { const e = (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).events.find((x) => x.title === "Spring camp"); return [e.location, e.kitId]; }), ["Ruan", "sionnach"]);
+  await S.screenshot({ path: ".e2e/events-1280.png", fullPage: true });
   const L2 = await page(1280, 900); await go(L2, "rota.html"); await L2.fill("#code", leadCode); await signInBtn(L2).click(); await L2.waitForTimeout(900); await pickSec(L2, "Scouts");
   const slotText = (await L2.locator(".slot").allInnerTexts()).join(" | ");
   ok("the lead sees both new events on the rota", [slotText.includes("Spring camp"), slotText.includes("Leaders planning night")], [true, true]);
   await L2.screenshot({ path: ".e2e/rota-with-events-1280.png" });
-  await S.locator("#events tr.person", { hasText: "Leaders planning night" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(250);
-  await S.locator("#events tr.editor button:has-text('Remove')").click(); await S.waitForTimeout(1200);
-  ok("a leaders-only event can be removed", (await evRows(S)).length, before + 1);
-  await S.screenshot({ path: ".e2e/roster-calendar-390.png", fullPage: true });
+  step = "events as a lead";
+  await go(L2, "events.html"); await L2.waitForTimeout(700);
+  ok("a lead gets their own section and the whole group only", (await L2.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()), ["Scouts", "Whole group"]);
+  await pickSec(L2, "Scouts");
+  await L2.fill("#evDate", "2030-05-10"); await L2.fill("#evTitle", "Scouts hike");
+  await L2.locator("#addCard").getByRole("button", { name: "Add", exact: true }).click(); await L2.waitForTimeout(1200);
+  ok("a lead adds an event for their section", (await evRows(L2)).length, before + 3);
+  await pickSec(L2, "Whole group");
+  ok("but has no add form for whole-group events", await L2.locator("#addCard").isVisible(), false);
+  step = "events as a helper";
+  // Member Test was removed from the roster earlier, so their code no longer
+  // signs in. A fresh helper on Scouts, where the events above live, made
+  // through the API because the secretary is on the events page, not the roster.
+  const evHelperCode = await S.evaluate(async () => { const h = { "Content-Type": "application/json", "x-rota-token": localStorage.getItem("rota-token") };
+    return (await (await fetch("/.netlify/functions/rota?a=person", { method: "POST", headers: h, body: JSON.stringify({ name: "Ev Helper", sections: ["scouts"], lead: false }) })).json()).code; });
+  const Hv = await page(390, 844); await go(Hv, "events.html"); await Hv.fill("#code", evHelperCode); await signInBtn(Hv).click(); await Hv.waitForTimeout(1000);
+  ok("a helper is signed in on their own section plus the whole group", (await Hv.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()), ["Scouts", "Whole group"]);
+  ok("a helper sees their section's events read-only", [await Hv.locator("#addCard").isVisible(), await Hv.locator("#events button").count(), (await evRows(Hv)).length >= 2], [false, 0, true]);
+  await Hv.screenshot({ path: ".e2e/events-390.png", fullPage: true });
+  await Hv.close();
+  step = "";
+  await go(S, "events.html"); await S.waitForTimeout(700); await pickSec(S, "Scouts");
+  for (const t of ["Leaders planning night", "Scouts hike"]) { await S.locator("#events tr.person", { hasText: t }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(250); await S.locator("#events tr.editor button:has-text('Remove')").click(); await S.waitForTimeout(1200); }
+  ok("the secretary can remove a lead's event and a leaders-only one", (await evRows(S)).length, before + 1);
+  await go(S, "roster.html"); await S.waitForTimeout(700);
 
   await S.locator("#people tr.person", { hasText: "Lead Test" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(150);
   ok("editor offers to hand the secretary role over", await S.locator("#people tr.editor button:has-text('Make secretary instead of me')").count(), 1);

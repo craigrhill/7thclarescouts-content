@@ -1338,26 +1338,31 @@ function createHandler(storeFactory) {
         });
         return json(200, { id: b.id, status });
       }
-      if (!canManage) return fail(403, "Only the secretary can do that.");
       if (a === "event" || a === "event-update" || a === "event-remove") {
         const isPrivate = !!b.private;
+        const mayEdit = (e) => canManage || !!me.lead && !!e.section && (me.sections || []).includes(e.section);
+        const deny = (e) => e.section ? [403, "Only a lead of that section can change its events."] : [403, "Only the secretary can change whole-group events."];
         const apply = (list, content) => {
           const sectionKeys = (content && content.settings.sections || []).map((x) => x.key);
           const kitIds = (content && content.kits || []).map((k) => k.id);
           if (a === "event-remove") {
-            const next2 = list.filter((e) => !sameEvent(eventKey(e), b.key));
-            return next2.length === list.length ? { error: [404, "No such event."] } : { events: next2 };
+            const ex = list.find((e) => sameEvent(eventKey(e), b.key));
+            if (!ex) return { error: [404, "No such event."] };
+            if (!mayEdit(ex)) return { error: deny(ex) };
+            return { events: list.filter((e) => e !== ex) };
           }
           const { event, error } = cleanEvent(b, sectionKeys, kitIds);
           if (error) return { error: [400, error] };
           const key = eventKey(event);
           const clash = (skip) => list.some((e, i2) => i2 !== skip && sameEvent(eventKey(e), key));
+          if (!mayEdit(event)) return { error: deny(event) };
           if (a === "event") {
             if (clash(-1)) return { error: [409, "There is already an event with that date and title."] };
             return { events: [...list, event] };
           }
           const i = list.findIndex((e) => sameEvent(eventKey(e), b.key));
           if (i < 0) return { error: [404, "No such event."] };
+          if (!mayEdit(list[i])) return { error: deny(list[i]) };
           if (clash(i)) return { error: [409, "There is already an event with that date and title."] };
           const next = [...list];
           next[i] = event;
@@ -1396,6 +1401,7 @@ function createHandler(storeFactory) {
         }
         return json(200, { events: out.events, private: isPrivate });
       }
+      if (!canManage) return fail(403, "Only the secretary can do that.");
       if (a === "person") {
         const name = cleanName(b.name);
         if (!name) return fail(400, "A name is needed.");

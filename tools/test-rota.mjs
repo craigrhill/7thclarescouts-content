@@ -230,7 +230,23 @@ ok("private events come back on GET", r.j.events.map(e => e.title), ["Leaders pl
 r = await call("GET", "?sections=scouts", { token: cubsLead });
 ok("a lead sees them too, so the rota can show them", r.j.events.length, 1);
 r = await call("POST", "?a=event", { token: cubsLead, body: { date: "2030-06-01", title: "Not allowed" } });
-ok("a section lead cannot add an event", r.status, 403);
+ok("a section lead cannot add a whole-group event", [r.status, r.j.error], [403, "Only the secretary can change whole-group events."]);
+r = await call("POST", "?a=event", { token: cubsLead, body: { date: "2030-06-01", title: "Not theirs", section: "scouts" } });
+ok("nor one for a section that is not theirs", r.status, 403);
+r = await call("POST", "?a=event", { token: cubsLead, body: { date: "2030-06-01", title: "Cubs hike", section: "cubs", location: "Black Head" } });
+ok("but a lead adds an event for their own section", [r.status, r.j.events.some((e) => e.title === "Cubs hike")], [200, true]);
+r = await call("POST", "?a=event-update", { token: cubsLead, body: { key: "2030-06-01|Cubs hike", date: "2030-06-01", title: "Cubs hike", section: "scouts" } });
+ok("and cannot move it to a section that is not theirs", r.status, 403);
+r = await call("POST", "?a=event-update", { token: cubsLead, body: { key: "2030-06-01|Cubs hike", date: "2030-06-08", title: "Cubs hike", section: "cubs" } });
+ok("but can change it within their section", [r.status, r.j.events.find((e) => e.title === "Cubs hike").date], [200, "2030-06-08"]);
+r = await call("POST", "?a=person", { token: m2, body: { name: "Ev Helper", sections: ["cubs"] } });
+const evHelper = (await call("POST", "?a=login", { body: { code: r.j.code } })).j.token;
+r = await call("POST", "?a=event", { token: evHelper, body: { date: "2030-06-02", title: "Helper try", section: "cubs" } });
+ok("a helper cannot add an event even for their own section", [r.status, r.j.error], [403, "Only a lead of that section can change its events."]);
+r = await call("POST", "?a=event-remove", { token: evHelper, body: { key: "2030-06-08|Cubs hike" } });
+ok("nor remove one", r.status, 403);
+r = await call("POST", "?a=event-remove", { token: cubsLead, body: { key: "2030-06-08|Cubs hike" } });
+ok("the lead removes their own section's event", [r.status, r.j.events.some((e) => e.title === "Cubs hike")], [200, false]);
 r = await call("POST", "?a=event-remove", { token: m2, body: { private: true, key: "2030-04-02|Leaders planning night" } });
 ok("a private event can be removed", r.j.events.length, 0);
 { // With no calendar configured at all, a public event fails clearly and a private one still works.

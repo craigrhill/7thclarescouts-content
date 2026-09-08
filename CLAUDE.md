@@ -96,6 +96,7 @@ warning fires correctly for leaders.
                         the app, not cached by sw.js, noindexed, and never
                         read by content.json. Delete a file to remove it.
     lab/rota.html       the rota: coverage per section (see below)
+    lab/events.html     calendar events: a lead for their sections, the secretary for all
     lab/roster.html     the secretary's roster: people, sections, codes
     lab/badges.html     the Adventure Skills badge board, names and all (see below)
     lab/attendance.html attendance per meeting, taken at the door (see below)
@@ -143,10 +144,14 @@ Roles are flags on a person, and the function enforces them, not the pages:
   the store so the secretary can see them again; GET returns them to
   secretaries only, never to leads or helpers. Adding is a name (or
   several, comma separated), section chips and Add; the code shows in the
-  row. The secretary also keeps the calendar there: a public event is
-  written into `content.json`, the same file `admin.html` edits, so it
-  reaches parents and the rota alike; a "leaders only" one is kept in the
-  rota store and shows on the rota only.
+  row.
+* **events** live on `events.html`: a lead adds and changes events for the
+  sections on their own roster entry, the secretary for any section and for
+  the whole group; helpers see their sections' events read-only. The
+  function decides, not the page. A public event is written into
+  `content.json`, the same file `admin.html` edits, so it reaches parents
+  and the rota alike; a "leaders only" one is kept in the rota store and
+  shows on the rota only.
 * **lead** runs coverage on `rota.html` for the sections on their own
   roster entry: adults needed per section and per meeting, anyone's ticks,
   weeks off. Leads see the roster there read-only.
