@@ -105,7 +105,7 @@ function render(){
   const slots = upcoming(k), names = (D.people || []).filter(p => (p.sections || []).includes(k));
   const live = slots.filter(x => !slotOf(k, x.id).off);
   const gaps = live.filter(x => slotOf(k, x.id).who.length < needOf(k, x.id));
-  $("gaps").innerHTML = (live.length ? `<div class="gap ok"><span>${live.length - gaps.length} of ${live.length} covered</span><span class="count">default ${sect.required}</span></div>` : "")
+  $("gaps").innerHTML = (live.length ? `<div class="gap ok"><span>${live.length - gaps.length} of ${live.length} covered</span><span class="count">${queued ? "saving…" : "default " + sect.required}</span></div>` : "")
     + (gaps.map(x => `<div class="gap"><span>${esc(fmt(x.date))}, ${esc(x.title)}</span><span class="count">${slotOf(k, x.id).who.length} of ${needOf(k, x.id)}</span></div>`).join("") || (live.length ? "" : `<div class="empty">No meeting day set for this section.</div>`));
   $("slots").innerHTML = slots.map(x => {
     const s = slotOf(k, x.id), n = s.who.length, kk = needOf(k, x.id), custom = s.need > 0;
@@ -128,13 +128,41 @@ function render(){
   $("people").innerHTML = lead ? (names.map(p => `<div class="person"><span class="nm">${esc(p.name)}${p.lead ? "<small>lead</small>" : ""}</span><span>${pills(C, p.sections)}</span></div>`).join("") || `<div class="empty">Nobody on the roster for ${esc(sectionName(k))} yet.</div>`) : "";
 }
 async function load(){ showErr(""); D = await api("GET", "?sections=" + allKeys().join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
-async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); } }
 function pick(k){ try { localStorage.setItem(SK, k); } catch {} render(); }
 function putSection(k, doc){ D.sections[k] = { required: doc.required, slots: doc.slots, updatedAt: doc.updatedAt }; render(); }
-const tick = (k, id, pid, on) => guarded(async () => putSection(k, (await api("POST", "?a=slot", { section: k, id, [on ? "add" : "remove"]: [pid] })).section));
-const setNeed = (k, id, v) => guarded(async () => putSection(k, (await api("POST", "?a=slot", { section: k, id, need: Number(v) })).section));
-const setOff = (k, id, off) => guarded(async () => putSection(k, (await api("POST", "?a=slot", { section: k, id, off })).section));
-$("req").addEventListener("change", () => guarded(async () => putSection(sec(), (await api("POST", "?a=required", { section: sec(), required: Number($("req").value) })).section)));
+// A tick changes the page at once and the save follows it. Requests go one at
+// a time in the order they were made, and the section the server sends back is
+// taken only when nothing else is waiting, so a reply that lands late cannot
+// put an older picture back on screen. The local change mirrors what the
+// function does with the same request, down to a needed number that matches
+// the section default counting as no change at all.
+let queued = 0, chain = Promise.resolve(), missed = false;
+const slotIn = (k, id) => { const s = D.sections[k].slots; return (s[id] = s[id] || { who: [], off: false }); };
+function send(k, q, body, apply){
+  apply(); render(); queued++;
+  chain = chain.then(async () => {
+    try { const r = await api("POST", q, body); if (queued === 1 && r.section) putSection(k, r.section); if (!missed) showErr(""); }
+    catch (e) { missed = true; showErr(e.message); }
+    queued--; render();
+    // One that failed leaves the page ahead of the server, so read it back.
+    if (!queued && missed) { missed = false; try { await load(); } catch {} showErr("Something did not save, so this is the rota straight from the server. Have another go."); }
+  });
+}
+const tick = (k, id, pid, on) => send(k, "?a=slot", { section: k, id, [on ? "add" : "remove"]: [pid] }, () => {
+  const s = slotIn(k, id); s.who = on ? [...s.who.filter(x => x !== pid), pid] : s.who.filter(x => x !== pid);
+});
+const setNeed = (k, id, v) => send(k, "?a=slot", { section: k, id, need: Number(v) }, () => {
+  const n = Math.round(Number(v)), s = slotIn(k, id);
+  if (n >= 1 && n <= 9 && n !== D.sections[k].required) s.need = n; else delete s.need;
+});
+const setOff = (k, id, off) => send(k, "?a=slot", { section: k, id, off }, () => { slotIn(k, id).off = !!off; });
+$("req").addEventListener("change", () => { const k = sec(), n = Math.round(Number($("req").value));
+  send(k, "?a=required", { section: k, required: n }, () => {
+    if (!(n >= 1 && n <= 9)) return;
+    D.sections[k].required = n;
+    for (const s of Object.values(D.sections[k].slots)) if (s.need === n) delete s.need;
+  });
+});
 function signOut(msg){ leaveBridge(); setToken(null); D = null; $("app").hidden = true; $("gate").hidden = false; $("adminHint").hidden = !adminPw(); $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
 onUnauthorized = signOut;
 async function boot(){

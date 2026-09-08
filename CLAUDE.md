@@ -180,7 +180,14 @@ Roles are flags on a person, and the function enforces them, not the pages:
   shows on the rota only.
 * **lead** runs coverage on `rota.html` for the sections on their own
   roster entry: adults needed per section and per meeting, anyone's ticks,
-  weeks off. Leads see the roster there read-only.
+  weeks off. Leads see the roster there read-only. A tick changes the page
+  first and the save follows: requests go one at a time in the order they
+  were made, and the section the function sends back is taken only when
+  nothing else is waiting, so a reply that lands late cannot put an older
+  picture on screen. The local change mirrors what the function does with
+  the same request, down to a needed number equal to the section default
+  counting as no change at all. One that fails reads the section back from
+  the server rather than leaving the page ahead of it.
 * neither: sees the rota for their own sections, ticks only themselves, and
   sees only people who share a section with them.
 

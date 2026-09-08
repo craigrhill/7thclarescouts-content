@@ -85,6 +85,18 @@ try {
   await L.locator(".slot").first().locator(".who label", { hasText: "(you)" }).locator("input").check(); await L.waitForTimeout(500);
   await L.locator(".slot").first().locator(".need input").fill("3"); await L.locator(".slot").first().locator(".need input").press("Enter"); await L.waitForTimeout(500);
   ok("lead ticks self and raises the slot to 3", await status(L, 0), "1 OF 3");
+  // Ticks on a phone with one bar: the count follows the tap, not the reply,
+  // and a reply landing late cannot put an older picture back on screen.
+  await L.route("**/functions/rota?a=slot", async (r) => { await new Promise((x) => setTimeout(x, 700)); await r.continue(); });
+  await L.locator(".slot").nth(1).locator(".who label", { hasText: "(you)" }).click(); await L.waitForTimeout(120);
+  await L.locator(".slot").nth(1).locator(".who label", { hasText: "Member Test" }).click(); await L.waitForTimeout(150);
+  ok("two quick ticks show at once, with the count and the saving note", [await L.locator(".slot").nth(1).locator(".who input:checked").count(), (await L.locator("#gaps").innerText()).includes("saving")], [2, true]);
+  await L.waitForTimeout(2400);
+  ok("and neither is undone when the replies land", [await L.locator(".slot").nth(1).locator(".who input:checked").count(), await status(L, 1)], [2, "COVERED"]);
+  await L.unroute("**/functions/rota?a=slot");
+  await L.locator(".slot").nth(1).locator(".who label", { hasText: "Member Test" }).click(); await L.waitForTimeout(700);
+  await L.locator(".slot").nth(1).locator(".who label", { hasText: "(you)" }).click(); await L.waitForTimeout(700);
+  ok("and the slot goes back to empty when both are untapped", await L.locator(".slot").nth(1).locator(".who input:checked").count(), 0);
   await L.screenshot({ path: ".e2e/rota-lead-1280.png" });
 
   const M = await page(390, 844); await go(M, "rota.html"); await M.fill("#code", memberCode.toLowerCase()); await signInBtn(M).click(); await M.waitForTimeout(900);
