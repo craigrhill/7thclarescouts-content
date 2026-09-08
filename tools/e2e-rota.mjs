@@ -73,6 +73,7 @@ try {
 
   const L = await page(1280, 900); await go(L, "rota.html"); await L.fill("#code", leadCode); await signInBtn(L).click(); await L.waitForTimeout(900);
   ok("lead signs in", [await L.locator("#app").isVisible(), await L.locator("#meRole").innerText()], [true, ", section lead"]);
+  ok("lead sees only their own section's chip", (await L.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()), ["Scouts"]);
   ok("lead has no Roster pill, and Rota is the highlighted one", [await L.locator("#leaderNav").getByRole("link", { name: "Roster" }).isVisible(), (await L.locator("#leaderNav a.on").innerText()).trim()], [false, "Rota"]);
   await pickSec(L, "Scouts");
   ok("lead sees the Scouts roster read-only", await names(L), ["Lead Test", "Member Test"]);
@@ -86,6 +87,7 @@ try {
 
   const M = await page(390, 844); await go(M, "rota.html"); await M.fill("#code", memberCode.toLowerCase()); await signInBtn(M).click(); await M.waitForTimeout(900);
   ok("member signs in (code case-insensitive)", [await M.locator("#app").isVisible(), await M.locator("#meRole").innerText()], [true, ""]);
+  ok("member sees only their own section's chip", (await M.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()), ["Scouts"]);
   await pickSec(M, "Scouts");
   ok("member sees the lead's tick", await status(M, 0), "1 OF 3");
   ok("member cannot tick the lead", await M.locator(".slot").first().locator(".who label", { hasText: "Lead Test" }).locator("input").isDisabled(), true);
@@ -115,6 +117,18 @@ try {
 
   const S2 = await page(1280, 900); await go(S2, "rota.html"); await S2.fill("#code", secCode); await signInBtn(S2).click(); await S2.waitForTimeout(900);
   ok("secretary on the rota page gets a Roster pill", await S2.locator("#leaderNav").getByRole("link", { name: "Roster" }).isVisible(), true);
+  ok("and every section's chip", await S2.locator("#chips .chip").count(), await S2.evaluate(async () => (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).settings.sections.length));
+  // A lead with no section on their entry gets a plain message, not an empty rota.
+  // Made through the API as the secretary: the add form is for people with sections.
+  step = "blank lead";
+  const blank = await S.evaluate(async () => { const h = { "Content-Type": "application/json", "x-rota-token": localStorage.getItem("rota-token") };
+    const r = await (await fetch("/.netlify/functions/rota?a=person", { method: "POST", headers: h, body: JSON.stringify({ name: "Blank Lead", sections: [], lead: true }) })).json(); return { code: r.code, id: r.person.id }; });
+  const Bl = await page(390, 844); await go(Bl, "rota.html"); await Bl.fill("#code", blank.code); await signInBtn(Bl).click(); await Bl.waitForTimeout(900);
+  ok("a lead with no sections is told to ask the secretary, and sees no rota", [await Bl.locator("#none").isVisible(), await Bl.locator("#rotaBody").isVisible(), await Bl.locator("#chips .chip").count()], [true, false, 0]);
+  await Bl.close();
+  await S.evaluate(async (id) => { const h = { "Content-Type": "application/json", "x-rota-token": localStorage.getItem("rota-token") };
+    await fetch("/.netlify/functions/rota?a=person-remove", { method: "POST", headers: h, body: JSON.stringify({ id, sections: [] }) }); }, blank.id);
+  step = "";
   await go(S2, "roster.html"); ok("secretary is signed in on the roster page too (shared token)", await S2.locator("#app").isVisible(), true);
   await S2.locator("#people tr.person", { hasText: "Lead Test" }).locator("button:has-text('Edit')").click(); await S2.waitForTimeout(200);
   await S2.screenshot({ path: ".e2e/roster-1280.png" });

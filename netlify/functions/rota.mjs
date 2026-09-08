@@ -1004,6 +1004,7 @@ function cleanEvent(b, sectionKeys, kitIds) {
   return { event: e };
 }
 var sectionFallback = () => ({ required: 2, slots: {} });
+var canSeeSection = (me, canManage, k) => canManage || (me.sections || []).includes(k);
 var SKILLS = ["camping", "backwoods", "pioneering", "hillwalking", "emergencies", "air", "paddling", "rowing", "sailing"];
 var isSkill = (x) => SKILLS.includes(x);
 var badgesFallback = () => ({ next: 1, youth: [], stages: {} });
@@ -1110,7 +1111,8 @@ function createHandler(storeFactory) {
         return json(200, { me: pub(me, canManage), sections, canEdit, canAdd });
       }
       if (req.method === "GET") {
-        const keys = (url.searchParams.get("sections") || "").split(",").map((s) => s.trim()).filter(isKey);
+        const wanted = (url.searchParams.get("sections") || "").split(",").map((s) => s.trim()).filter(isKey);
+        const keys = wanted.filter((k) => canSeeSection(me, canManage, k));
         const sections = {};
         for (const k of keys) {
           const { doc } = await readDoc(store, "section/" + k, sectionFallback);
@@ -1120,7 +1122,7 @@ function createHandler(storeFactory) {
         const visible = me.lead || canManage ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
         const { doc: ev } = await readDoc(store, "events", eventsFallback);
         const { doc: cd } = await readDoc(store, "county", countyFallback);
-        const ourSections = new Set(keys);
+        const ourSections = new Set(wanted);
         const county = Object.entries(cd.items || {}).filter(([, it]) => {
           if (canManage) return true;
           if (!me.lead) return false;
@@ -1267,6 +1269,7 @@ function createHandler(storeFactory) {
       }
       if (a === "slot") {
         if (!isKey(b.section) || !isSlotId(b.id)) return fail(400, "Bad section or slot.");
+        if (!canSeeSection(me, canManage, b.section)) return fail(403, "That section is not on your roster entry.");
         const known = new Set(roster.doc.people.map((p) => p.id));
         const add = Array.isArray(b.add) ? b.add : [], remove = Array.isArray(b.remove) ? b.remove : [];
         if ([...add, ...remove].some((id) => !known.has(id))) return fail(400, "Unknown person.");
@@ -1290,6 +1293,7 @@ function createHandler(storeFactory) {
       if (a === "required") {
         if (!me.lead) return fail(403, "Only a section lead can change that.");
         if (!isKey(b.section)) return fail(400, "Bad section.");
+        if (!canSeeSection(me, canManage, b.section)) return fail(403, "That section is not on your roster entry.");
         const n = Math.round(Number(b.required));
         if (!(n >= 1 && n <= 9)) return fail(400, "Required must be 1 to 9.");
         const doc = await update(store, "section/" + b.section, sectionFallback, (d) => {

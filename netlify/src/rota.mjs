@@ -24,7 +24,7 @@
 //
 // API (all JSON; auth by the x-rota-token header):
 //   OPTIONS                                         204
-//   GET    ?sections=a,b                            { me, people, sections }
+//   GET    ?sections=a,b                            { me, people, sections }   sections on your entry only
 //   POST   ?a=bootstrap  x-admin-password  {name}   { person, code }   first secretary
 //   POST   ?a=login                        {code}   { token, me }
 //   POST   ?a=admin-login  x-admin-password          { token, me }   as the secretary
@@ -268,6 +268,10 @@ function cleanEvent(b, sectionKeys, kitIds) {
 }
 const sectionFallback = () => ({ required: 2, slots: {} });
 
+// Coverage, like the boards, is per section: a person sees and ticks the
+// sections on their own roster entry; the secretary sees all of them.
+const canSeeSection = (me, canManage, k) => canManage || (me.sections || []).includes(k);
+
 // ---- badge boards ----
 const SKILLS = ["camping", "backwoods", "pioneering", "hillwalking", "emergencies", "air", "paddling", "rowing", "sailing"];
 const isSkill = (x) => SKILLS.includes(x);
@@ -365,7 +369,11 @@ export function createHandler(storeFactory) {
       }
 
       if (req.method === "GET") {
-        const keys = (url.searchParams.get("sections") || "").split(",").map((s) => s.trim()).filter(isKey);
+        // "wanted" is the group's list, which the county filter below needs
+        // to know which of a county event's sections are ours at all;
+        // "keys" is the part of it this person may see.
+        const wanted = (url.searchParams.get("sections") || "").split(",").map((s) => s.trim()).filter(isKey);
+        const keys = wanted.filter((k) => canSeeSection(me, canManage, k));
         const sections = {};
         for (const k of keys) { const { doc } = await readDoc(store, "section/" + k, sectionFallback); sections[k] = { required: doc.required, slots: doc.slots, updatedAt: doc.updatedAt || null }; }
         // Leads and the secretary see everyone. Others see the people who share a section with them, which is all coverage needs.
@@ -373,7 +381,7 @@ export function createHandler(storeFactory) {
         const visible = (me.lead || canManage) ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
         const { doc: ev } = await readDoc(store, "events", eventsFallback);
         const { doc: cd } = await readDoc(store, "county", countyFallback);
-        const ourSections = new Set(keys);
+        const ourSections = new Set(wanted);
         const county = Object.entries(cd.items || {})
           .filter(([, it]) => {
             if (canManage) return true;
@@ -481,6 +489,7 @@ export function createHandler(storeFactory) {
 
       if (a === "slot") {
         if (!isKey(b.section) || !isSlotId(b.id)) return fail(400, "Bad section or slot.");
+        if (!canSeeSection(me, canManage, b.section)) return fail(403, "That section is not on your roster entry.");
         const known = new Set(roster.doc.people.map((p) => p.id));
         const add = Array.isArray(b.add) ? b.add : [], remove = Array.isArray(b.remove) ? b.remove : [];
         if ([...add, ...remove].some((id) => !known.has(id))) return fail(400, "Unknown person.");
@@ -501,6 +510,7 @@ export function createHandler(storeFactory) {
       if (a === "required") {
         if (!me.lead) return fail(403, "Only a section lead can change that.");
         if (!isKey(b.section)) return fail(400, "Bad section.");
+        if (!canSeeSection(me, canManage, b.section)) return fail(403, "That section is not on your roster entry.");
         const n = Math.round(Number(b.required));
         if (!(n >= 1 && n <= 9)) return fail(400, "Required must be 1 to 9.");
         const doc = await update(store, "section/" + b.section, sectionFallback, (d) => { d.required = n; for (const s of Object.values(d.slots)) if (s.need === n) delete s.need; return d; });

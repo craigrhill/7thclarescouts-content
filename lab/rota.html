@@ -39,6 +39,11 @@
     <p class="muted">Meetings for the next eight weeks and the section's events. Tick yourself in for the nights you can do. Anything below the number needed shows as a gap.</p>
     <div class="chips" id="chips"></div>
 
+    <div id="none" class="card" hidden>
+      <p class="muted" style="margin:0">No sections on your roster entry yet, so there is no rota to show. Ask the secretary to add your section on the roster.</p>
+    </div>
+    <div id="rotaBody">
+
     <div class="card">
       <div class="row"><label for="req">Default adults needed</label><input type="number" id="req" min="1" max="9"></div>
       <p class="small muted" style="margin:.5rem 0 0" id="reqNote"></p>
@@ -52,6 +57,7 @@
       <p class="small muted" id="peopleNote"></p>
       <div id="people"></div>
     </div>
+    </div>
   </section>
 </main>
 <footer class="wrap">Nothing on this page is public. Codes are personal: do not share yours.</footer>
@@ -62,7 +68,9 @@ const SK = "rota-section";
 const DAYS = { sunday:0, monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6 };
 let C = null, D = null;
 function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
-function keys(){ return C.settings.sections.map(x => x.key); }
+function allKeys(){ return C.settings.sections.map(x => x.key); }
+// The function returns only the sections on this person's roster entry; the chips follow that.
+function keys(){ return allKeys().filter(k => D && D.sections && D.sections[k]); }
 function sec(){ let k = null; try { k = localStorage.getItem(SK); } catch {} return keys().includes(k) ? k : keys()[0]; }
 function sectionName(k){ return (C.settings.sections.find(x => x.key === k) || {}).name || k; }
 function iso(d){ return d.toISOString().slice(0, 10); }
@@ -84,9 +92,13 @@ const slotOf = (k, id) => (D.sections[k] && D.sections[k].slots[id]) || { who: [
 const needOf = (k, id) => { const s = slotOf(k, id); return s.need > 0 ? s.need : D.sections[k].required; };
 
 function render(){
-  const k = sec(), me = D.me, lead = !!me.lead, sect = D.sections[k] || { required: 2, slots: {} };
+  const me = D.me;
   $("leaderNav").innerHTML = leaderNav(me); $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
-  $("chips").innerHTML = C.settings.sections.map(x => `<button class="chip ${x.key === k ? "on" : ""}" onclick="pick('${esc(x.key)}')">${esc(x.name)}</button>`).join("");
+  const v = keys();
+  $("none").hidden = !!v.length; $("rotaBody").hidden = !v.length;
+  if (!v.length) { $("chips").innerHTML = ""; return; }
+  const k = sec(), lead = !!me.lead, sect = D.sections[k] || { required: 2, slots: {} };
+  $("chips").innerHTML = C.settings.sections.filter(x => v.includes(x.key)).map(x => `<button class="chip ${x.key === k ? "on" : ""}" onclick="pick('${esc(x.key)}')">${esc(x.name)}</button>`).join("");
   $("req").value = sect.required; $("req").disabled = !lead;
   $("reqNote").textContent = lead ? "Applies to every meeting and event unless you change the number on that one below." : "Only a section lead can change this.";
   const slots = upcoming(k), names = (D.people || []).filter(p => (p.sections || []).includes(k));
@@ -114,7 +126,7 @@ function render(){
   $("peopleNote").textContent = lead ? "From the roster the secretary keeps. To add someone or change their sections, ask the secretary." : "Your sections: " + ((me.sections || []).map(sectionName).join(", ") || "none yet") + ". To change them, ask the secretary.";
   $("people").innerHTML = lead ? (names.map(p => `<div class="person"><span class="nm">${esc(p.name)}${p.lead ? "<small>lead</small>" : ""}</span><span>${pills(C, p.sections)}</span></div>`).join("") || `<div class="empty">Nobody on the roster for ${esc(sectionName(k))} yet.</div>`) : "";
 }
-async function load(){ showErr(""); D = await api("GET", "?sections=" + keys().join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
+async function load(){ showErr(""); D = await api("GET", "?sections=" + allKeys().join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
 async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); } }
 function pick(k){ try { localStorage.setItem(SK, k); } catch {} render(); }
 function putSection(k, doc){ D.sections[k] = { required: doc.required, slots: doc.slots, updatedAt: doc.updatedAt }; render(); }

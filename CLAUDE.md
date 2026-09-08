@@ -147,10 +147,17 @@ Roles are flags on a person, and the function enforces them, not the pages:
   written into `content.json`, the same file `admin.html` edits, so it
   reaches parents and the rota alike; a "leaders only" one is kept in the
   rota store and shows on the rota only.
-* **lead** runs coverage on `rota.html`: adults needed per section and per
-  meeting, anyone's ticks, weeks off. Leads see the roster there read-only.
-* neither: sees the rota, ticks only themselves, and sees only people who
-  share a section with them.
+* **lead** runs coverage on `rota.html` for the sections on their own
+  roster entry: adults needed per section and per meeting, anyone's ticks,
+  weeks off. Leads see the roster there read-only.
+* neither: sees the rota for their own sections, ticks only themselves, and
+  sees only people who share a section with them.
+
+The function returns and accepts only the sections on the caller's roster
+entry (all of them for the secretary), so a lead or helper with no section
+set sees a message asking the secretary to add one rather than an empty
+rota. The county filter still uses the group's whole section list to decide
+which of a county event's sections are ours at all.
 
 While no secretary exists (a roster from before the role did), leads hold the
 secretary's powers so nobody is locked out. The first secretary is created

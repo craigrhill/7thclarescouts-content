@@ -141,6 +141,18 @@ r = await call("POST", "?a=person", { token: member, body: { name: "X", sections
 r = await call("POST", "?a=login", { body: { code: cubsLeadCode } }); const cubsLead = r.j.token;
 r = await call("POST", "?a=person", { token: cubsLead, body: { name: "X", sections: [] } });               ok("a section lead cannot add people either", r.status, 403);
 r = await call("POST", "?a=required", { token: cubsLead, body: { section: "cubs", required: 3 } });       ok("but a section lead can set adults needed", r.status, 200);
+r = await call("GET", "?sections=scouts,cubs,beavers", { token: cubsLead });
+ok("a lead gets back only the sections on their own entry", Object.keys(r.j.sections), ["cubs"]);
+r = await call("GET", "?sections=scouts,cubs,beavers", { token: member });
+ok("so does a helper", Object.keys(r.j.sections), ["scouts"]);
+r = await call("GET", "?sections=scouts,cubs,beavers", { token: lead });
+ok("the secretary gets them all", Object.keys(r.j.sections).sort(), ["beavers", "cubs", "scouts"]);
+r = await call("POST", "?a=slot", { token: cubsLead, body: { section: "scouts", id: slot, add: [cubsLeadId] } });
+ok("a lead cannot tick on a section that is not theirs, even themselves", [r.status, r.j.error], [403, "That section is not on your roster entry."]);
+r = await call("POST", "?a=required", { token: cubsLead, body: { section: "scouts", required: 4 } });
+ok("nor set its adults needed", r.status, 403);
+r = await call("POST", "?a=slot", { token: cubsLead, body: { section: "cubs", id: slot, add: [memberId, cubsLeadId] } });
+ok("on their own section a lead ticks anyone", [r.status, r.j.section.slots[slot].who.sort()], [200, [cubsLeadId, memberId].sort()]);
 r = await call("GET", "?sections=scouts", { token: member });
 ok("member sees only people sharing a section (the secretary has none, the helper is Beavers)", r.j.people.map(p => p.name), ["Member One"]);
 ok("member does not see the Beaver helper", r.j.people.some(p => p.id === beaverId), false);
