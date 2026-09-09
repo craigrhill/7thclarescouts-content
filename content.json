@@ -1565,7 +1565,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-09T04:44:36.308Z",
+  "updatedAt": "2026-09-09T22:11:28.364Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
@@ -1646,6 +1646,68 @@
       "album": "Phoenix Challenge 2026",
       "w": 1600,
       "h": 1200
+    }
+  ],
+  "meetings": [
+    {
+      "id": "2026-09-15",
+      "section": "beavers",
+      "date": "2026-09-15"
+    },
+    {
+      "id": "2026-09-22",
+      "section": "beavers",
+      "date": "2026-09-22"
+    },
+    {
+      "id": "2026-09-29",
+      "section": "beavers",
+      "date": "2026-09-29"
+    },
+    {
+      "id": "2026-10-06",
+      "section": "beavers",
+      "date": "2026-10-06"
+    },
+    {
+      "id": "2026-10-13",
+      "section": "beavers",
+      "date": "2026-10-13"
+    },
+    {
+      "id": "2026-10-20",
+      "section": "beavers",
+      "date": "2026-10-20"
+    },
+    {
+      "id": "2026-10-27",
+      "section": "beavers",
+      "date": "2026-10-27"
+    },
+    {
+      "id": "2026-11-03",
+      "section": "beavers",
+      "date": "2026-11-03"
+    },
+    {
+      "id": "2026-11-10",
+      "section": "beavers",
+      "date": "2026-11-10"
+    },
+    {
+      "id": "2026-11-17",
+      "section": "beavers",
+      "date": "2026-11-17"
+    },
+    {
+      "id": "2026-11-24",
+      "section": "beavers",
+      "date": "2026-11-24"
+    },
+    {
+      "id": "2026-12-01",
+      "section": "beavers",
+      "date": "2026-12-01"
     }
   ]
 }
