@@ -1171,6 +1171,7 @@ var badgesFallback = () => ({ next: 1, youth: [], stages: {} });
 var canSeeBoard = (me, canManage, k) => canManage || (me.sections || []).includes(k);
 var canEditBoard = (me, canManage, k) => canSeeBoard(me, canManage, k) && (canManage || !!me.lead);
 var byNumber = (youth) => [...youth].sort((x, y) => x.n - y.n);
+var coverOf = (roster, k) => (roster.people || []).filter((p) => p.secretary || (p.sections || []).includes(k)).sort((x, y) => !!y.lead - !!x.lead || String(x.name).localeCompare(String(y.name), "en-IE"));
 var boardFor = (doc) => ({ next: doc.next, youth: byNumber(doc.youth), stages: doc.stages, updatedAt: doc.updatedAt || null });
 var attendanceFallback = () => ({ meetings: {} });
 var publicBoard = (k, doc) => ({ section: k, updatedAt: doc.updatedAt || null, rows: byNumber(doc.youth).map((y) => ({ n: y.n, stages: doc.stages[y.id] || {} })) });
@@ -1330,7 +1331,12 @@ function createHandler(storeFactory) {
         for (const k of keys) {
           const { doc: board } = await readDoc(store, "badges/" + k, badgesFallback);
           const { doc: att } = await readDoc(store, "attendance/" + k, attendanceFallback);
-          sections[k] = { youth: byNumber(board.youth).map(({ id, n, name }) => ({ id, n, name })), meetings: att.meetings, updatedAt: att.updatedAt || null };
+          sections[k] = {
+            youth: byNumber(board.youth).map(({ id, n, name }) => ({ id, n, name })),
+            adults: coverOf(roster.doc, k).map(({ id, name, lead }) => ({ id, name, lead: !!lead })),
+            meetings: att.meetings,
+            updatedAt: att.updatedAt || null
+          };
           canEdit[k] = true;
           canAdd[k] = canEditBoard(me, canManage, k);
         }
@@ -1531,14 +1537,18 @@ function createHandler(storeFactory) {
         if (!isDate(b.date)) return fail(400, "Bad date.");
         const { doc: board } = await readDoc(store, "badges/" + k, badgesFallback);
         const known = new Set(board.youth.map((y) => y.id));
+        const cover = new Set(coverOf(roster.doc, k).map((p) => p.id));
         const doc = await update(store, "attendance/" + k, attendanceFallback, (d) => {
           if (a === "attend-remove") {
             delete d.meetings[b.date];
             return d;
           }
           const present = [...new Set((Array.isArray(b.present) ? b.present : []).filter((id) => known.has(id)))];
+          const adults = [...new Set((Array.isArray(b.adults) ? b.adults : []).filter((id) => cover.has(id)))];
+          const lead = cover.has(b.lead) ? b.lead : "";
+          if (lead && !adults.includes(lead)) adults.push(lead);
           const note = String(b.note || "").trim().slice(0, 80);
-          d.meetings[b.date] = { present, note, by: me.name, at: (/* @__PURE__ */ new Date()).toISOString() };
+          d.meetings[b.date] = { present, adults, lead, note, by: me.name, at: (/* @__PURE__ */ new Date()).toISOString() };
           return d;
         });
         return json(200, { meetings: doc.meetings });

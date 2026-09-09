@@ -38,7 +38,7 @@
     </div>
 
     <h1>Attendance</h1>
-    <p class="muted intro">Tap each name as they arrive. It saves as you go, so whoever is at the door can do it and put the phone away.</p>
+    <p class="muted intro">Tap each name as they arrive, the young people and the Scouters both, and name whoever is answerable for the programme. It saves as you go, so whoever is at the door can do it and put the phone away.</p>
     <div class="chips" id="chips"></div>
 
     <div id="none" class="card" hidden>
@@ -57,6 +57,17 @@
       </div>
       <div class="who att" id="names"></div>
       <div id="addRow"></div>
+
+      <h3 class="grp">Scouters</h3>
+      <div class="row tools" style="margin:0 0 .2rem;justify-content:space-between">
+        <span id="acount" class="small"></span>
+      </div>
+      <div class="who att" id="adults"></div>
+      <div class="lead-row">
+        <label class="small muted" for="lead" id="leadLabel">In charge of the programme</label><br>
+        <select id="lead" onchange="setLead(this.value)"></select>
+        <p class="small muted" id="leadNote" style="margin:.3rem 0 0"></p>
+      </div>
     </div>
 
     <div id="history" class="card" hidden>
@@ -67,7 +78,7 @@
     </div>
   </section>
 </main>
-<footer class="wrap">Nothing on this page is public. Names come from the badge board. <a href="/">Back to the app</a></footer>
+<footer class="wrap">Nothing on this page is public. Scouts come from the badge board, Scouters from the roster. <a href="/">Back to the app</a></footer>
 
 <script src="rota-lib.js"></script>
 <script>
@@ -87,6 +98,25 @@ function sectionName(k){ return (C.settings.sections.find(x => x.key === k) || {
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
 const rec = (k, d) => (D.sections[k].meetings || {})[d] || null;
 const presentSet = (k, d) => new Set((rec(k, d) || {}).present || []);
+const adultSet = (k, d) => new Set((rec(k, d) || {}).adults || []);
+const leadOf = (k, d) => (rec(k, d) || {}).lead || "";
+// A night away is run by a camp lead; an ordinary night by whoever is
+// answerable for the programme. The calendar says which this is, so the page
+// asks for the right one by name rather than making a leader translate. Every
+// day of a camp counts, not only the first, because attendance is taken on
+// each of them. It reads the public calendar, so a camp kept leaders-only
+// asks for the programme wording instead; the field is the same either way.
+function overnight(k, d){
+  return (C.events || []).some(e => e.endDate && e.endDate > e.date && e.date <= d && e.endDate >= d
+    && (!e.section || e.section === "all" || e.section === k));
+}
+const leadWord = (k, d) => overnight(k, d)
+  ? { label: "Camp lead", short: "Camp lead", done: "Answerable for this camp.",
+      ask: "Name the camp lead: somebody has to be answerable for a night away.",
+      none: "No camp lead was named." }
+  : { label: "In charge of the programme", short: "In charge", done: "Answerable for tonight's programme.",
+      ask: "Name whoever was in charge of the programme.",
+      none: "Nobody was named as in charge." };
 
 function render(){
   const me = D.me;
@@ -94,7 +124,7 @@ function render(){
   const v = visibleKeys();
   if (!v.length) { $("chips").innerHTML = ""; $("tonight").hidden = true; $("history").hidden = true; $("none").hidden = false; return; }
   $("none").hidden = true; $("tonight").hidden = false; $("history").hidden = false;
-  const k = sec(), S = D.sections[k], youth = S.youth;
+  const k = sec(), S = D.sections[k], youth = S.youth, adults = S.adults || [];
   if (!date) date = today();
   $("chips").innerHTML = v.map(x => `<button class="chip ${x === k ? "on" : ""}" onclick="pickSection('${esc(x)}')">${esc(sectionName(x))}</button>`).join("");
   $("printTitle").textContent = sectionName(k) + " attendance";
@@ -110,15 +140,37 @@ function render(){
     ? youth.map(y => `<label class="${here.has(y.id) ? "on" : ""}"><input type="checkbox" ${here.has(y.id) ? "checked" : ""} onchange="toggle('${esc(y.id)}', this.checked)">${esc(y.name)}</label>`).join("")
     : `<span class="empty">Nobody on the ${esc(sectionName(k))} badge board yet, so nobody to tick.${D.canAdd[k] ? "" : " Ask the section lead to add them."}</span>`;
   $("addRow").innerHTML = D.canAdd[k] ? `<div class="row add" style="margin-top:.6rem"><input type="text" id="newName" placeholder="Add a Scout: name, or several separated by commas" autocomplete="off"><button class="btn primary" onclick="add()">Add</button></div><p class="small muted" style="margin:.3rem 0 0">Added here goes on the badge board too; it is the same list.</p>` : "";
-  // Term so far: newest first, and a tally per Scout.
+  // The Scouters who were there, and the one answerable for the programme.
+  const on = adultSet(k, date), lead = leadOf(k, date), word = leadWord(k, date);
+  $("acount").innerHTML = adults.length ? `<b>${on.size}</b> of ${adults.length} here` : "";
+  $("adults").innerHTML = adults.length
+    ? adults.map(p => `<label class="${on.has(p.id) ? "on" : ""}"><input type="checkbox" ${on.has(p.id) ? "checked" : ""} onchange="toggleAdult('${esc(p.id)}', this.checked)">${esc(p.name)}${p.id === lead ? ` <span class="tag lead-tag">${esc(word.short)}</span>` : ""}</label>`).join("")
+    : `<span class="empty">Nobody on the roster covers ${esc(sectionName(k))} yet. Ask the secretary to add the Scouters who do.</span>`;
+  $("leadLabel").textContent = word.label;
+  $("lead").innerHTML = `<option value="">Nobody named yet</option>`
+    + adults.map(p => `<option value="${esc(p.id)}" ${p.id === lead ? "selected" : ""}>${esc(p.name)}</option>`).join("");
+  $("lead").value = lead;
+  $("leadNote").innerHTML = lead ? esc(word.done) : `<span class="warn">${esc(word.ask)}</span>`;
+  // Term so far: newest first, and a tally per person.
   const dates = Object.keys(S.meetings || {}).sort().reverse();
+  const nameOf = id => (adults.find(p => p.id === id) || {}).name || "";
   $("meetings").innerHTML = dates.length ? dates.map(d => { const m = S.meetings[d], p = new Set(m.present), away = youth.filter(y => !p.has(y.id));
-      return `<details class="meeting"><summary><span><b>${esc(fmt(d))}</b>${m.note ? `, ${esc(m.note)}` : ""}</span><span class="muted">${p.size} of ${youth.length}</span></summary>
+      const was = (m.adults || []).map(nameOf).filter(Boolean), ran = nameOf(m.lead), w = leadWord(k, d);
+      return `<details class="meeting"><summary><span><b>${esc(fmt(d))}</b>${m.note ? `, ${esc(m.note)}` : ""}</span><span class="muted">${p.size} of ${youth.length}${was.length ? ", " + was.length + " on" : ""}</span></summary>
         <p class="small" style="margin:.4rem 0">${away.length ? "Missing: " + away.map(y => esc(y.name)).join(", ") : "Everyone was there."}<span class="muted"> · saved by ${esc(m.by)}</span></p>
+        <p class="small" style="margin:.4rem 0">Scouters: ${was.length ? esc(was.join(", ")) : "<span class='muted'>none recorded</span>"}. ${ran ? esc(w.short) + ": <b>" + esc(ran) + "</b>." : `<span class="warn">${esc(w.none)}</span>`}</p>
         <p class="small" style="margin:0"><button class="btn quiet" onclick="openDate('${esc(d)}')">Edit</button><button class="btn quiet" onclick="removeMeeting('${esc(d)}')">Remove this meeting</button></p></details>`; }).join("")
     : `<div class="empty">No meetings recorded yet.</div>`;
-  $("totals").innerHTML = dates.length && youth.length ? `<table class="board"><thead><tr><th class="nm">Scout</th><th>Here</th><th>Of</th><th>Rate</th></tr></thead><tbody>${youth.map(y => { const n = dates.filter(d => S.meetings[d].present.includes(y.id)).length;
-      return `<tr><td class="nm">${esc(y.name)}</td><td>${n}</td><td>${dates.length}</td><td>${Math.round(100 * n / dates.length)}%</td></tr>`; }).join("")}</tbody></table>` : "";
+  // One tally, two groups: the young people, then the Scouters, each under its
+  // own heading, because they are counted the same way but are not one list.
+  const tally = (people, get) => people.map(x => { const n = dates.filter(d => get(S.meetings[d]).includes(x.id)).length;
+    return `<tr><td class="nm">${esc(x.name)}</td><td>${n}</td><td>${dates.length}</td><td>${Math.round(100 * n / dates.length)}%</td></tr>`; }).join("");
+  const grp = (title, n) => `<tr class="grp"><th class="nm" colspan="4">${esc(title)}<span class="muted"> · ${n}</span></th></tr>`;
+  $("totals").innerHTML = dates.length && (youth.length || adults.length)
+    ? `<table class="board"><thead><tr><th class="nm">Name</th><th>Here</th><th>Of</th><th>Rate</th></tr></thead><tbody>`
+      + (youth.length ? grp("Young people", youth.length) + tally(youth, m => m.present || []) : "")
+      + (adults.length ? grp("Scouters", adults.length) + tally(adults, m => m.adults || []) : "")
+      + `</tbody></table>` : "";
 }
 async function load(){ showErr(""); D = await api("GET", "?a=attendance&sections=" + keys().join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
 async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); } }
@@ -126,9 +178,15 @@ function pickSection(k){ try { localStorage.setItem(SK, k); } catch {} render();
 function openDate(d){ date = d; render(); $("tonight").scrollIntoView({ block: "start", behavior: "smooth" }); }
 // Every change sends the whole list for the date, so two phones at the door
 // converge on whatever was tapped last rather than fighting over a diff.
-const local = (k, d) => { const S = D.sections[k]; S.meetings = S.meetings || {}; return (S.meetings[d] = S.meetings[d] || { present: [], note: "", by: D.me.name, at: null }); };
-function save(k, d, present, note){
-  const m = local(k, d); m.present = present; if (note !== undefined) m.note = note;
+const local = (k, d) => { const S = D.sections[k]; S.meetings = S.meetings || {}; return (S.meetings[d] = S.meetings[d] || { present: [], adults: [], lead: "", note: "", by: D.me.name, at: null }); };
+// One saver for all four fields, so a tap on a Scouter is as cheap and as
+// safe as a tap on a Scout: whatever the record holds now is what goes.
+function save(k, d, patch){
+  const m = local(k, d); Object.assign(m, patch);
+  m.adults = m.adults || []; m.lead = m.lead || "";
+  // What the function does with a lead, done here too, so the screen and the
+  // store never disagree while the save is in the air.
+  if (m.lead && !m.adults.includes(m.lead)) m.adults.push(m.lead);
   m.by = D.me.name; m.at = new Date().toISOString();
   queued = { k, d }; render(); flush();
 }
@@ -137,7 +195,7 @@ async function flush(){
   const { k, d } = queued; queued = null; sending = true;
   try {
     const m = local(k, d);
-    const r = await api("POST", "?a=attend", { section: k, date: d, present: m.present, note: m.note });
+    const r = await api("POST", "?a=attend", { section: k, date: d, present: m.present, adults: m.adults, lead: m.lead, note: m.note });
     // A reply is only the truth while nothing newer is waiting to be sent.
     if (!queued) D.sections[k].meetings = r.meetings;
     unsaved = false; showErr("");
@@ -146,18 +204,28 @@ async function flush(){
   if (queued) flush();
 }
 const retry = () => { queued = { k: sec(), d: date }; render(); flush(); };
-const toggle = (id, on) => { const k = sec(), s = presentSet(k, date); if (on) s.add(id); else s.delete(id); save(k, date, [...s]); };
-const setAll = (on) => { const k = sec(); save(k, date, on ? D.sections[k].youth.map(y => y.id) : []); };
+const toggle = (id, on) => { const k = sec(), s = presentSet(k, date); if (on) s.add(id); else s.delete(id); save(k, date, { present: [...s] }); };
+const setAll = (on) => { const k = sec(); save(k, date, { present: on ? D.sections[k].youth.map(y => y.id) : [] }); };
+// Taking the person in charge off the list takes the title with them, or the
+// record would name somebody who was not there.
+const toggleAdult = (id, on) => { const k = sec(), s = adultSet(k, date); if (on) s.add(id); else s.delete(id);
+  save(k, date, { adults: [...s], lead: (!on && leadOf(k, date) === id) ? "" : leadOf(k, date) }); };
+const setLead = (id) => save(sec(), date, { lead: id });
 const removeMeeting = (d) => guarded(async () => { const k = sec(); if (!confirm(`Remove the record for ${fmt(d)}?`)) return; const r = await api("POST", "?a=attend-remove", { section: k, date: d }); D.sections[k].meetings = r.meetings; if (date === d) date = today(); render(); });
 async function add(){ const name = ($("newName").value || "").trim(); if (!name) return;
   await guarded(async () => { const k = sec(); const r = await api("POST", "?a=badge-add", { section: k, name }); D.sections[k].youth = r.board.youth.map(({ id, n, name }) => ({ id, n, name })); render(); }); }
 $("date").addEventListener("change", () => { if (isDateStr($("date").value)) { date = $("date").value; render(); } });
-$("note").addEventListener("change", () => { const k = sec(); if (rec(k, date) || $("note").value.trim()) save(k, date, [...presentSet(k, date)], $("note").value); });
+$("note").addEventListener("change", () => { const k = sec(); if (rec(k, date) || $("note").value.trim()) save(k, date, { note: $("note").value }); });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target && e.target.id === "newName") add(); });
 const isDateStr = s => /^\d{4}-\d{2}-\d{2}$/.test(s || "");
 function csv(){
   const k = sec(), S = D.sections[k], dates = Object.keys(S.meetings || {}).sort();
-  const rows = [["Scout", ...dates, "Here", "Of"], ...S.youth.map(y => { const n = dates.filter(d => S.meetings[d].present.includes(y.id)).length; return [y.name, ...dates.map(d => S.meetings[d].present.includes(y.id) ? "1" : ""), n, dates.length]; })];
+  const line = (who, x, get) => { const n = dates.filter(d => get(S.meetings[d]).includes(x.id)).length;
+    return [who, x.name, ...dates.map(d => get(S.meetings[d]).includes(x.id) ? "1" : ""), n, dates.length]; };
+  const rows = [["Who", "Name", ...dates, "Here", "Of"],
+    ...S.youth.map(y => line("Young person", y, m => m.present || [])),
+    ...(S.adults || []).map(p => line("Scouter", p, m => m.adults || [])),
+    ["In charge", "", ...dates.map(d => { const m = S.meetings[d], p = (S.adults || []).find(x => x.id === m.lead); return p ? p.name : ""; }), "", ""]];
   const text = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/csv" })); a.download = `attendance-${k}.csv`; a.click();
 }

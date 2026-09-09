@@ -64,15 +64,24 @@
 //   POST   ?a=badge-rename {section,id,name}                   { board }   lead of it
 //   POST   ?a=badge-remove {section,id}                        { board }   lead of it
 //   POST   ?a=badge-stage  {section,id,skill,stage 0..9}       { board }   lead of it
-//   GET    ?a=attendance&sections=a,b            { me, sections: {k: {youth, meetings}}, canEdit, canAdd }
-//   POST   ?a=attend        {section,date,present:[ids],note?}  { meetings }   anyone on that section
+//   GET    ?a=attendance&sections=a,b            { me, sections: {k: {youth, adults, meetings}}, canEdit, canAdd }
+//   POST   ?a=attend        {section,date,present:[ids],adults?:[ids],lead?,note?}  { meetings }   anyone on that section
 //   POST   ?a=attend-remove {section,date}                      { meetings }   anyone on that section
 //
-// Attendance: attendance/<key> holds one record per meeting date, the ids of
+// Attendance: attendance/<key> holds one record per meeting date: the ids of
 // the young people who were there (from the section's badge board, which is
-// where names live) and an optional note. Anyone signed in with the section
-// on their roster entry can fill it in, helpers included, because it is done
-// at the door on a phone by whoever is there. Nothing in it is public.
+// where their names live), the ids of the Scouters who were there (from the
+// roster, where theirs live), the one Scouter accountable for the programme
+// that night, and an optional note. Anyone signed in with the section on
+// their roster entry can fill it in, helpers included, because it is done at
+// the door on a phone by whoever is there. Nothing in it is public.
+//
+// Both lists are held to the section: a young person on its badge board, a
+// Scouter with it on their roster entry (or the secretary, who covers the
+// group). A Scouter helping another section is added to that section on the
+// roster, which is what the rota already asks for. Naming somebody
+// accountable also marks them present, because they were: the two cannot
+// disagree.
 //
 // Badge boards: one document per section, badges/<key>, holds the section's
 // young people and the stage each holds in the nine Adventure Skills. Names
@@ -483,6 +492,13 @@ const badgesFallback = () => ({ next: 1, youth: [], stages: {} });
 const canSeeBoard = (me, canManage, k) => canManage || (me.sections || []).includes(k);
 const canEditBoard = (me, canManage, k) => canSeeBoard(me, canManage, k) && (canManage || !!me.lead);
 const byNumber = (youth) => [...youth].sort((x, y) => x.n - y.n);
+// The Scouters who can be at a section's night: the ones carrying it on their
+// roster entry, and the secretary, who covers the group. It is deliberately
+// the same set as may take that section's attendance at all, because whoever
+// can be at the door can be recorded at it. Wider than the rota's own list,
+// which is about who may be put down for a night in advance.
+const coverOf = (roster, k) => (roster.people || []).filter((p) => p.secretary || (p.sections || []).includes(k))
+  .sort((x, y) => (!!y.lead - !!x.lead) || String(x.name).localeCompare(String(y.name), "en-IE"));
 const boardFor = (doc) => ({ next: doc.next, youth: byNumber(doc.youth), stages: doc.stages, updatedAt: doc.updatedAt || null });
 // What the public site gets: numbers and stages, nothing that names anyone.
 const attendanceFallback = () => ({ meetings: {} });
@@ -609,7 +625,9 @@ export function createHandler(storeFactory) {
         for (const k of keys) {
           const { doc: board } = await readDoc(store, "badges/" + k, badgesFallback);
           const { doc: att } = await readDoc(store, "attendance/" + k, attendanceFallback);
-          sections[k] = { youth: byNumber(board.youth).map(({ id, n, name }) => ({ id, n, name })), meetings: att.meetings, updatedAt: att.updatedAt || null };
+          sections[k] = { youth: byNumber(board.youth).map(({ id, n, name }) => ({ id, n, name })),
+            adults: coverOf(roster.doc, k).map(({ id, name, lead }) => ({ id, name, lead: !!lead })),
+            meetings: att.meetings, updatedAt: att.updatedAt || null };
           canEdit[k] = true; canAdd[k] = canEditBoard(me, canManage, k);
         }
         return json(200, { me: pub(me, canManage), sections, canEdit, canAdd });
@@ -787,11 +805,17 @@ export function createHandler(storeFactory) {
         if (!isDate(b.date)) return fail(400, "Bad date.");
         const { doc: board } = await readDoc(store, "badges/" + k, badgesFallback);
         const known = new Set(board.youth.map((y) => y.id));
+        const cover = new Set(coverOf(roster.doc, k).map((p) => p.id));
         const doc = await update(store, "attendance/" + k, attendanceFallback, (d) => {
           if (a === "attend-remove") { delete d.meetings[b.date]; return d; }
           const present = [...new Set((Array.isArray(b.present) ? b.present : []).filter((id) => known.has(id)))];
+          const adults = [...new Set((Array.isArray(b.adults) ? b.adults : []).filter((id) => cover.has(id)))];
+          // Somebody accountable for the programme was there to be accountable
+          // for it, so naming them ticks them in rather than contradicting it.
+          const lead = cover.has(b.lead) ? b.lead : "";
+          if (lead && !adults.includes(lead)) adults.push(lead);
           const note = String(b.note || "").trim().slice(0, 80);
-          d.meetings[b.date] = { present, note, by: me.name, at: new Date().toISOString() };
+          d.meetings[b.date] = { present, adults, lead, note, by: me.name, at: new Date().toISOString() };
           return d;
         });
         return json(200, { meetings: doc.meetings });

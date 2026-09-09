@@ -156,6 +156,19 @@ r = await call("POST", "?a=person", { token: lead, body: { name: "member one", s
   ok("the secretary can record any section", [r.status, Object.keys(r.j.meetings).sort()], [200, ["2026-09-11", "2026-09-18"]]);
   r = await call("POST", "?a=attend-remove", { token: bCubs, body: { section: "cubs", date: "2026-09-18" } });
   ok("a meeting record can be removed", Object.keys(r.j.meetings), ["2026-09-11"]);
+
+  // ---- the Scouters who were there, and the one accountable for the night ----
+  r = await call("GET", "?a=attendance&sections=scouts", { token: bMember });
+  ok("attendance lists the section's Scouters as well as its young people", r.j.sections.scouts.adults.some((p) => p.id === memberId), true);
+  r = await call("POST", "?a=attend", { token: bMember, body: { section: "scouts", date: "2026-09-24", present: [scoutKid], adults: [memberId], lead: memberId } });
+  ok("who was on and who ran it are both kept", [r.j.meetings["2026-09-24"].adults, r.j.meetings["2026-09-24"].lead], [[memberId], memberId]);
+  r = await call("POST", "?a=attend", { token: bMember, body: { section: "scouts", date: "2026-09-24", present: [scoutKid], adults: [], lead: memberId } });
+  ok("naming somebody accountable marks them there, because they were", [r.j.meetings["2026-09-24"].adults, r.j.meetings["2026-09-24"].lead], [[memberId], memberId]);
+  r = await call("POST", "?a=attend", { token: bMember, body: { section: "scouts", date: "2026-09-24", present: [], adults: [memberId, "nope", memberId], lead: "nope" } });
+  ok("a Scouter who is not on that section, and a made up one, are dropped", [r.j.meetings["2026-09-24"].adults, r.j.meetings["2026-09-24"].lead], [[memberId], ""]);
+  r = await call("POST", "?a=attend", { token: bMember, body: { section: "scouts", date: "2026-09-24", present: [], adults: [cubsLeadId] } });
+  ok("nor one who covers another section only", r.j.meetings["2026-09-24"].adults, []);
+
   r = await call("GET", "?a=attendance&sections=cubs", { token: bCubs });
   ok("the lead may add from the attendance page too", [r.j.canAdd.cubs, r.j.sections.cubs.meetings["2026-09-11"].present], [true, [brid]]);
   r = await call("GET", "?a=board&section=cubs");

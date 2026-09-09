@@ -359,6 +359,35 @@ try {
   ok("Everyone here, then one tapped off, leaves the rest on", (await L2.locator("#names label.on").allInnerTexts()).map((t) => t.trim()).sort(), ["Bea Test", "Bea Three"]);
   await L2.unroute("**/functions/rota?a=attend");
 
+  // ---- the Scouters who were there, and the one answerable for the night ----
+  step = "Scouters at the door";
+  ok("the Scouters covering the section are listed under their own heading", (await L2.locator("#adults label").allInnerTexts()).map((t) => t.trim()).sort(), ["Board Helper", "Lead Test"]);
+  ok("and nobody is answerable until somebody says so", [await L2.locator("#lead").inputValue(), (await L2.locator("#leadNote").innerText()).includes("in charge of the programme")], ["", true]);
+  await L2.locator("#adults label", { hasText: "Board Helper" }).click(); await L2.waitForTimeout(900);
+  ok("a Scouter is ticked in like anyone else", [(await L2.locator("#acount").innerText()).startsWith("1 of 2"), await L2.locator("#adults label.on").count()], [true, 1]);
+  await L2.selectOption("#lead", { label: "Lead Test" }); await L2.waitForTimeout(900);
+  ok("naming who was in charge marks them there too, so the two agree", [await L2.locator("#adults label.on").count(), (await L2.locator("#adults label", { hasText: "Lead Test" }).innerText()).toUpperCase().includes("IN CHARGE")], [2, true]);
+  await L2.locator("#adults label", { hasText: "Lead Test" }).click(); await L2.waitForTimeout(900);
+  ok("taking them off again takes the title with them", [await L2.locator("#lead").inputValue(), (await L2.locator("#leadNote").innerText()).includes("in charge")], ["", true]);
+  await L2.selectOption("#lead", { label: "Board Helper" }); await L2.waitForTimeout(900);
+  const tally = (await L2.locator("#totals").innerText()).replace(/\s+/g, " ");
+  ok("the tally puts the young people and the Scouters under headings of their own", [/YOUNG PEOPLE/i.test(tally), /SCOUTERS/i.test(tally), tally.includes("Board Helper 1 1 100%")], [true, true, true]);
+  await L2.locator("#meetings summary").first().click(); await L2.waitForTimeout(150);
+  ok("and the night's record says who was on and who ran it", (await L2.locator("#meetings details").first().innerText()).replace(/\s+/g, " ").includes("Scouters: Board Helper. In charge: Board Helper."), true);
+  await L2.screenshot({ path: ".e2e/attendance-scouters-1280.png", fullPage: true });
+  // A night away asks for a camp lead by name, every day of it, and an
+  // ordinary night for whoever is in charge of the programme.
+  ok("a camp asks for a camp lead, on each of its days, and nothing else does", await L2.evaluate(() => {
+    const was = C.events;
+    C.events = [{ date: "2030-01-05", endDate: "2030-01-07", section: "beavers", title: "Camp" }];
+    const out = ["2030-01-05", "2030-01-06", "2030-01-07", "2030-01-08"].map((d) => leadWord("beavers", d).label);
+    C.events = was; return out;
+  }), ["Camp lead", "Camp lead", "Camp lead", "In charge of the programme"]);
+  await L2.setViewportSize({ width: 390, height: 844 }); await L2.waitForTimeout(300);
+  ok("it reads the same on a phone", [await L2.locator("#adults label").count(), await L2.locator("#lead").isVisible()], [2, true]);
+  await L2.screenshot({ path: ".e2e/attendance-scouters-390.png", fullPage: true });
+  await L2.setViewportSize({ width: 1280, height: 900 }); await L2.waitForTimeout(200);
+
   // ---- the admin password signs the leaders' pages in as the secretary ----
   step = "sign into admin.html";
   const A = await page(1280, 900); await A.goto(H.replace(/lab\/$/, "admin.html"), { waitUntil: "load" }); await A.waitForTimeout(600);

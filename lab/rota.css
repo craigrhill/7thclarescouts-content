@@ -160,7 +160,17 @@ details.meeting{border-bottom:1px solid var(--stone-100);padding:.45rem 0}
 details.meeting:last-child{border-bottom:0}
 details.meeting summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:.6rem}
 details.meeting summary::-webkit-details-marker{display:none}
-@media print{ #addRow,.who.att input,details.meeting .btn{display:none!important} details.meeting{break-inside:avoid} details.meeting[open] summary~*{display:block} }
+/* Attendance keeps two lists on one sheet: the young people, then the
+   Scouters. A heading between them, and the same heading again in the tally,
+   so a printed page never leaves it to guess whose row is whose. */
+h3.grp{font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--stone-600);margin:1.2rem 0 0;padding-top:.9rem;border-top:1px solid var(--stone-100)}
+table.board tr.grp th{text-align:left;padding-top:.8rem;color:var(--sea-700);border-bottom:1px solid var(--stone-200)}
+table.board tr.grp:first-child th{padding-top:.2rem}
+.lead-row{margin-top:.8rem}
+.lead-row select{font:inherit;padding:.5rem .6rem;border:1px solid var(--stone-200);border-radius:10px;background:#fff;max-width:100%;min-width:12rem}
+.tag.lead-tag{background:var(--orange);color:#fff;margin-left:auto}
+@media print{ #addRow,.who.att input,details.meeting .btn{display:none!important} details.meeting{break-inside:avoid} details.meeting[open] summary~*{display:block}
+  .lead-row select{border:0;padding:0;font-weight:600;-webkit-appearance:none;appearance:none} }
 
 /* ---- the pill nav across the leaders' pages ---- */
 .lnav{display:flex;gap:.45rem;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:.9rem 0 .3rem;margin:0 -1rem;padding-left:1rem;padding-right:1rem}

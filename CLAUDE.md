@@ -143,7 +143,8 @@ below), `message` (the wording that goes out with a link), `admin-tries` (the
 guard in front of the password), `events` (leaders-only calendar events),
 `badges/<key>` (the section's badge board: `next`, `youth` with `id`, `n`,
 `name`, and `stages` keyed by youth id then skill), `attendance/<key>`
-(`meetings` keyed by ISO date: `present` youth ids, `note`, `by`, `at`).
+(`meetings` keyed by ISO date: `present` youth ids, `adults` Scouter ids,
+`lead` the one Scouter answerable for that night, `note`, `by`, `at`).
 Every write is guarded by
 the document's etag and retried on conflict, so concurrent edits do not
 overwrite each other.
@@ -342,7 +343,8 @@ for leads under "A link for chasing".
 ### Attendance
 
 `lab/attendance.html` is taken at the door on a phone: pick the section,
-the date defaults to today, tap each name as they arrive. Every tap saves
+the date defaults to today, tap each name as they arrive, the young people
+and the Scouters both. Every tap saves
 the whole list for that date, so two phones at the door converge on
 whatever was tapped last instead of fighting over a diff. On one phone the
 tap changes the list locally first and the save goes out behind it: saves
@@ -353,10 +355,31 @@ a slow connection left one Scout ticked and the other three marked absent. Names
 the badge board, which is the one list of young people; a lead can add a
 Scout from either page and both see it. Anyone signed in with the section
 on their roster entry can fill it in, helpers included, because whoever is
-at the door does it; only a lead can add Scouts. "Term so far" lists the
-meetings newest first with who was missing, a tally per Scout, print and
-CSV. Nothing in it is public, and the public board endpoint never includes
-it.
+at the door does it; only a lead can add Scouts.
+
+**The Scouters are the second list, and one of them is answerable.** They
+come from the roster, not the board, through `coverOf()` in `rota.mjs`:
+whoever carries the section on their roster entry, plus the secretary, who
+covers the group. That is deliberately the same set as may take the
+section's attendance at all, so whoever can be at the door can be recorded
+at it, and deliberately wider than the rota's own list, which is about
+being put down for a night in advance. A Scouter helping another section is
+added to it on the roster, as the rota already asks.
+
+One of them is named as answerable for the night, kept as `lead`. Naming
+somebody also ticks them present, in the function and mirrored on the page,
+because they were there to be answerable for it; taking them off the list
+takes the title with them. The field is called **Camp lead** on any day of
+a multi-day event on the public calendar and **In charge of the programme**
+otherwise, worked out by `overnight()` on the page. A camp kept leaders-only
+asks for the programme wording, since that page reads the public calendar.
+Until somebody is named, the page and the night's record both say so.
+
+"Term so far" lists the meetings newest first with who was missing, who was
+on and who ran it, then one tally with the young people and the Scouters
+under headings of their own, print and CSV (which carries a Who column and
+an In charge row). Nothing in it is public, and the public board endpoint
+never includes it.
 
 The service worker never caches the rota function except that public board
 read, which is network first with the last copy as fallback. Before this the
