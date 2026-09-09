@@ -1023,6 +1023,7 @@ function readToken(sec, token) {
   }
 }
 var rosterFallback = () => ({ people: [] });
+var ownerName = (p) => String(p && p.name || "The owner");
 var eventsFallback = () => ({ events: [] });
 var eventKey = (e) => e.date + "|" + e.title;
 var slotIdOf = (e) => "e:" + (isEntryId(e.id) ? e.id : e.date + ":" + e.title);
@@ -1186,7 +1187,15 @@ var coverOf = (roster, k) => (roster.people || []).filter((p) => p.secretary || 
 var boardFor = (doc) => ({ next: doc.next, youth: byNumber(doc.youth), stages: doc.stages, updatedAt: doc.updatedAt || null });
 var attendanceFallback = () => ({ meetings: {} });
 var publicBoard = (k, doc) => ({ section: k, updatedAt: doc.updatedAt || null, rows: byNumber(doc.youth).map((y) => ({ n: y.n, stages: doc.stages[y.id] || {} })) });
-var pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, qualified: !!p.qualified, ...withCode ? { code: p.code || null } : {} });
+var ownerNames = () => String(process.env.OWNER_NAME || "Craig, Craig Hill").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+var isOwner = (p) => {
+  if (!p) return false;
+  const id = String(process.env.OWNER_ID || "").trim();
+  if (id) return p.id === id;
+  return ownerNames().includes(String(p.name || "").trim().toLowerCase());
+};
+var withOwner = (people) => !people.some(isOwner) ? people : people.map((p) => isOwner(p) ? p.secretary ? p : { ...p, secretary: true } : p.secretary ? { ...p, secretary: false } : p);
+var pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, qualified: !!p.qualified, owner: isOwner(p), ...withCode ? { code: p.code || null } : {} });
 var isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
 var isSlotId = (s) => typeof s === "string" && /^[me]:[A-Za-z0-9._-]{1,60}(:.{1,140})?$/.test(s);
 var cleanName = (n) => String(n || "").trim().replace(/\s+/g, " ").slice(0, 60);
@@ -1213,6 +1222,11 @@ function createHandler(storeFactory) {
         const b2 = await body(req);
         const name = cleanName(b2 && b2.name);
         if (!name) return fail(400, "A name is needed.");
+        {
+          const { doc: r0 } = await readDoc(store, "roster", rosterFallback);
+          const owner = (r0.people || []).find(isOwner);
+          if (owner && !isOwner({ id: owner.id, name })) return fail(403, ownerName(owner) + " is the group's secretary in the app itself. Use that name here to send a new link.");
+        }
         const code = newCode();
         let person;
         await update(store, "roster", rosterFallback, (doc) => {
@@ -1234,7 +1248,8 @@ function createHandler(storeFactory) {
         const shut = await adminGate(store, req);
         if (shut) return shut;
         const { doc } = await readDoc(store, "roster", rosterFallback);
-        const person = doc.people.find((p) => p.secretary);
+        const people = withOwner(doc.people);
+        const person = people.find((p) => p.secretary);
         if (!person) return fail(409, "No secretary yet. Set one up on the roster page first.");
         return json(200, { token: issueToken(sec, person.id), me: pub(person) });
       }
@@ -1322,6 +1337,7 @@ function createHandler(storeFactory) {
       const t = readToken(sec, req.headers.get("x-rota-token"));
       if (!t) return fail(401, "Please sign in.");
       const roster = await readDoc(store, "roster", rosterFallback);
+      roster.doc.people = withOwner(roster.doc.people);
       const me = roster.doc.people.find((p) => p.id === t.id);
       if (!me) return fail(401, "Please sign in.");
       const hasSecretary = roster.doc.people.some((p) => p.secretary);
@@ -1791,11 +1807,19 @@ function createHandler(storeFactory) {
           return d;
         });
         if (!person) return fail(409, "Someone with that name is already on the list.");
-        return json(200, { person: pub(person), code });
+        return json(200, { person: pub(withOwner([person])[0]), code });
       }
       if (a === "person-update" || a === "person-remove" || a === "recode") {
         const target = roster.doc.people.find((p) => p.id === b.id);
         if (!target) return fail(404, "No such person.");
+        if (isOwner(target)) {
+          if (a === "person-remove") return fail(403, ownerName(target) + " is the group's secretary in the app itself and cannot be taken off the roster.");
+          if (a === "person-update" && "secretary" in b && !b.secretary) return fail(403, ownerName(target) + " is the group's secretary in the app itself.");
+          if (a === "person-update" && "name" in b && cleanName(b.name) && !isOwner({ id: target.id, name: cleanName(b.name) }))
+            return fail(403, "Renaming " + ownerName(target) + " would hand the secretary's role to nobody. Change OWNER_NAME first.");
+        } else if (a === "person-update" && b.secretary && roster.doc.people.some(isOwner)) {
+          return fail(403, "The secretary is set in the app itself, so the role cannot be handed on here.");
+        }
         const secretaries = roster.doc.people.filter((p) => p.secretary).length;
         const losingSecretary = target.secretary && (a === "person-remove" || a === "person-update" && "secretary" in b && !b.secretary);
         if (losingSecretary && secretaries <= 1) return fail(409, "Keep at least one secretary.");

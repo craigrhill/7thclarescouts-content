@@ -648,5 +648,62 @@ ok("a private event can be removed", r.j.events.length, 0);
   globalThis.fetch = realFetch;
 }
 
+{ // ---- the owner is the secretary, and that is set in the app, not the roster ----
+  // A store of its own, so the rule is watched from an empty roster upwards.
+  const s2 = memoryStore(), h2 = createHandler((n) => (n === "rota" ? s2 : memoryStore()));
+  const call2 = async (method, q, { token, admin, body: bd } = {}) => {
+    const headers = { "Content-Type": "application/json", ...(token ? { "x-rota-token": token } : {}), ...(admin ? { "x-admin-password": admin } : {}) };
+    const res = await h2(new Request("https://x/.netlify/functions/rota" + q, { method, headers, ...(bd ? { body: JSON.stringify(bd) } : {}) }));
+    return { status: res.status, j: await res.json().catch(() => null) };
+  };
+  const PW = "admin-for-test";
+  process.env.OWNER_NAME = "Craig, Craig Hill";
+  let r2 = await call2("POST", "?a=bootstrap", { admin: PW, body: { name: "Mary Secretary" } });
+  ok("with nobody named as the owner on the roster, setup works as it always did", r2.status, 200);
+  const maryTok = (await call2("POST", "?a=login", { body: { code: r2.j.code } })).j.token;
+  r2 = await call2("GET", "?sections=scouts", { token: maryTok });
+  ok("and she is the secretary", [r2.j.me.secretary, r2.j.me.owner], [true, false]);
+  // Craig joins as an ordinary helper. He is the secretary from that moment.
+  r2 = await call2("POST", "?a=person", { token: maryTok, body: { name: "Craig", sections: ["scouts"] } });
+  const craigId = r2.j.person.id, craigTok = (await call2("POST", "?a=login", { body: { code: r2.j.code } })).j.token;
+  ok("adding the owner as a plain helper still makes them the secretary", [r2.j.person.secretary, r2.j.person.owner], [true, true]);
+  r2 = await call2("GET", "?sections=scouts", { token: craigTok });
+  ok("the owner signs in as the secretary and sees the whole roster", [r2.j.me.secretary, r2.j.me.owner, r2.j.people.length], [true, true, 2]);
+  ok("and nobody else is the secretary any more, whatever the roster says", r2.j.people.filter(p => p.secretary).map(p => p.name), ["Craig"]);
+  r2 = await call2("GET", "?sections=scouts", { token: maryTok });
+  ok("so the old secretary keeps her place on the roster but not the role", [r2.j.me.secretary, r2.j.people.length], [false, 1]);
+  // None of the ways off the roster work on the owner.
+  r2 = await call2("POST", "?a=person-update", { token: craigTok, body: { id: craigId, secretary: false } });
+  ok("the owner cannot be demoted", [r2.status, /secretary in the app itself/.test(r2.j.error)], [403, true]);
+  r2 = await call2("POST", "?a=person-remove", { token: craigTok, body: { id: craigId } });
+  ok("nor taken off the roster", [r2.status, /cannot be taken off/.test(r2.j.error)], [403, true]);
+  r2 = await call2("POST", "?a=person-update", { token: craigTok, body: { id: craigId, name: "Somebody Else" } });
+  ok("nor renamed out of it by accident", [r2.status, /OWNER_NAME/.test(r2.j.error)], [403, true]);
+  r2 = await call2("POST", "?a=person-update", { token: craigTok, body: { id: craigId, name: "Craig Hill" } });
+  ok("but renaming within the owner's own names is fine", [r2.status, r2.j.person.owner], [200, true]);
+  r2 = await call2("POST", "?a=person-update", { token: craigTok, body: { id: craigId, sections: ["cubs"], lead: true } });
+  ok("and everything else about them still edits", [r2.status, r2.j.person.sections, r2.j.person.lead], [200, ["cubs"], true]);
+  // Nor can the role be handed on, from either side.
+  r2 = await call2("POST", "?a=person-update", { token: craigTok, body: { id: (await call2("GET", "?sections=scouts", { token: craigTok })).j.people.find(p => p.name === "Mary Secretary").id, secretary: true } });
+  ok("the role cannot be handed to somebody else", [r2.status, /cannot be handed on/.test(r2.j.error)], [403, true]);
+  r2 = await call2("POST", "?a=bootstrap", { admin: PW, body: { name: "Mary Secretary" } });
+  ok("nor taken with the admin password, which says who the secretary is", [r2.status, /Craig Hill is the group's secretary/.test(r2.j.error)], [403, true]);
+  r2 = await call2("POST", "?a=bootstrap", { admin: PW, body: { name: "craig hill" } });
+  ok("bootstrap still sends the owner a new link, whatever case it is typed in", [r2.status, /^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(r2.j.code)], [200, true]);
+  r2 = await call2("POST", "?a=admin-login", { admin: PW });
+  ok("and the admin password signs in as the owner, not whoever the roster last flagged", r2.j.me.name, "Craig Hill");
+  // Pinning it to one entry takes the name out of it entirely.
+  process.env.OWNER_ID = craigId;
+  process.env.OWNER_NAME = "Nobody At All";
+  r2 = await call2("GET", "?sections=scouts", { token: craigTok });
+  ok("OWNER_ID pins the role to one roster entry, name or no name", [r2.j.me.secretary, r2.j.me.owner], [true, true]);
+  delete process.env.OWNER_ID;
+  // And with the rule pointed at nobody, the roster is exactly as it was.
+  process.env.OWNER_NAME = "Nobody At All";
+  r2 = await call2("GET", "?sections=scouts", { token: maryTok });
+  ok("turning the rule off gives back the flags the store actually holds", [r2.j.me.secretary, r2.j.me.owner], [true, false]);
+  process.env.OWNER_NAME = "Craig, Craig Hill";
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

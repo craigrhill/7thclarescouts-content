@@ -33,6 +33,13 @@ const status = (p, i) => p.locator(".slot").nth(i).locator(".status").innerText(
 // The rota opens on the tab that suits the person: a lead on the whole list,
 // a helper on what is still short. Open a named one to look at the rest.
 const openTab = async (p, name) => { await p.locator("#tabs button", { hasText: name }).click(); await p.waitForTimeout(200); };
+// The public app renders from defaults.js first and again when the content
+// function answers, so poll for what should end up on the page rather than
+// asking once and catching the wrong render.
+const settled = async (p, fn, ok2, ms = 15000) => {
+  const until = Date.now() + ms; let last;
+  for (;;) { last = await p.evaluate(fn); if (ok2(last) || Date.now() > until) return last; await p.waitForTimeout(250); }
+};
 const pickSec = async (p, n) => { await p.getByRole("button", { name: n, exact: true }).first().click(); await p.waitForTimeout(150); };
 const names = async (p) => (await p.locator("#people .person .nm").allInnerTexts()).map((t) => t.split("\n")[0].replace(/\s*\(you\)\s*$/, "").trim());
 // Adds via the form and returns the new person's code, read from their row.
@@ -299,25 +306,19 @@ try {
   // The app itself: the section page and the calendar tab.
   const APP = await page(390, 844);
   await APP.goto(APP_ROOT + "#sections/scouts", { waitUntil: "load" });
-  await APP.waitForSelector("#secDetail .event.night", { timeout: 20000 });
-  // The app renders once from the built-in defaults and again when the content
-  // function answers, so read the finished page in one go rather than asking
-  // it four questions across a re-render.
-  await APP.waitForTimeout(800);
-  const secPage = await APP.evaluate(() => ({
+  const secPage = await settled(APP, () => ({
     nights: document.querySelectorAll("#secDetail .event.night").length,
     off: document.querySelectorAll("#secDetail .event.night.off").length,
     offText: (document.querySelector("#secDetail .event.night.off") || {}).innerText || "",
     chevs: document.querySelectorAll("#secDetail .event.night .chev").length,
-  }));
+  }), (x) => x.nights >= 8 && x.off >= 1);
   ok("the section page lists the nights under its calendar", secPage.nights >= 8, true);
   ok("a week that is off is struck through and says so", [secPage.off >= 1, secPage.offText.includes("No meeting")], [true, true]);
   ok("and a night is not something to open, so it offers no chevron", secPage.chevs, 0);
   await APP.screenshot({ path: ".e2e/app-section-nights-390.png", fullPage: true });
   await APP.goto(APP_ROOT + "#calendar", { waitUntil: "load" });
-  await APP.waitForSelector("#calBody .event.night", { timeout: 20000 });
-  await APP.waitForTimeout(800);
-  ok("the calendar tab has them too, beside the events", await APP.evaluate(() => document.querySelectorAll("#calBody .event.night").length) >= 8, true);
+  ok("the calendar tab has them too, beside the events",
+    await settled(APP, () => document.querySelectorAll("#calBody .event.night").length, (n) => n >= 8) >= 8, true);
   await APP.screenshot({ path: ".e2e/app-calendar-nights-390.png", fullPage: true });
   await APP.close();
 
@@ -542,6 +543,35 @@ try {
   ok("signing out there sticks, and the gate offers the admin route back", [await A.locator("#gate").isVisible(), await A.locator("#adminHint").isVisible()], [true, true]);
   await A.locator("#adminHint button").click(); await A.waitForTimeout(900);
   ok("one tap brings it back", await A.locator("#app").isVisible(), true);
+
+  // ---- the owner: named in the app, so the roster cannot move the role ----
+  // Last, because adding them makes them the secretary from that moment.
+  step = "the owner";
+  await go(L2, "roster.html"); await L2.waitForTimeout(900);
+  // Added by the form rather than addOnRoster, which reads the new code back
+  // out of the row: this one's code is the secretary's and is not handed to a
+  // lead, which the secretary is about to become.
+  for (const i of await L2.locator("#newSecs input").all()) await i.uncheck();
+  await L2.fill("#newName", "Craig Hill"); await L2.locator("#newSecs input[data-key=scouts]").check();
+  await L2.locator("#addCard").getByRole("button", { name: "Add", exact: true }).click(); await L2.waitForTimeout(1400);
+  ok("added as a plain helper, the owner is the secretary from that moment",
+    (await L2.locator("#people tr.person", { hasText: "Craig Hill" }).innerText()).toLowerCase().includes("secretary"), true);
+  ok("and the secretary who added them is a lead now, with no add form left",
+    [await L2.locator("#addCard").isVisible(), await L2.locator("#people button:has-text('Edit')").count()], [false, 0]);
+  // The owner's own view, reached the way Craig will reach it: the admin
+  // password on the device signs the leaders' pages in as the secretary.
+  const OW = await page(1280, 900);
+  await OW.goto(H.replace(/lab\/$/, "admin.html"), { waitUntil: "load" }); await OW.waitForTimeout(600);
+  await OW.fill("#pw", "local"); await OW.locator("#login .btn").click(); await OW.waitForSelector("#editor", { state: "visible" });
+  await go(OW, "roster.html"); await OW.waitForTimeout(1400);
+  ok("the admin password signs in as the owner, whoever the roster last flagged", [await OW.locator("#meName").innerText(), (await OW.locator("#meRole").innerText()).includes("secretary")], ["Craig Hill", true]);
+  await OW.locator("#people tr.person", { hasText: "Craig Hill" }).locator("button:has-text('Edit')").click(); await OW.waitForTimeout(300);
+  const ed = OW.locator("#people tr.editor");
+  ok("their own row cannot be removed, and says why", [await ed.locator("button:has-text('Remove from roster')").count(), (await ed.innerText()).includes("The app names Craig Hill as the group's secretary")], [0, true]);
+  ok("but a new link can still be sent to themselves", await ed.locator("button:has-text('New link')").count(), 1);
+  await OW.locator("#people tr.person", { hasText: "Spare Helper" }).locator("button:has-text('Edit')").click(); await OW.waitForTimeout(300);
+  ok("and nobody else is offered the role any more", [await OW.locator("#people tr.editor button:has-text('Make secretary instead of me')").count(), await OW.locator("#people tr.editor button:has-text('Remove from roster')").count()], [0, 1]);
+  await OW.screenshot({ path: ".e2e/roster-owner-1280.png", fullPage: true });
 } catch (e) { fail++; console.log(`FAIL  suite threw${step ? " at: " + step : ""}:`, e.message.split("\n")[0]);
   for (const p of b.contexts().flatMap((c) => c.pages())) { try { await p.screenshot({ path: `.e2e/threw-${b.contexts().flatMap((c) => c.pages()).indexOf(p)}.png` }); } catch {} } }
 await b.close(); stop();

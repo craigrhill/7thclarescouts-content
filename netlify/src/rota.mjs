@@ -68,6 +68,11 @@
 //   POST   ?a=badge-rename {section,id,name}                   { board }   lead of it
 //   POST   ?a=badge-remove {section,id}                        { board }   lead of it
 //   POST   ?a=badge-stage  {section,id,skill,stage 0..9}       { board }   lead of it
+//          The group's owner is the secretary and nobody else is, set in the
+//          code (OWNER_NAME, or OWNER_ID to pin it to one roster entry). They
+//          cannot be demoted, renamed out of it or removed, and the role
+//          cannot be handed on while they are on the roster. "owner" on a
+//          person says which one they are.
 //          hasSecretary says whether the roster has one at all: while it has
 //          none, a lead holds her powers, and a lead cannot see far enough
 //          across the roster to tell.
@@ -361,6 +366,7 @@ function readToken(sec, token) {
 
 // ---- shapes and validation ----
 const rosterFallback = () => ({ people: [] });
+const ownerName = (p) => String((p && p.name) || "The owner");
 const eventsFallback = () => ({ events: [] });
 const eventKey = (e) => e.date + "|" + e.title;
 // Where an event's ticks hang. On its own id where it has one, and on the old
@@ -532,7 +538,30 @@ const boardFor = (doc) => ({ next: doc.next, youth: byNumber(doc.youth), stages:
 // What the public site gets: numbers and stages, nothing that names anyone.
 const attendanceFallback = () => ({ meetings: {} });
 const publicBoard = (k, doc) => ({ section: k, updatedAt: doc.updatedAt || null, rows: byNumber(doc.youth).map((y) => ({ n: y.n, stages: doc.stages[y.id] || {} })) });
-const pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, qualified: !!p.qualified, ...(withCode ? { code: p.code || null } : {}) });
+// The group's owner, hard-coded: whoever else comes and goes, this person is
+// the secretary. Nobody can demote them, remove them from the roster, or take
+// the role for themselves, so the group cannot lock itself out of its own
+// leaders' area and cannot hand the role away by a mis-tap. Matched on the
+// roster name, trimmed and case-insensitive, because a name is what a person
+// is on the roster; OWNER_ID pins it to one roster entry instead, and
+// OWNER_NAME replaces the list, both without a deploy. Read per request so a
+// change to either takes effect on the next one.
+const ownerNames = () => String(process.env.OWNER_NAME || "Craig, Craig Hill")
+  .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+const isOwner = (p) => {
+  if (!p) return false;
+  const id = String(process.env.OWNER_ID || "").trim();
+  if (id) return p.id === id;
+  return ownerNames().includes(String(p.name || "").trim().toLowerCase());
+};
+// The roster as the function reads it. While the owner is on it they are the
+// secretary and nobody else is, whatever the stored flags say. Reads only: the
+// stored document is left as it is, so turning the rule off gives back exactly
+// what was there before.
+const withOwner = (people) => !people.some(isOwner) ? people
+  : people.map((p) => isOwner(p) ? (p.secretary ? p : { ...p, secretary: true })
+    : (p.secretary ? { ...p, secretary: false } : p));
+const pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, qualified: !!p.qualified, owner: isOwner(p), ...(withCode ? { code: p.code || null } : {}) });
 const isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
 // A slot id is the kind, then the id of the night it belongs to: "m:<entryId>"
 // for a meeting, "e:<eventId>" for an event. The older shapes, "m:<date>" and
@@ -557,6 +586,15 @@ export function createHandler(storeFactory) {
         const shut = await adminGate(store, req); if (shut) return shut;
         const b = await body(req); const name = cleanName(b && b.name);
         if (!name) return fail(400, "A name is needed.");
+        // Bootstrap exists so a group that has lost its secretary can get back
+        // in. A group with an owner cannot lose theirs, so all it does here is
+        // reissue that person's code, and it will not quietly set up somebody
+        // else who would then not be the secretary anyway.
+        {
+          const { doc: r0 } = await readDoc(store, "roster", rosterFallback);
+          const owner = (r0.people || []).find(isOwner);
+          if (owner && !isOwner({ id: owner.id, name })) return fail(403, ownerName(owner) + " is the group's secretary in the app itself. Use that name here to send a new link.");
+        }
         const code = newCode(); let person;
         await update(store, "roster", rosterFallback, (doc) => {
           person = doc.people.find((p) => p.name.toLowerCase() === name.toLowerCase());
@@ -574,7 +612,8 @@ export function createHandler(storeFactory) {
       if (req.method === "POST" && a === "admin-login") {
         const shut = await adminGate(store, req); if (shut) return shut;
         const { doc } = await readDoc(store, "roster", rosterFallback);
-        const person = doc.people.find((p) => p.secretary);
+        const people = withOwner(doc.people);
+        const person = people.find((p) => p.secretary);
         if (!person) return fail(409, "No secretary yet. Set one up on the roster page first.");
         return json(200, { token: issueToken(sec, person.id), me: pub(person) });
       }
@@ -636,6 +675,7 @@ export function createHandler(storeFactory) {
       const t = readToken(sec, req.headers.get("x-rota-token"));
       if (!t) return fail(401, "Please sign in.");
       const roster = await readDoc(store, "roster", rosterFallback);
+      roster.doc.people = withOwner(roster.doc.people);
       const me = roster.doc.people.find((p) => p.id === t.id);
       if (!me) return fail(401, "Please sign in.");
       const hasSecretary = roster.doc.people.some((p) => p.secretary);
@@ -1100,11 +1140,22 @@ export function createHandler(storeFactory) {
           d.people.push(person); return d;
         });
         if (!person) return fail(409, "Someone with that name is already on the list.");
-        return json(200, { person: pub(person), code });
+        return json(200, { person: pub(withOwner([person])[0]), code });
       }
       if (a === "person-update" || a === "person-remove" || a === "recode") {
         const target = roster.doc.people.find((p) => p.id === b.id);
         if (!target) return fail(404, "No such person.");
+        // The owner's place is set in the app, not on the roster, and their
+        // guard speaks first: they are the only secretary, so "keep at least
+        // one secretary" would otherwise answer for it and say the wrong thing.
+        if (isOwner(target)) {
+          if (a === "person-remove") return fail(403, ownerName(target) + " is the group's secretary in the app itself and cannot be taken off the roster.");
+          if (a === "person-update" && "secretary" in b && !b.secretary) return fail(403, ownerName(target) + " is the group's secretary in the app itself.");
+          if (a === "person-update" && "name" in b && cleanName(b.name) && !isOwner({ id: target.id, name: cleanName(b.name) }))
+            return fail(403, "Renaming " + ownerName(target) + " would hand the secretary's role to nobody. Change OWNER_NAME first.");
+        } else if (a === "person-update" && b.secretary && roster.doc.people.some(isOwner)) {
+          return fail(403, "The secretary is set in the app itself, so the role cannot be handed on here.");
+        }
         // The roster must always have someone who can maintain it.
         const secretaries = roster.doc.people.filter((p) => p.secretary).length;
         const losingSecretary = target.secretary && (a === "person-remove" || (a === "person-update" && "secretary" in b && !b.secretary));

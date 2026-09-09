@@ -225,6 +225,25 @@ a lead used to be sent the whole roster and every private event, and is sent
 their own sections' share of each. The county filter still uses the group's whole section list to decide
 which of a county event's sections are ours at all.
 
+**The owner is the secretary, and that is set in the app.** `isOwner()` in
+`netlify/src/rota.mjs` matches a roster entry by name, case-insensitively and
+trimmed, against `OWNER_NAME` (default `"Craig, Craig Hill"`, a comma
+separated list because a roster entry may be either); `OWNER_ID` pins it to
+one roster entry instead and ignores the name. Both are read per request, so
+either can change in Netlify without a deploy. While that person is on the
+roster, `withOwner()` makes them the secretary and nobody else, whatever the
+stored flags say. It is a read-side rule: the stored document is untouched,
+so pointing `OWNER_NAME` at nobody gives back exactly the flags that were
+always there.
+
+The consequences, all enforced by the function and mirrored on the page: the
+owner cannot be demoted, removed from the roster, or renamed out of the
+matching list; nobody else can be given the role, so "Make secretary instead
+of me" is gone from every row; and `?a=bootstrap` will only reissue the
+owner's own code, since a group with an owner cannot lose its secretary.
+Everything else about their entry still edits, and "New link" still works, so
+a lost phone is a tap. `owner` on a person in the GET says which one they are.
+
 While no secretary exists (a roster from before the role did), leads hold the
 secretary's powers so nobody is locked out. **`hasSecretary` on the GET is
 what says so.** The pages used to work it out from the people list, which a
@@ -606,6 +625,11 @@ link in the footer.
   list admin has already offered, so a list a leader deleted on purpose is not
   auto-added back on the next load. Admin writes it on every save. Do not hand
   edit it to force a list back; delete the id instead.
+* **The owner's name is in the source, and this repo is public.** It is
+  already on the site in the team list, so nothing new is published by it, but
+  it does mean the person named in `OWNER_NAME` is the one the app trusts.
+  Change the name on the roster and the rule stops matching, which is why
+  renaming that entry is refused rather than silently dropping the role.
 * **The admin password is throttled.** Both functions count wrong tries in
   their own store under `admin-tries`: fifteen goes, then it shuts for five
   minutes, then fifteen, then an hour. A correct password wipes the count. On

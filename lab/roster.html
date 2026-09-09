@@ -112,6 +112,9 @@ function render(){
   // this too: it sends a lead their own sections' people and no others, their
   // codes but never the secretary's, and refuses every write.
   const links = manage || !!me.lead;
+  // The group's owner is named in the app itself, so while they are on the
+  // roster the role is not the secretary's to pass on or take away here.
+  const fixed = (D.people || []).some(p => p.owner);
   $("leaderNav").innerHTML = leaderNav(me); $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
   $("intro").textContent = manage
     ? "Type a name, tap the sections they can cover, press Add. Their own link appears in the row: Copy message and send it to them, and they never type anything. Edit a row to change anything later."
@@ -140,7 +143,8 @@ function render(){
       <div class="row"><input type="text" id="edName" value="${esc(p.name)}"><button class="btn" onclick="saveName('${esc(p.id)}')">Save name</button></div>
       <div class="secs">${chips(p.sections || [], k => `setSections('${esc(p.id)}','${k}',this.checked)`)}</div>
       <div class="row"><label><input type="checkbox" ${p.lead ? "checked" : ""} onchange="setFlag('${esc(p.id)}','lead',this.checked)"> Section lead</label>${QUAL.on ? `<label><input type="checkbox" ${p.qualified ? "checked" : ""} onchange="setFlag('${esc(p.id)}','qualified',this.checked)"> ${esc(QUAL.label)}</label>` : ""}</div>
-      <div class="row"><button class="btn" onclick="recode('${esc(p.id)}')">New link</button><button class="btn quiet" onclick="removePerson('${esc(p.id)}')">Remove from roster</button>${p.id !== me.id && !p.secretary ? `<button class="btn quiet" onclick="handOver('${esc(p.id)}')">Make secretary instead of me</button>` : ""}</div>
+      <div class="row"><button class="btn" onclick="recode('${esc(p.id)}')">New link</button>${p.owner ? "" : `<button class="btn quiet" onclick="removePerson('${esc(p.id)}')">Remove from roster</button>`}${!fixed && p.id !== me.id && !p.secretary ? `<button class="btn quiet" onclick="handOver('${esc(p.id)}')">Make secretary instead of me</button>` : ""}</div>
+      ${p.owner ? `<p class="small muted" style="margin:0">The app names ${esc(p.name)} as the group's secretary, so the role cannot be handed on and this row cannot be removed. Everything else about it edits as normal.</p>` : ""}
     </div></td></tr>`;
   }).join("") : `<tr><td colspan="5" class="empty">${manage ? "Nobody yet. Add the first Scouter below."
     : "Nobody on the roster covers your sections yet. Ask the secretary to add them."}</td></tr>`;
