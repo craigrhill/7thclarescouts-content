@@ -317,6 +317,13 @@ try {
   ok("the message that goes with a link is theirs to word", (await L2.locator("#msgPreview").innerText()).includes("Hi Mary"), true);
   await L2.screenshot({ path: ".e2e/roster-1280.png", fullPage: true });
 
+  step = "a rule nobody has named";
+  // settings.rota carries no qualifiedLabel, so the whole idea is off: no tick
+  // box on the roster, no tag beside a name, no numbers on the meetings card.
+  ok("nothing on the roster asks about a rule the group has not named", [await L2.locator("#newQualifiedWrap").isVisible(), await L2.locator("#people label", { hasText: "qualified" }).count()], [false, 0]);
+  await go(L2, "events.html"); await L2.waitForTimeout(800); await pickSec(L2, "Scouts");
+  ok("nor does the meetings card, though it still asks how many adults", [await L2.locator("#meetReq").isVisible(), await L2.locator("#meetQualWrap").isVisible(), await L2.locator("#meetQualEvWrap").isVisible()], [true, false, false]);
+
   // ---- attendance: the helper takes it at the door, the secretary sees it ----
   await go(Hh, "attendance.html"); await Hh.waitForTimeout(700);
   ok("attendance opens signed in, on the helper's one section, dated today", [await Hh.locator("#chips .chip").count(), await Hh.locator("#date").inputValue() !== "", await Hh.locator("#names label").allInnerTexts()], [1, true, ["Bea Test"]]);

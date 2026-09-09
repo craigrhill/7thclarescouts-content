@@ -91,6 +91,13 @@ textarea{min-height:90px;resize:vertical}
     <div class="card"><h2>School breaks</h2>
       <p class="hint">Midterms, Christmas, Easter: the weeks nobody is around. Kept once here, off the school calendar. The leaders' Events page marks any meeting night that falls inside one as "no meeting" with the break's name, so nothing is scheduled over them by accident, and the section pages tell parents when there is no meeting. Leave the sections blank for a break that is everyone's; tick some for one that is not.</p>
       <div id="breakList"></div><button class="btn secondary" onclick="addBreak()">+ Add a break</button></div>
+    <div class="card"><h2>Adults on a night</h2>
+      <p class="hint">If the group asks that at least one adult on every meeting or outing answers some rule of its own, name it here: Garda vetted, a trained first aider, whatever it is. Naming it puts a tick box beside each person on the leaders' roster and lets a lead say how many of them a night needs. Leave it blank and none of that shows at all, which is where it starts.</p>
+      <div class="row">
+        <div><label>What the rule is called</label><input id="qualLabel" value="" oninput="setQual('qualifiedLabel', this.value)" placeholder="Garda vetted"></div>
+        <div><label>The short version, for a tight space</label><input id="qualShort" value="" oninput="setQual('qualifiedShort', this.value)" placeholder="Vetted"></div>
+      </div>
+      <p class="hint" id="qualNote"></p></div>
   </div>
 
   <div class="pane" id="pane-kits">
@@ -579,6 +586,7 @@ function addNews(){ C.news.push({date:new Date().toISOString().slice(0,10),title
 
 function renderSections(){
   renderBreaks();
+  renderQual();
   $("sectionList").innerHTML = C.settings.sections.map((s,i) => `<div class="item"><h3>${esc(s.name)} <span class="hint">${esc(s.ages)}</span></h3>
     <div class="row">
       <div><label>Meeting night</label><input value="${esc(s.day)}" oninput="C.settings.sections[${i}].day=this.value"></div>
@@ -586,6 +594,30 @@ function renderSections(){
       <div><label>Venue</label><input value="${esc(s.venue||"")}" oninput="C.settings.sections[${i}].venue=this.value"></div>
     </div>
     <label>Blurb</label><textarea oninput="C.settings.sections[${i}].blurb=this.value">${esc(s.blurb)}</textarea></div>`).join("");
+}
+
+// ---- Adults on a night ----
+// The rule the group asks of at least one adult, if it asks anything. It is
+// off until it is named: the leaders' pages read settings.rota and show
+// nothing about it while the label is empty.
+function renderQual(){
+  const r = C.settings.rota || {};
+  $("qualLabel").value = r.qualifiedLabel || "";
+  $("qualShort").value = r.qualifiedShort || "";
+  qualNote();
+}
+function qualNote(){
+  const r = C.settings.rota || {}, label = String(r.qualifiedLabel || "").trim();
+  $("qualNote").textContent = label
+    ? `On the leaders' pages each person can be marked "${label}", and a lead can say how many nights need one. Save and publish to turn it on.`
+    : "Not named, so nothing about it shows on the leaders' pages.";
+}
+function setQual(field, v){
+  C.settings.rota = C.settings.rota || {};
+  C.settings.rota[field] = v;
+  if (!String(C.settings.rota.qualifiedLabel || "").trim()) delete C.settings.rota.qualifiedLabel;
+  if (!String(C.settings.rota.qualifiedShort || "").trim()) delete C.settings.rota.qualifiedShort;
+  qualNote();
 }
 
 // ---- School breaks ----

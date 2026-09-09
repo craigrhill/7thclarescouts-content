@@ -53,7 +53,11 @@
     <div id="meetCard" class="card" hidden>
       <div class="row" style="justify-content:space-between;align-items:baseline">
         <h2 style="margin:0">Meeting nights</h2>
-        <label class="small">Adults needed <input type="number" min="1" max="9" id="meetReq" onchange="setRequired(this.value)"></label>
+        <span class="row" style="gap:.6rem">
+          <label class="small">Adults needed <input type="number" min="1" max="9" id="meetReq" onchange="setRequired('required', this.value)"></label>
+          <label class="small" id="meetQualWrap" hidden>of them <span id="meetQualLabel"></span> <input type="number" min="0" max="9" id="meetQual" onchange="setRequired('requiredQualified', this.value)"></label>
+          <label class="small" id="meetQualEvWrap" hidden>and at an event <input type="number" min="0" max="9" id="meetQualEv" onchange="setRequired('requiredQualifiedEvents', this.value)"></label>
+        </span>
       </div>
       <p class="small muted" id="meetNote"></p>
       <div id="breakNote" class="banner" hidden></div>
@@ -120,7 +124,15 @@ function loadNights(k){
 function renderMeetings(k){
   const saved = entriesFor(k).length > 0;
   const x = (C.settings.sections || []).find(s => s.key === k) || {};
-  $("meetReq").value = (D.sections[k] || {}).required ?? 2;
+  const nums = D.sections[k] || {};
+  $("meetReq").value = nums.required ?? 2;
+  // The group's own rule about who has to be there, if it has one.
+  $("meetQualWrap").hidden = $("meetQualEvWrap").hidden = !qualOn();
+  if (qualOn()) {
+    $("meetQualLabel").textContent = QUAL.short;
+    $("meetQual").value = nums.requiredQualified ?? 0;
+    $("meetQualEv").value = nums.requiredQualifiedEvents ?? 0;
+  }
   $("meetNote").textContent = saved
     ? "The nights on the rota for " + sectionName(k) + ". Edit opens one up. Changing a date or a name keeps whoever is already down for it, and Called off leaves it on the rota greyed out rather than losing them."
     : "These are the next twelve " + (x.day || "meeting") + "s, worked out from the section's meeting night. Save them to take the list over: after that a night can be moved, renamed, called off or given its own numbers.";
@@ -181,10 +193,10 @@ const saveNights = () => guarded(async () => {
   $("meetMsg").textContent = MEET.length + " night" + (MEET.length === 1 ? "" : "s") + " saved.";
   render();
 });
-const setRequired = (v) => guarded(async () => {
+const setRequired = (field, v) => guarded(async () => {
   const k = sec();
-  const r = await api("POST", "?a=required", { section: k, required: Number(v) });
-  D.sections[k] = { ...D.sections[k], required: r.section.required };
+  const r = await api("POST", "?a=required", { section: k, [field]: Number(v) });
+  D.sections[k] = { ...D.sections[k], required: r.section.required, requiredQualified: r.section.requiredQualified, requiredQualifiedEvents: r.section.requiredQualifiedEvents };
   render();
 });
 function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }

@@ -293,13 +293,18 @@ service has left. The rule is enforced inside the read-modify-write, so two
 people racing for the last place cannot both win, and mirrored in
 `placeForMe()` on the page purely so the button knows what to say.
 
-**The rule itself is Craig's to name, and is off until he does.** A person
+**The rule itself is Craig's to name, and naming it is what turns it on.**
+The wording is `settings.rota.qualifiedLabel` and `qualifiedShort` in
+`content.json`, set in admin under Sections in "Adults on a night", so it can
+be Garda vetting, a first aider, or anything else without the store moving.
+While the label is empty there is no rule: `lab/rota-lib.js` holds `QUAL` and
+`qualOn()`, and every page reads them, so the roster's tick box, the tag
+beside a name and the two number boxes on the meetings card are all hidden.
+Naming it shows them. The data underneath is there either way: a person
 carries a `qualified` flag, a section carries `requiredQualified` (meetings)
-and `requiredQualifiedEvents`, and both default to 0, so nothing about this
-shows anywhere until a number is set. The wording comes from
-`settings.rota.qualifiedLabel` and `qualifiedShort` in `content.json`, so it
-can be Garda vetting, a first aider, or anything else without the store
-moving.
+and `requiredQualifiedEvents`, and both numbers default to 0, so a rule that
+is named but has no number set still holds nobody back. Setting those numbers
+is a lead's job, on `events.html` beside "Adults needed".
 
 **The rota is three tabs**, remembered in `localStorage` under `rota-tab`:
 Gaps (what is still short, each row offering itself to anyone who can take

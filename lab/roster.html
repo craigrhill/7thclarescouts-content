@@ -53,7 +53,7 @@
       <div class="add">
         <input type="text" id="newName" placeholder="Name (or several, separated by commas)" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addPeople()}">
         <div class="secs" id="newSecs"></div>
-        <div class="row"><button class="btn primary" onclick="addPeople()">Add</button><label class="small"><input type="checkbox" id="newLead"> Section lead</label><label class="small"><input type="checkbox" id="newQualified"> <span data-qual-label>the training</span></label><span class="small muted" id="addMsg"></span></div>
+        <div class="row"><button class="btn primary" onclick="addPeople()">Add</button><label class="small"><input type="checkbox" id="newLead"> Section lead</label><label class="small" id="newQualifiedWrap" data-qual-only hidden><input type="checkbox" id="newQualified"> <span data-qual-label></span></label><span class="small muted" id="addMsg"></span></div>
       </div>
     </div>
 
@@ -118,7 +118,7 @@ function render(){
     return row + `<tr class="editor"><td colspan="5"><div class="edrow">
       <div class="row"><input type="text" id="edName" value="${esc(p.name)}"><button class="btn" onclick="saveName('${esc(p.id)}')">Save name</button></div>
       <div class="secs">${chips(p.sections || [], k => `setSections('${esc(p.id)}','${k}',this.checked)`)}</div>
-      <div class="row"><label><input type="checkbox" ${p.lead ? "checked" : ""} onchange="setFlag('${esc(p.id)}','lead',this.checked)"> Section lead</label><label><input type="checkbox" ${p.qualified ? "checked" : ""} onchange="setFlag('${esc(p.id)}','qualified',this.checked)"> <span data-qual-label>the training</span></label></div>
+      <div class="row"><label><input type="checkbox" ${p.lead ? "checked" : ""} onchange="setFlag('${esc(p.id)}','lead',this.checked)"> Section lead</label>${QUAL.on ? `<label><input type="checkbox" ${p.qualified ? "checked" : ""} onchange="setFlag('${esc(p.id)}','qualified',this.checked)"> ${esc(QUAL.label)}</label>` : ""}</div>
       <div class="row"><button class="btn" onclick="recode('${esc(p.id)}')">New link</button><button class="btn quiet" onclick="removePerson('${esc(p.id)}')">Remove from roster</button>${p.id !== me.id && !p.secretary ? `<button class="btn quiet" onclick="handOver('${esc(p.id)}')">Make secretary instead of me</button>` : ""}</div>
     </div></td></tr>`;
   }).join("") : `<tr><td colspan="5" class="empty">Nobody yet. Add the first Scouter below.</td></tr>`;

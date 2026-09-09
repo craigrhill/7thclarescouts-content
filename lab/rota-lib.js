@@ -49,17 +49,22 @@ async function api(method, q, body, extra = {}) {
   return j;
 }
 // What the group asks of at least one adult on a night, where it asks
-// anything: Garda vetting, a first aider, whatever the rule is. The wording is
-// the secretary's, in settings.rota; the numbers are per section and start at
-// nought, so until somebody sets one nothing about this shows at all.
-let QUAL = { label: "the training", short: "trained" };
+// anything: Garda vetting, a first aider, whatever the rule is. Until the
+// group names it in admin there is no rule at all: no checkbox on the roster,
+// no tag beside a name, no numbers for a lead to set. Naming it turns all of
+// that on, worded the way the group words it, and the numbers are then per
+// section and still start at nought.
+let QUAL = { on: false, label: "", short: "" };
+const qualOn = () => QUAL.on;
 async function loadContent(){
   let c;
   try { const r = await fetch("/.netlify/functions/content", { cache: "no-store" }); c = await r.json(); if (!c || !c.settings) throw 0; }
   catch { c = { settings: { sections: [{ key: "scouts", name: "Scouts", day: "Thursday", time: "6:00 to 7:30 pm" }] }, events: [] }; }
   const r0 = (c.settings && c.settings.rota) || {};
-  QUAL = { label: r0.qualifiedLabel || QUAL.label, short: r0.qualifiedShort || r0.qualifiedLabel || QUAL.short };
+  const label = String(r0.qualifiedLabel || "").trim();
+  QUAL = { on: !!label, label, short: String(r0.qualifiedShort || "").trim() || label };
   document.querySelectorAll("[data-qual-label]").forEach(el => { el.textContent = QUAL.label; });
+  document.querySelectorAll("[data-qual-only]").forEach(el => { el.hidden = !QUAL.on; });
   return c;
 }
 // School breaks, kept once in the site's settings: midterms, Christmas,
@@ -69,7 +74,7 @@ async function loadContent(){
 const BREAKS = c => (((c || {}).settings || {}).breaks || []).filter(b => b && b.start && b.end);
 const breakOn = (c, date, section) => BREAKS(c).find(b => date >= b.start && date <= (b.end || b.start)
   && (!Array.isArray(b.sections) || !b.sections.length || b.sections.includes(section)));
-const qualTag = p => p.qualified ? `<span class="tag" title="${esc(QUAL.label)}">${esc(QUAL.short)}</span>` : "";
+const qualTag = p => (QUAL.on && p.qualified) ? `<span class="tag" title="${esc(QUAL.label)}">${esc(QUAL.short)}</span>` : "";
 // On a rota the people who answer the rule come first: a night is not covered
 // without one of them, so they are the ones being looked for.
 const byName2 = (a, b) => String(a.name).localeCompare(String(b.name), "en-IE");
