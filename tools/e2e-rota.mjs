@@ -263,6 +263,11 @@ try {
   step = "the term's nights";
   await go(L2, "events.html"); await L2.waitForTimeout(800); await pickSec(L2, "Scouts");
   ok("the meetings card offers the term, worked out from the section's night", await L2.locator("#meetList .entry").count(), 12);
+  // The school breaks are kept once in the site's settings, so a night inside
+  // one arrives marked off rather than anyone having to remember.
+  const inBreaks = await L2.evaluate(() => MEET.filter(e => e.off && e.title).map(e => e.date + " " + e.title));
+  ok("a night in a school break comes ready marked, named after the break", inBreaks.some(x => /midterm|Christmas|Easter/i.test(x)), true);
+  ok("and nothing is left for the lead to notice", await L2.locator("#breakNote").isHidden(), true);
   ok("and says it is not saved yet", (await L2.locator("#meetNote").innerText()).includes("Save them to take the list over"), true);
   await L2.locator("#meetList .entry").nth(1).getByRole("button", { name: "Edit" }).click(); await L2.waitForTimeout(200);
   await L2.locator("#meetList .entry.open input[type=checkbox]").check();
@@ -274,7 +279,10 @@ try {
   await go(L2, "rota.html"); await L2.waitForTimeout(800); await pickSec(L2, "Scouts");
   const slotFor = (p, text) => p.locator(".slot", { hasText: text }).first();
   ok("the rota shows the renamed night", await slotFor(L2, "Night hike").count(), 1);
-  ok("and the one called off, greyed out rather than gone", await L2.locator(".slot", { hasText: "No meeting" }).count(), 1);
+  // Two of them: the one called off by hand, and the one the October midterm
+  // took, which the editor marked before it was ever saved.
+  ok("nights that are off are greyed out rather than gone", await L2.locator(".slot", { hasText: "No meeting" }).count(), 2);
+  ok("and the school break says which one it is", await L2.locator(".slot", { hasText: "October midterm" }).count(), 1);
 
   step = "first come, first served";
   // Lead Test is the secretary by now, and L2 is the context signed in as them.

@@ -62,6 +62,13 @@ async function loadContent(){
   document.querySelectorAll("[data-qual-label]").forEach(el => { el.textContent = QUAL.label; });
   return c;
 }
+// School breaks, kept once in the site's settings: midterms, Christmas,
+// Easter. A night inside one is not a night: the tool marks it off with the
+// break's name rather than anyone remembering to. A break with no sections
+// named is every section's.
+const BREAKS = c => (((c || {}).settings || {}).breaks || []).filter(b => b && b.start && b.end);
+const breakOn = (c, date, section) => BREAKS(c).find(b => date >= b.start && date <= (b.end || b.start)
+  && (!Array.isArray(b.sections) || !b.sections.length || b.sections.includes(section)));
 const qualTag = p => p.qualified ? `<span class="tag" title="${esc(QUAL.label)}">${esc(QUAL.short)}</span>` : "";
 // On a rota the people who answer the rule come first: a night is not covered
 // without one of them, so they are the ones being looked for.

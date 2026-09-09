@@ -56,6 +56,7 @@
         <label class="small">Adults needed <input type="number" min="1" max="9" id="meetReq" onchange="setRequired(this.value)"></label>
       </div>
       <p class="small muted" id="meetNote"></p>
+      <div id="breakNote" class="banner" hidden></div>
       <div id="meetList"></div>
       <div class="row" style="margin-top:.8rem">
         <button class="btn" onclick="addNight()">Add a night</button>
@@ -104,8 +105,9 @@ function seedNights(k){
   const out = [], d = new Date(); d.setHours(12, 0, 0, 0);
   while (d.getDay() !== wd) d.setDate(d.getDate() + 1);
   for (let i = 0; i < 12; i++) {
-    const date = isoDay(d), was = slots["m:" + date] || {};
-    out.push({ id: date, date, title: "", location: "", details: "", need: was.need ?? null, off: !!was.off, startTime: "", endTime: "" });
+    const date = isoDay(d), was = slots["m:" + date] || {}, br = breakOn(C, date, k);
+    out.push({ id: date, date, title: br ? br.name : "", location: "", details: "",
+      need: was.need ?? null, off: !!was.off || !!br, startTime: "", endTime: "" });
     d.setDate(d.getDate() + 7);
   }
   return out;
@@ -123,6 +125,14 @@ function renderMeetings(k){
     ? "The nights on the rota for " + sectionName(k) + ". Edit opens one up. Changing a date or a name keeps whoever is already down for it, and Called off leaves it on the rota greyed out rather than losing them."
     : "These are the next twelve " + (x.day || "meeting") + "s, worked out from the section's meeting night. Save them to take the list over: after that a night can be moved, renamed, called off or given its own numbers.";
   $("meetSave").textContent = meetDirty || !saved ? "Save the nights" : "Saved";
+  // Nights that fall in a school break and are not marked off yet. The dates
+  // are kept once, in the site's settings, so this is a button rather than a
+  // job of looking each one up.
+  const inBreak = MEET.map((e, i) => ({ i, e, br: breakOn(C, e.date, k) })).filter(x => x.br && !x.e.off);
+  $("breakNote").hidden = !inBreak.length;
+  if (inBreak.length) $("breakNote").innerHTML = `<b>${inBreak.length} night${inBreak.length === 1 ? " falls" : "s fall"} in a school break.</b> `
+    + esc(inBreak.map(x => fmt(x.e.date) + " (" + x.br.name + ")").join(", "))
+    + `<span class="row" style="margin-top:.5rem"><button class="btn" onclick="markBreaks()">Mark ${inBreak.length === 1 ? "it" : "them"} as no meeting</button></span>`;
   $("meetList").innerHTML = MEET.map((e, i) => meetOpen.has(i) ? `<div class="entry open">
       <div class="row"><input type="date" value="${esc(e.date)}" oninput="setNight(${i},'date',this.value)" aria-label="Date"><input type="text" value="${esc(e.title || "")}" placeholder="${esc(sectionName(k))} meeting" oninput="setNight(${i},'title',this.value)" aria-label="What it is"><button class="btn quiet" title="Remove" onclick="removeNight(${i})">&#x2715;</button></div>
       <div class="row"><input type="text" value="${esc(e.location || "")}" placeholder="Where, if not the usual" oninput="setNight(${i},'location',this.value)" aria-label="Place"><label class="small">from <input type="time" value="${esc(e.startTime || "")}" oninput="setNight(${i},'startTime',this.value)" aria-label="Starts"></label><label class="small">to <input type="time" value="${esc(e.endTime || "")}" oninput="setNight(${i},'endTime',this.value)" aria-label="Ends"></label></div>
@@ -133,6 +143,12 @@ function renderMeetings(k){
       <span>${e.off ? `<span class="status off">Called off</span>` : ""}${e.need != null ? `<span class="custom">${e.need} adults</span>` : ""}<button class="btn quiet" onclick="openNight(${i})">Edit</button><button class="btn quiet" title="Remove" onclick="removeNight(${i})">&#x2715;</button></span>
     </div>${e.details ? `<p class="small muted" style="margin:.2rem 0 0">${esc(e.details)}</p>` : ""}</div>`).join("")
     || `<div class="empty">No nights yet. Add one, or set the section's meeting night in the admin editor and reload.</div>`;
+}
+// One tap for the lot: a break is a run of dates, not a night at a time.
+function markBreaks(){
+  const k = sec();
+  MEET.forEach(e => { const br = breakOn(C, e.date, k); if (br && !e.off) { e.off = true; if (!e.title) e.title = br.name; } });
+  meetDirty = true; renderMeetings(k);
 }
 function openNight(i){ meetOpen.has(i) ? meetOpen.delete(i) : meetOpen.add(i); renderMeetings(sec()); }
 function addNight(){

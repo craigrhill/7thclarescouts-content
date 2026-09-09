@@ -268,6 +268,18 @@ the editor fall back to the weeks worked out from its weekday, and the editor
 seeds from those, **using each date as the entry id**, so the first save keeps
 every tick that is already there.
 
+**School breaks are kept once, not remembered twelve times.** `settings.breaks`
+in `content.json` is `[{name, start, end, sections?}]`: the midterms, Christmas
+and Easter, off the school calendar, edited in admin under Sections. A break
+with no sections named is the whole group's. The meetings editor seeds a night
+inside one already marked off, titled "No meeting, October midterm", and for a
+list that was saved before a break was added it offers one button to mark them
+all. The admin editor spells out which nights each break swallows as it is
+typed, so a wrong date shows up before it is saved, and the section pages tell
+parents which weeks have no meeting, off the same list, so the two can never
+disagree. Events are deliberately left alone: a camp in the midterm is the
+point of the midterm.
+
 **A night fills up and then closes.** A helper puts themselves on while there
 is a place; once there is not, `?a=slot` answers 409 and the button is gone.
 Two things stop that deadlocking, and both matter: while a night still wants
@@ -503,6 +515,7 @@ link in the footer.
 
     { settings: { heroTitle, heroLede, about, venue, email, phone,
                   rota: { qualifiedLabel?, qualifiedShort? },
+                  breaks: [{name, start, end, sections?}],
                   social: [{name, url}],
                   logoUrl?, aboutPhotoUrl?, joinPhotoUrl?,
                   venues: [{name, query, link}],

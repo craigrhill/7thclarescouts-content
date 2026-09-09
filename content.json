@@ -93,6 +93,28 @@
         "venue": "Newquay National School",
         "blurb": "Youth-led challenges, mountain trips, international events and leadership."
       }
+    ],
+    "breaks": [
+      {
+        "name": "October midterm",
+        "start": "2026-10-26",
+        "end": "2026-10-30"
+      },
+      {
+        "name": "Christmas",
+        "start": "2026-12-23",
+        "end": "2027-01-05"
+      },
+      {
+        "name": "February midterm",
+        "start": "2027-02-15",
+        "end": "2027-02-19"
+      },
+      {
+        "name": "Easter",
+        "start": "2027-03-22",
+        "end": "2027-04-02"
+      }
     ]
   },
   "fundraising": {
@@ -1527,7 +1549,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-08T06:31:03.511Z",
+  "updatedAt": "2026-09-09T03:14:40.898Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
@@ -1580,7 +1602,7 @@
     "sionnach",
     "mpc"
   ],
-  "updatedBy": "admin",
+  "updatedBy": "claude",
   "gallery": [
     {
       "url": "/photo/418bc94a11694cc0da5466007c46b65f.jpg",

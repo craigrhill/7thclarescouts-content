@@ -88,6 +88,9 @@ textarea{min-height:90px;resize:vertical}
 
   <div class="pane" id="pane-sections">
     <div class="card"><h2>Sections</h2><p class="hint">Meeting night, time and blurb for each section.</p><div id="sectionList"></div></div>
+    <div class="card"><h2>School breaks</h2>
+      <p class="hint">Midterms, Christmas, Easter: the weeks nobody is around. Kept once here, off the school calendar. The leaders' Events page marks any meeting night that falls inside one as "no meeting" with the break's name, so nothing is scheduled over them by accident, and the section pages tell parents when there is no meeting. Leave the sections blank for a break that is everyone's; tick some for one that is not.</p>
+      <div id="breakList"></div><button class="btn secondary" onclick="addBreak()">+ Add a break</button></div>
   </div>
 
   <div class="pane" id="pane-kits">
@@ -575,6 +578,7 @@ function renderNews(){
 function addNews(){ C.news.push({date:new Date().toISOString().slice(0,10),title:"",body:""}); renderNews(); }
 
 function renderSections(){
+  renderBreaks();
   $("sectionList").innerHTML = C.settings.sections.map((s,i) => `<div class="item"><h3>${esc(s.name)} <span class="hint">${esc(s.ages)}</span></h3>
     <div class="row">
       <div><label>Meeting night</label><input value="${esc(s.day)}" oninput="C.settings.sections[${i}].day=this.value"></div>
@@ -583,6 +587,46 @@ function renderSections(){
     </div>
     <label>Blurb</label><textarea oninput="C.settings.sections[${i}].blurb=this.value">${esc(s.blurb)}</textarea></div>`).join("");
 }
+
+// ---- School breaks ----
+function renderBreaks(){
+  C.settings.breaks = C.settings.breaks || [];
+  const secs = C.settings.sections || [];
+  $("breakList").innerHTML = C.settings.breaks.map((b, i) => `<div class="item">
+    <div class="row">
+      <div><label>Name</label><input value="${esc(b.name || "")}" oninput="C.settings.breaks[${i}].name=this.value" placeholder="October midterm"></div>
+      <div><label>First day</label><input type="date" value="${esc(b.start || "")}" onchange="C.settings.breaks[${i}].start=this.value;renderBreaks()"></div>
+      <div><label>Last day</label><input type="date" value="${esc(b.end || "")}" onchange="C.settings.breaks[${i}].end=this.value;renderBreaks()"></div>
+    </div>
+    <label>Sections (leave all unticked for the whole group)</label>
+    <div class="row">${secs.map(x => `<label class="small"><input type="checkbox" ${(b.sections || []).includes(x.key) ? "checked" : ""} onchange="setBreakSection(${i},'${esc(x.key)}',this.checked)"> ${esc(x.name)}</label>`).join("")}</div>
+    <p class="hint">${esc(breakHits(b))}</p>
+    <div class="actions"><button class="btn danger" onclick="C.settings.breaks.splice(${i},1);renderBreaks()">Delete</button></div></div>`).join("")
+    || `<p class="hint">No breaks yet. Add the ones off this year's school calendar.</p>`;
+}
+function setBreakSection(i, key, on){
+  const b = C.settings.breaks[i];
+  b.sections = [...new Set([...(b.sections || []).filter(k => k !== key), ...(on ? [key] : [])])];
+  if (!b.sections.length) delete b.sections;
+}
+// Which meeting nights this break swallows, said plainly, so a wrong date is
+// obvious before it is saved.
+const DAYNUM = { sunday:0, monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6 };
+function breakHits(b){
+  if (!b.start || !b.end || b.end < b.start) return "Set the first and last day.";
+  const out = [];
+  for (const x of (C.settings.sections || [])) {
+    if (Array.isArray(b.sections) && b.sections.length && !b.sections.includes(x.key)) continue;
+    const wd = DAYNUM[String(x.day || "").toLowerCase()];
+    if (wd === undefined) continue;
+    const hits = [];
+    for (let d = new Date(b.start + "T12:00:00"); d <= new Date(b.end + "T12:00:00"); d.setDate(d.getDate() + 1))
+      if (d.getDay() === wd) hits.push(d.toLocaleDateString("en-IE", { day: "numeric", month: "short" }));
+    if (hits.length) out.push(x.name + ": " + hits.join(", "));
+  }
+  return out.length ? "No meeting on " + out.join("; ") + "." : "No meeting night falls inside this one.";
+}
+function addBreak(){ C.settings.breaks = C.settings.breaks || []; C.settings.breaks.push({ name: "", start: "", end: "" }); renderBreaks(); }
 
 const SETTING_KEYS = ["heroTitle","heroLede","about","email","phone","venue","logoUrl","aboutPhotoUrl","joinPhotoUrl"];
 function renderSettings(){ SETTING_KEYS.forEach(k => { const el = $("s_"+k); el.value = C.settings[k] || ""; el.oninput = () => C.settings[k] = el.value;

@@ -659,6 +659,7 @@ function showSection(key){
     <div class="card section-card ${esc(x.key)}"><div class="age">${esc(x.ages)}</div><h1 style="margin:.1em 0 .3em">${esc(x.name)}</h1>
     <p class="muted" style="font-size:.95rem">${esc(x.blurb)}</p>
     <div class="kv" style="margin-bottom:0">${ICON.cal}<span>${ph(x.day)}</span>${ICON.clock}<span>${ph(x.time)}</span>${x.venue?`${ICON.pin}<span>${ph(x.venue)}</span>`:""}</div>
+    ${breakLine(key)}
     <div class="btn-row"><button class="btn ${(getMy()||[]).includes(key)?"":"orange"}" onclick="toggleMySection('${esc(key)}')">${(getMy()||[]).includes(key)?"✓ On my Home · remove":"Add to my Home"}</button></div></div>
     ${leaders.length?`<div class="sec-head"><h2>Leaders</h2><a href="#more/team">Whole team</a></div><div class="card">${leaders.map(personHtml).join("")}</div>`:""}
     ${pics.length?`<div class="sec-head"><h2>Photos</h2><a href="#more/gallery/${esc(key)}">All photos</a></div>
@@ -703,6 +704,24 @@ function openFigure(kind){
 }
 
 /* ---------- photos ---------- */
+/* School breaks, from the same list the leaders' rota marks its nights off
+   with, so parents and leaders never disagree about which weeks are off. Only
+   the ones still to come, and only this section's. */
+function breaks(key){
+  // Local midnight, read as a date: toISOString on it would slip back a day
+  // through the summer, when Ireland is an hour ahead of UTC.
+  const n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
+  const t = n.toISOString().slice(0, 10);
+  return ((C.settings || {}).breaks || [])
+    .filter(b => b && b.start && (b.end || b.start) >= t && (!Array.isArray(b.sections) || !b.sections.length || b.sections.includes(key)))
+    .sort((a, b) => a.start.localeCompare(b.start));
+}
+function breakLine(key){
+  const list = breaks(key).slice(0, 3);
+  if (!list.length) return "";
+  const span = b => b.end && b.end !== b.start ? `${fmtShort(b.start)} to ${fmtShort(b.end)}` : fmtShort(b.start);
+  return `<p class="small muted" style="margin:.5rem 0 0">No meetings: ${list.map(b => `${esc(span(b))} (${esc(b.name || "school break")})`).join(", ")}.</p>`;
+}
 /* One list, two surfaces. The gallery page shows every photo; a section page
    shows the ones tagged with that section. A photo with no section is
    group-wide and appears on the gallery only, so leaders keep one list. */
