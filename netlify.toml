@@ -24,3 +24,12 @@
   for = "/sw.js"
   [headers.values]
     Cache-Control = "no-cache"
+
+# Netlify does not know this extension, so it served the manifest as
+# application/octet-stream. Chrome parses it anyway and the app installs
+# either way, but the right type is one line and stops it reading as a
+# download in devtools.
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json; charset=utf-8"
