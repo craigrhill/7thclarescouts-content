@@ -388,6 +388,42 @@ try {
   await L2.screenshot({ path: ".e2e/attendance-scouters-390.png", fullPage: true });
   await L2.setViewportSize({ width: 1280, height: 900 }); await L2.waitForTimeout(200);
 
+  // ---- the load table, section by section ----
+  // Board Helper takes on Scouts as well as Beavers, so there is somebody the
+  // split is actually about: how much of them goes to each.
+  step = "who is down for what, per section";
+  await go(L2, "roster.html"); await L2.waitForTimeout(900);
+  await L2.locator("#people tr.person", { hasText: "Board Helper" }).locator("button:has-text('Edit')").click(); await L2.waitForTimeout(200);
+  await L2.locator("#people tr.editor .secs label", { hasText: "Scouts" }).locator("input").check(); await L2.waitForTimeout(1200);
+  // A night out that belongs to the whole group, to prove it is not counted
+  // twice for somebody who covers two of the sections it is offered to.
+  await L2.evaluate(async () => { const h = { "Content-Type": "application/json", "x-rota-token": localStorage.getItem("rota-token") };
+    await fetch("/.netlify/functions/rota?a=event", { method: "POST", headers: h, body: JSON.stringify({ date: "2030-06-08", title: "Group day out", section: "" }) }); });
+  await go(L2, "rota.html"); await L2.waitForTimeout(800); await pickSec(L2, "Beavers"); await openTab(L2, "Every night");
+  // #slots is the Every night pane. The Gaps pane holds .slot cards too, and
+  // a hidden one is not clickable, so scope to the list being ticked.
+  // A night called off has no list of names on it at all, so reach for the
+  // first tickable one across the matching nights rather than the first night.
+  const tickOn = async (what) => { await L2.locator("#slots .slot", { hasText: what })
+    .locator(".who label", { hasText: "Board Helper" }).first().click(); await L2.waitForTimeout(800); };
+  await tickOn("Beavers meeting"); await tickOn("Group day out");
+  await pickSec(L2, "Scouts"); await L2.waitForTimeout(500);
+  await tickOn("Scouts meeting"); await tickOn("Group day out");
+  await go(L2, "roster.html"); await L2.waitForTimeout(1100);
+  const loadRow = async (name) => (await L2.locator("#loadTable tr.person", { hasText: name }).innerText()).replace(/\s+/g, " ").trim();
+  ok("the card offers All and a pill per section", (await L2.locator("#loadChips .chip").allInnerTexts()).map((t) => t.trim()), ["All", "Beavers", "Cubs", "Scouts", "Ventures"]);
+  ok("All says where the nights went, and counts one night out once however many sections were offered it",
+    await loadRow("Board Helper"), "Board Helper Beavers 2, Scouts 2 2 1 3");
+  await L2.locator("#loadChips .chip", { hasText: "Beavers" }).click(); await L2.waitForTimeout(400);
+  ok("one section counts only its own nights", await loadRow("Board Helper"), "Board Helper 1 1 2");
+  ok("and only the people who cover it", (await L2.locator("#loadTable tr.person").allInnerTexts()).some((t) => t.includes("Spare Helper")), false);
+  ok("the line above counts that section's nights", (await L2.locator("#loadNote").innerText()).includes("Beavers meeting"), true);
+  await L2.reload({ waitUntil: "load" }); await L2.waitForTimeout(1200);
+  ok("and the section stays picked when the page is opened again", (await L2.locator("#loadChips .chip.on").innerText()).trim(), "Beavers");
+  await L2.screenshot({ path: ".e2e/roster-load-section-1280.png", fullPage: true });
+  await L2.locator("#loadChips .chip", { hasText: "All" }).click(); await L2.waitForTimeout(400);
+  ok("All is the way back", [(await L2.locator("#loadChips .chip.on").innerText()).trim(), (await loadRow("Board Helper")).endsWith("2 1 3")], ["All", true]);
+
   // ---- the admin password signs the leaders' pages in as the secretary ----
   step = "sign into admin.html";
   const A = await page(1280, 900); await A.goto(H.replace(/lab\/$/, "admin.html"), { waitUntil: "load" }); await A.waitForTimeout(600);

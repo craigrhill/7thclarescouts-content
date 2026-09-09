@@ -328,7 +328,17 @@ would carry the whole URL, code and all, in the Referer header.
 **Who is down for what** on the roster counts each person over the nights
 still to come that are going ahead, meetings and events apart, with the two
 added up, and puts anyone at nothing at the top: they are who the secretary
-rings next. It is a table of numbers, so it is the one table on these pages
+rings next. A pill row picks the section: **All**, then one per section, kept
+in `localStorage` under `roster-load-section`. On a section it counts only
+that section's nights and lists only the people who cover it (and anyone
+still carrying one of its nights after being moved off, who would otherwise
+vanish with their ticks). On All, a Scouter covering more than one section
+gets a line under their name saying where the nights went, "Beavers 2,
+Scouts 2", which is the question the card is usually asked. One night out
+counts once in the All total however many sections were offered it: a
+group event's slot id turns up under each section, so `bump()` counts a
+slot id it has already seen for that person in the section tallies but not
+in the overall one. It is a table of numbers, so it is the one table on these pages
 that keeps its headings on a phone rather than folding into cards
 (`table.roster.load`), because three bare figures under a name say nothing.
 The nights it counts come from `meetingNights()` in `lab/rota-lib.js`, the

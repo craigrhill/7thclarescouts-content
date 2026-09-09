@@ -213,6 +213,8 @@ table.roster.load td.nm{font-weight:600}
   table.roster.load th.n{font-size:.66rem;letter-spacing:.04em}
   table.roster.load td.nm .small{display:block}
 }
+/* Where a Scouter covers more than one section, how their nights split. */
+table.roster.load td.nm .split{display:block;font-weight:400}
 /* Somebody down for nothing at all: the one to ask next. Shaded, and said in
    words beside the name as well, so it does not rest on the colour alone. */
 table.roster.load tr.person.zero td{background:#FBE9EC}

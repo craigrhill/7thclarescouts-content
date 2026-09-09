@@ -77,6 +77,7 @@
 
     <div class="card" id="loadCard" hidden>
       <h2>Who is down for what</h2>
+      <div class="chips" id="loadChips"></div>
       <p class="small muted" id="loadNote"></p>
       <p class="small muted">Each number is how many of those nights the person is ticked for on the rota: the meetings, the events, and the two added up. Anyone down for nothing is shaded and sits at the top, because they are the ones to ask next.</p>
       <table class="roster load" id="loadTable"></table>
@@ -88,8 +89,10 @@
 
 <script src="rota-lib.js"></script>
 <script>
+const LOAD_KEY = "roster-load-section";
 let C = null, D = null, editing = null;
 function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
+const sectionName = k => (C.settings.sections.find(x => x.key === k) || {}).name || k;
 const personById = id => (D.people || []).find(p => p.id === id);
 const canManage = () => !!D.me.secretary || (!(D.people || []).some(p => p.secretary) && !!D.me.lead);
 function chips(checked, onchange){ return C.settings.sections.map(x => `<label><input type="checkbox" ${checked.includes(x.key) ? "checked" : ""} data-key="${esc(x.key)}" ${onchange ? `onchange="${onchange(esc(x.key))}"` : ""}>${esc(x.name)}</label>`).join(""); }
@@ -146,44 +149,82 @@ function resetMessage(){ $("msgText").value = STANDARD_MESSAGE; msgDirty = true;
 
 // How much each person has taken on, counted over the nights still to come
 // that are going ahead. Somebody down for nothing is the one to ask, so that
-// row is marked.
+// row is marked. Counted per section as well as altogether, because a Scouter
+// who covers two sections is asked about each of them separately: what the
+// secretary wants to see is how much of Adam is going to Beavers and how much
+// to Scouts, not one number that hides it.
 function loadOf(){
   const today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
   const t = today.toISOString().slice(0, 10);
-  const counts = new Map(); let meetings = 0, events = 0;
+  const keys = Object.keys(D.sections || {});
+  const counts = new Map(), pool = { meetings: 0, events: 0, secs: {} };
+  for (const k of keys) pool.secs[k] = { meetings: 0, events: 0 };
   // The same nights the rota draws, section by section, so the two agree even
   // before a lead has saved a list of their own.
-  const entries = Object.keys(D.sections || {}).flatMap(k => meetingNights(C, D, k)).filter(e => !e.off);
+  const entries = keys.flatMap(k => meetingNights(C, D, k)).filter(e => !e.off);
   const evs = [...(C.events || []), ...((D.events) || [])].filter(e => (e.endDate || e.date) >= t);
-  const bump = (k, id, kind) => { const c = counts.get(id) || { meetings: 0, events: 0 }; c[kind]++; counts.set(id, c); };
+  // A group event is offered to every section, so its slot id turns up under
+  // each of them. It is still one night out for the person on it: the section
+  // tallies count it once each, the overall one counts it once in all.
+  const bump = (k, id, kind, slot) => {
+    const c = counts.get(id) || { meetings: 0, events: 0, secs: {}, seen: new Set() };
+    if (!c.seen.has(slot)) { c.seen.add(slot); c[kind]++; }
+    const s = c.secs[k] || (c.secs[k] = { meetings: 0, events: 0 });
+    s[kind]++; counts.set(id, c);
+  };
   for (const e of entries) {
-    meetings++;
-    ((D.sections[e.section] || {}).slots || {})["m:" + e.id]?.who?.forEach(id => bump(e.section, id, "meetings"));
+    pool.meetings++; if (pool.secs[e.section]) pool.secs[e.section].meetings++;
+    const slot = "m:" + e.id;
+    ((D.sections[e.section] || {}).slots || {})[slot]?.who?.forEach(id => bump(e.section, id, "meetings", slot));
   }
   for (const e of evs) {
-    const keys = e.section ? [e.section] : Object.keys(D.sections || {});
-    let counted = false;
-    for (const k of keys) {
-      const who = ((D.sections[k] || {}).slots || {})["e:" + (e.id || (e.date + ":" + e.title))]?.who || [];
-      who.forEach(id => bump(k, id, "events"));
-      if (who.length || keys.length === 1) counted = true;
+    const on = (e.section ? [e.section] : keys).filter(k => pool.secs[k]);
+    if (!on.length) continue;
+    pool.events++;
+    const slot = "e:" + (e.id || (e.date + ":" + e.title));
+    for (const k of on) {
+      pool.secs[k].events++;
+      (((D.sections[k] || {}).slots || {})[slot]?.who || []).forEach(id => bump(k, id, "events", slot));
     }
-    if (counted) events++;
   }
-  return { counts, meetings, events };
+  return { counts, pool };
 }
+// Which sections the table is showing: all of them, or one. Kept on the phone
+// so the secretary comes back to the section she was chasing.
+let loadSec = (() => { try { return localStorage.getItem(LOAD_KEY) || ""; } catch { return ""; } })();
+function pickLoad(k){ loadSec = k; try { localStorage.setItem(LOAD_KEY, k); } catch {} renderLoad(); }
 function renderLoad(){
-  const { counts, meetings, events } = loadOf();
-  const rows = (D.people || []).map(p => { const c = counts.get(p.id) || { meetings: 0, events: 0 }; return { p, ...c, total: c.meetings + c.events }; })
+  const { counts, pool } = loadOf();
+  const keys = Object.keys(D.sections || {});
+  if (loadSec && !keys.includes(loadSec)) loadSec = "";
+  const k = loadSec, secName = k ? sectionName(k) : "";
+  $("loadChips").innerHTML = [["", "All"], ...C.settings.sections.filter(x => keys.includes(x.key)).map(x => [x.key, x.name])]
+    .map(([key, name]) => `<button class="chip ${key === k ? "on" : ""}" onclick="pickLoad('${esc(key)}')">${esc(name)}</button>`).join("");
+  const zero = { meetings: 0, events: 0 };
+  const of = p => { const c = counts.get(p.id); return (k ? (c && c.secs[k]) : c) || zero; };
+  // On one section, only the people who cover it, and anyone still carrying a
+  // night on it after being moved off, who would otherwise vanish with it.
+  const rows = (D.people || []).filter(p => !k || (p.sections || []).includes(k) || of(p).meetings || of(p).events)
+    .map(p => { const c = of(p); return { p, meetings: c.meetings, events: c.events, total: c.meetings + c.events, split: splitOf(counts.get(p.id)) }; })
     .sort((a, b) => (a.total - b.total) || byName2(a.p, b.p));
-  const none = rows.filter(r => r.total === 0).length;
-  $("loadNote").textContent = `${meetings} meeting${meetings === 1 ? "" : "s"} and ${events} event${events === 1 ? "" : "s"} still to come.`
-    + (none ? ` ${none} ${none === 1 ? "person is" : "people are"} down for nothing yet.` : " Everyone is down for something.");
+  const totals = k ? pool.secs[k] : pool, none = rows.filter(r => r.total === 0).length;
+  $("loadNote").textContent = `${totals.meetings} ${k ? secName + " " : ""}meeting${totals.meetings === 1 ? "" : "s"} and ${totals.events} event${totals.events === 1 ? "" : "s"} still to come.`
+    + (rows.length ? (none ? ` ${none} of ${rows.length} ${none === 1 ? "is" : "are"} down for nothing yet.` : " Everyone is down for something.") : "");
   // The headings stay on a phone: three short numbers mean nothing without
   // them, so this table keeps its shape where the roster's turns into cards.
   $("loadTable").innerHTML = `<thead><tr><th>Scouter</th><th class="n">Meetings</th><th class="n">Events</th><th class="n">Total</th></tr></thead><tbody>`
-    + rows.map(r => `<tr class="person${r.total ? "" : " zero"}"><td class="nm">${esc(r.p.name)}${qualTag(r.p)}${r.total ? "" : ` <span class="small muted">none yet</span>`}</td><td class="n">${r.meetings}</td><td class="n">${r.events}</td><td class="n"><b>${r.total}</b></td></tr>`).join("")
+    + (rows.length ? rows.map(r => `<tr class="person${r.total ? "" : " zero"}"><td class="nm">${esc(r.p.name)}${qualTag(r.p)}${r.total ? "" : ` <span class="small muted">none yet</span>`}${!k && r.split ? `<span class="small muted split">${esc(r.split)}</span>` : ""}</td><td class="n">${r.meetings}</td><td class="n">${r.events}</td><td class="n"><b>${r.total}</b></td></tr>`).join("")
+      : `<tr><td class="nm" colspan="4"><span class="small muted">Nobody on the roster covers ${esc(secName)} yet.</span></td></tr>`)
     + `</tbody>`;
+}
+// Somebody who covers one section needs no breakdown; somebody who covers two
+// is exactly the person this card is asked about, so their row says which
+// nights went where without anyone having to tap through the sections.
+function splitOf(c){
+  if (!c) return "";
+  const parts = C.settings.sections.filter(x => c.secs[x.key] && (c.secs[x.key].meetings + c.secs[x.key].events))
+    .map(x => sectionName(x.key) + " " + (c.secs[x.key].meetings + c.secs[x.key].events));
+  return parts.length > 1 ? parts.join(", ") : "";
 }
 
 async function load(){ showErr(""); D = await api("GET", "?sections=" + (C.settings.sections || []).map(x => x.key).join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
