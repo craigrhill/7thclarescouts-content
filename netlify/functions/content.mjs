@@ -921,6 +921,23 @@ var fold = (line) => {
   out.push(s);
   return out;
 };
+function nightTitle(m, sectionName) {
+  const t = String(m && m.title || "").trim();
+  if (!m || !m.off) return t || ((sectionName || "").trim() + " meeting").trim();
+  return /^no meeting/i.test(t) ? t : "No meeting" + (t ? ", " + t : "");
+}
+var nightsAsEvents = (data) => (Array.isArray(data.meetings) ? data.meetings : []).map((m) => {
+  const s = (data.settings && data.settings.sections || []).find((x) => x.key === m.section) || {};
+  return {
+    date: m.date,
+    title: nightTitle(m, s.name),
+    section: m.section,
+    location: m.location || "",
+    startTime: m.startTime || "",
+    endTime: m.endTime || "",
+    nightId: m.id
+  };
+});
 function toICS(events, name, host) {
   const stamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   const usable = events.filter((e) => e && e.date && e.title);
@@ -935,7 +952,7 @@ function toICS(events, name, host) {
   ];
   if (usable.some((e) => isTime(e.startTime))) lines.push(...DUBLIN);
   for (const e of usable) {
-    const uid = (e.countyId || e.date + "-" + String(e.title).toLowerCase().replace(/[^a-z0-9]+/g, "-")) + "@" + host;
+    const uid = (e.countyId || e.nightId || e.date + "-" + String(e.title).toLowerCase().replace(/[^a-z0-9]+/g, "-")) + "@" + host;
     lines.push("BEGIN:VEVENT", "UID:" + uid, "DTSTAMP:" + stamp);
     if (isTime(e.startTime)) {
       const last = e.endDate || e.date;
@@ -964,7 +981,7 @@ var content_default = async (req) => {
       if (g) data = (await ghRead(g)).data;
       if (!data) data = await stores(STORE).get(KEY, { type: "json" });
       if (!data) return json(404, { error: "No calendar yet." });
-      const all = Array.isArray(data.events) ? data.events : [];
+      const all = [...Array.isArray(data.events) ? data.events : [], ...nightsAsEvents(data)].sort((x, y) => String(x.date).localeCompare(String(y.date)));
       const list = want ? all.filter((e) => !e.section || e.section === want) : all;
       const names = data.settings && data.settings.sections || [];
       const label = want ? (names.find((s) => s.key === want) || {}).name || want : "All sections";
@@ -1109,6 +1126,8 @@ var content_default = async (req) => {
 };
 export {
   content_default as default,
+  nightTitle,
+  nightsAsEvents,
   toICS,
   useStore
 };

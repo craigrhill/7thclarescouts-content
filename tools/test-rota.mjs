@@ -428,7 +428,18 @@ ok("a private event can be removed", r.j.events.length, 0);
   ok("a seeded night keeps its date as its id, so its ticks still match", cal[0].id, "2030-01-03");
   ok("one called off says so, and a new one gets an id of its own", [cal[1].off, /^[a-f0-9]{8}$/.test(cal[2].id)], [true, true]);
   ok("what one night wants is on the night", [cal[2].need, cal[2].startTime, cal[2].endTime, cal[2].location], [3, "18:00", "20:00", "Black Head"]);
+  // Parents need to know which Tuesday, so saving publishes them too.
+  { const doc = await contentStore.get("content", { type: "json" });
+    const pub = (doc.meetings || []).filter(m => m.section === "scouts");
+    ok("the nights reach the parents' calendar", pub.map(m => m.date), ["2030-01-03", "2030-01-10", "2030-01-17"]);
+    ok("a night that is off says so there too", pub[1].off, true);
+    ok("with the place and the hours a parent needs", [pub[2].title, pub[2].location, pub[2].startTime, pub[2].endTime], ["Night hike", "Black Head", "18:00", "20:00"]);
+    ok("but nothing about adults, and not the lead's own notes", [Object.keys(pub[2]).sort(), JSON.stringify(doc.meetings).includes("torch")],
+      [["date", "endTime", "id", "location", "section", "startTime", "title"], false]); }
   r = await call("POST", "?a=calendar", { token: cubsLead, body: { section: "cubs", entries: [{ id: "2030-01-08", date: "2030-01-08" }] } });
+  { const doc = await contentStore.get("content", { type: "json" });
+    ok("another section's nights sit alongside, in date order", (doc.meetings || []).map(m => m.section + " " + m.date),
+      ["scouts 2030-01-03", "cubs 2030-01-08", "scouts 2030-01-10", "scouts 2030-01-17"]); }
   ok("a lead sets their own section's", [r.status, r.j.calendar.entries.filter(e => e.section === "cubs").length], [200, 1]);
   r = await call("GET", "?sections=cubs", { token: calHelper });
   ok("a helper is given the nights for their own section", r.j.calendar.entries.map(e => e.date), ["2030-01-08"]);
@@ -437,7 +448,14 @@ ok("a private event can be removed", r.j.events.length, 0);
   // rather than keeping it invisibly.
   r = await call("POST", "?a=slot", { token: m2, body: { section: "scouts", id: "m:2030-01-03", add: [cubsLeadId] } });
   ok("someone is put down for the first night", r.j.section.slots["m:2030-01-03"].who.includes(cubsLeadId), true);
+  // A save that changes nothing a parent would see leaves the file alone.
+  { const before = await contentStore.get("content", { type: "json" });
+    await call("POST", "?a=calendar", { token: cubsLead, body: { section: "cubs", entries: [{ id: "2030-01-08", date: "2030-01-08", need: 4 }] } });
+    const after = await contentStore.get("content", { type: "json" });
+    ok("a leaders-only change to a night does not rewrite the public copy", after.updatedAt, before.updatedAt); }
   await call("POST", "?a=calendar", { token: m2, body: { section: "scouts", entries: [{ id: "2030-01-10", date: "2030-01-10" }] } });
+  { const doc = await contentStore.get("content", { type: "json" });
+    ok("and dropping nights drops them from the parents' calendar as well", (doc.meetings || []).filter(m => m.section === "scouts").map(m => m.date), ["2030-01-10"]); }
   r = await call("GET", "?sections=scouts", { token: m2 });
   ok("taking a night off the list takes its ticks with it", "m:2030-01-03" in r.j.sections.scouts.slots, false);
 }

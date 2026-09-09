@@ -125,6 +125,20 @@ const fold = (line) => {
   }
   out.push(s); return out;
 };
+// A meeting night, as a calendar entry. The nights are published by the rota
+// function under "meetings" so a parent can see which weeks are on: a
+// subscribed calendar wants the cancelled ones too, said plainly, because a
+// Tuesday that is off is the one worth knowing about.
+export function nightTitle(m, sectionName) {
+  const t = String((m && m.title) || "").trim();
+  if (!m || !m.off) return t || ((sectionName || "").trim() + " meeting").trim();
+  return /^no meeting/i.test(t) ? t : "No meeting" + (t ? ", " + t : "");
+}
+export const nightsAsEvents = (data) => (Array.isArray(data.meetings) ? data.meetings : []).map((m) => {
+  const s = ((data.settings && data.settings.sections) || []).find((x) => x.key === m.section) || {};
+  return { date: m.date, title: nightTitle(m, s.name), section: m.section,
+    location: m.location || "", startTime: m.startTime || "", endTime: m.endTime || "", nightId: m.id };
+});
 export function toICS(events, name, host) {
   const stamp = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   const usable = events.filter((e) => e && e.date && e.title);
@@ -132,7 +146,7 @@ export function toICS(events, name, host) {
     "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:" + icsEsc(name), "X-WR-TIMEZONE:Europe/Dublin"];
   if (usable.some((e) => isTime(e.startTime))) lines.push(...DUBLIN);
   for (const e of usable) {
-    const uid = (e.countyId || (e.date + "-" + String(e.title).toLowerCase().replace(/[^a-z0-9]+/g, "-"))) + "@" + host;
+    const uid = (e.countyId || e.nightId || (e.date + "-" + String(e.title).toLowerCase().replace(/[^a-z0-9]+/g, "-"))) + "@" + host;
     lines.push("BEGIN:VEVENT", "UID:" + uid, "DTSTAMP:" + stamp);
     if (isTime(e.startTime)) {
       const last = e.endDate || e.date;
@@ -164,7 +178,10 @@ export default async (req) => {
       if (g) data = (await ghRead(g)).data;
       if (!data) data = await stores(STORE).get(KEY, { type: "json" });
       if (!data) return json(404, { error: "No calendar yet." });
-      const all = Array.isArray(data.events) ? data.events : [];
+      // The weekly nights are on the feed too, so a subscribed parent sees
+      // which Tuesdays are on without opening the app.
+      const all = [...(Array.isArray(data.events) ? data.events : []), ...nightsAsEvents(data)]
+        .sort((x, y) => String(x.date).localeCompare(String(y.date)));
       // A section feed carries that section's events plus anything group-wide.
       const list = want ? all.filter((e) => !e.section || e.section === want) : all;
       const names = (data.settings && data.settings.sections) || [];

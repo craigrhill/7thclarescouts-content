@@ -133,9 +133,10 @@ function renderMeetings(k){
     $("meetQual").value = nums.requiredQualified ?? 0;
     $("meetQualEv").value = nums.requiredQualifiedEvents ?? 0;
   }
-  $("meetNote").textContent = saved
-    ? "The nights on the rota for " + sectionName(k) + ". Edit opens one up. Changing a date or a name keeps whoever is already down for it, and Called off leaves it on the rota greyed out rather than losing them."
-    : "These are the next twelve " + (x.day || "meeting") + "s, worked out from the section's meeting night. Save them to take the list over: after that a night can be moved, renamed, called off or given its own numbers.";
+  $("meetNote").textContent = (saved
+    ? "The nights for " + sectionName(k) + ". Edit opens one up. Changing a date or a name keeps whoever is already down for it, and Called off leaves it on the rota greyed out rather than losing them."
+    : "These are the next twelve " + (x.day || "meeting") + "s, worked out from the section's meeting night. Save them to take the list over: after that a night can be moved, renamed, called off or given its own numbers.")
+    + " Saving puts them on the parents' calendar as well, the date, the place and the hours, so a week that is off is one they can see coming. How many adults a night wants, and the line about it, stay here.";
   $("meetSave").textContent = meetDirty || !saved ? "Save the nights" : "Saved";
   // Nights that fall in a school break and are not marked off yet. The dates
   // are kept once, in the site's settings, so this is a button rather than a
@@ -148,7 +149,7 @@ function renderMeetings(k){
   $("meetList").innerHTML = MEET.map((e, i) => meetOpen.has(i) ? `<div class="entry open">
       <div class="row"><input type="date" value="${esc(e.date)}" oninput="setNight(${i},'date',this.value)" aria-label="Date"><input type="text" value="${esc(e.title || "")}" placeholder="${esc(sectionName(k))} meeting" oninput="setNight(${i},'title',this.value)" aria-label="What it is"><button class="btn quiet" title="Remove" onclick="removeNight(${i})">&#x2715;</button></div>
       <div class="row"><input type="text" value="${esc(e.location || "")}" placeholder="Where, if not the usual" oninput="setNight(${i},'location',this.value)" aria-label="Place"><label class="small">from <input type="time" value="${esc(e.startTime || "")}" oninput="setNight(${i},'startTime',this.value)" aria-label="Starts"></label><label class="small">to <input type="time" value="${esc(e.endTime || "")}" oninput="setNight(${i},'endTime',this.value)" aria-label="Ends"></label></div>
-      <div class="row"><input type="text" value="${esc(e.details || "")}" placeholder="A line about it, shown on the rota" oninput="setNight(${i},'details',this.value)" aria-label="Description"></div>
+      <div class="row"><input type="text" value="${esc(e.details || "")}" placeholder="A line about it, for leaders only" oninput="setNight(${i},'details',this.value)" aria-label="Description"></div>
       <div class="row small muted"><label class="small">Adults <input type="number" min="1" max="9" value="${e.need ?? ""}" placeholder="${(D.sections[k] || {}).required ?? 2}" oninput="setNight(${i},'need',this.value)" aria-label="Adults needed"></label><span data-usual="${i}">${e.need == null ? "as usual" : "just this one"}</span><label class="small"><input type="checkbox" ${e.off ? "checked" : ""} onchange="setNight(${i},'off',this.checked)"> No meeting this week</label><span style="margin-left:auto"><button class="btn" onclick="openNight(${i})">Done</button></span></div>
     </div>` : `<div class="entry"><div class="slot-head">
       <div><span class="when">${esc(e.date ? fmt(e.date) : "No date")}</span> <span class="sub">${esc(e.title || sectionName(k) + " meeting")}${esc([e.location, e.startTime ? e.startTime + (e.endTime ? " to " + e.endTime : "") : ""].filter(Boolean).join(", ") ? ", " + [e.location, e.startTime ? e.startTime + (e.endTime ? " to " + e.endTime : "") : ""].filter(Boolean).join(", ") : "")}</span></div>

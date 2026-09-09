@@ -271,6 +271,40 @@ a list now, in the store under `calendar`, kept per section by its lead on
     entries: [{ id, section, date, title, location, details,
                 need, needQualified, off, startTime, endTime }]
 
+**Saving a section's nights publishes them.** Parents need to know which
+Tuesday, because some weeks are off, so `?a=calendar` mirrors the list into
+`content.json` under `meetings`, replacing that section's entries only:
+
+    meetings: [{ id, section, date, title?, location?,
+                 startTime?, endTime?, off? }]
+
+`publicNight()` in `rota.mjs` decides what goes: the date, the name, the place
+and the hours. Not `need` or `needQualified`, which are the rota's business,
+and **not `details`**, which leads typed while the list was private and which
+is labelled "for leaders only" in the editor. A save that changes nothing a
+parent would see does not rewrite `content.json` at all, so a leaders-only
+tweak to a night leaves it alone; the write goes through `withContent()`,
+which took only `events` before and now takes either. If the public copy
+cannot be written the nights are still saved and `published` comes back with
+the reason.
+
+Everything downstream reads `meetings` from the one document: `index.html`
+(`nightsSorted`, `calendarItems`, `sectionCalendar`), `calendar.html`
+(`fromMeeting`, alongside the county-shape adapter) and the subscription feed
+(`nightsAsEvents` in `content.mjs`, whose UID is the night's own id so moving
+one does not leave a second entry behind). A night that is **off** is
+published too, named "No meeting" plus whatever reason was typed, because a
+Tuesday that is not happening is the one worth showing: it is struck through
+in the app and on the feed like any other entry. `nightTitle` decides that
+wording and lives in `index.html`, `calendar.html` and `content.mjs`.
+
+A night is not an event: nothing to open, no kit list, no details, so
+`eventCard` draws it flatter and without a chevron. Home is the exception in
+the other direction: it shows only the nights that are **off**, since four
+slots have no room for an ordinary Tuesday but a cancelled one is exactly
+what a parent needs to catch. A section that has never saved a list publishes
+nothing, and its page reads as it always did.
+
 **The ticks hang off the entry's id, not its date and name.** `m:<entryId>`,
 so moving or renaming a night keeps everyone already down for it. Events got
 the same treatment: `cleanEvent` gives one an id and the slot is `e:<id>`,
@@ -464,7 +498,9 @@ link in the footer.
 * **The content function serves an iCalendar feed.** `?ics=1`, optionally
   `&section=<key>`, public and read only, so a parent's calendar subscribes
   once and stays current. A section feed carries that section's events plus
-  anything group-wide. `tools/test-ics.mjs` pins the awkward parts: the
+  anything group-wide, and the weekly meeting nights, cancelled ones included.
+  `tools/serve.mjs` answers `?ics=1` through the same `nightsAsEvents`, so the
+  preview cannot drift from the deployed one. `tools/test-ics.mjs` pins the awkward parts: the
   exclusive DTEND, escaping, stable UIDs and the 75 octet fold.
 * **The rota function writes `content.json` too.** Calendar events from the
   secretary go through the same GitHub-or-Blobs path `content.mjs` uses, so
@@ -604,6 +640,8 @@ link in the footer.
       events: [{id?, date, endDate?, title, section, location?,
                 startTime?, endTime?, time?, need?, needQualified?,
                 kitId?, details}],
+      meetings: [{id, section, date, title?, location?,
+                  startTime?, endTime?, off?}],
       news: [{date, title, body}],
       gallery: [{url, thumb?, caption?, section?, album?, w?, h?}],
       kits: [{id, title, event, summary, imageUrl?, imageCaption?,

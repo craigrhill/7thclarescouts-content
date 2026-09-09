@@ -3800,6 +3800,38 @@ function fromContent(e, i){
   };
 }
 
+/* The weekly meeting nights, published under "meetings" by the rota function.
+   Same adapter idea: turn one into the shape below and every view, the poster
+   and the ics get it without changing. A night is not an event, so it carries
+   no description and no kit list; one that is off is named as such, since that
+   is the week a parent actually needs to see. */
+function nightName(m, secName){
+  var t = String(m.title || '').trim();
+  if (!m.off) return t || ((secName || '') + ' meeting').trim();
+  return /^no meeting/i.test(t) ? t : 'No meeting' + (t ? ', ' + t : '');
+}
+function fromMeeting(m, i, names){
+  var s = null;
+  for (var j = 0; j < names.length; j++) if (names[j].key === m.section) s = names[j];
+  return {
+    id: 'mt' + (m.id || i),
+    name: nightName(m, s && s.name),
+    start: m.date,
+    end: m.date,
+    time: eventWhen(m),
+    startTime: m.startTime || '',
+    endTime: m.endTime || '',
+    category: 'group',
+    sections: m.section ? [m.section] : ALL_SECTION_IDS.slice(),
+    description: '',
+    host: '',
+    location: m.location || '',
+    link: '',
+    kitId: '',
+    contactName:'', contactEmail:'', contactPhone:''
+  };
+}
+
 function load(){
   fetch(API, {cache:'no-store'})
     .then(function(r){
@@ -3808,7 +3840,10 @@ function load(){
     })
     .then(function(d){
       state.stale = d.offlineCopy === true;
-      state.events = (d.events||[]).map(fromContent).map(normalise);
+      var names = (d.settings && d.settings.sections) || [];
+      state.events = (d.events||[]).map(fromContent)
+        .concat((d.meetings||[]).map(function(m, i){ return fromMeeting(m, i, names); }))
+        .map(normalise);
       state.updatedAt = d.updatedAt || null;
       $('offlineBar').classList.toggle('on', !!state.stale);
       jumpToFirstUpcoming();

@@ -124,6 +124,14 @@ main{padding:1rem 0 calc(var(--tab-h) + 1.5rem);min-height:calc(100vh - var(--na
 .event h4{font-family:var(--sans);font-size:.98rem;margin:0 0 .15em;font-weight:600}
 .event .sub{font-size:.82rem;color:var(--stone-600);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .event.past{opacity:.6}
+/* A meeting night, not an event: nothing to open, so it sits flatter and does
+   not offer itself to a tap. One that is off is struck through, because "no
+   meeting" read at a glance must not look like a meeting. */
+.event.night{cursor:default;grid-template-columns:56px 1fr;box-shadow:none;background:#fff;border:1px solid var(--stone-200)}
+.event.night h4{font-weight:600}
+.event.off h4{text-decoration:line-through;text-decoration-thickness:1px;color:var(--stone-600)}
+.event.off .date{opacity:.55}
+.dchip.off{text-decoration:line-through;opacity:.75}
 .empty{color:var(--stone-400);font-style:italic;padding:1rem 0;text-align:center}
 
 /* Sheet (detail) */
@@ -466,15 +474,35 @@ window.addEventListener("hashchange", route);
 
 /* ---------- events ---------- */
 function eventsSorted(){ return (C.events||[]).map((e,i)=>({...e,_i:i})).sort((a,b)=>a.date.localeCompare(b.date)); }
+// The weekly meeting nights, published by the section's lead. They are on the
+// calendar because some weeks are off: a parent needs to know which Tuesday,
+// and a night that is not happening is the one worth showing. They are not
+// events, so there is nothing to open: no kit list, no details, no sheet.
+function nightTitle(m){
+  const t = String(m.title||"").trim();
+  if (!m.off) return t || (sectionName(m.section) + " meeting");
+  return /^no meeting/i.test(t) ? t : "No meeting" + (t ? ", " + t : "");
+}
+function nightsSorted(){ return (C.meetings||[]).map(m => ({...m, title: nightTitle(m), details: "", _night: true})); }
+// Home shows four things, so an ordinary Tuesday does not belong on it. A
+// cancelled one does: that is the week somebody turns up to a locked hall.
+const nightsOff = () => nightsSorted().filter(m => m.off);
+const byDate = (a,b) => a.date.localeCompare(b.date) || String(a.title).localeCompare(String(b.title));
+// Everything a parent could want on a date: the events and the nights.
+function calendarItems(){ return [...eventsSorted(), ...nightsSorted()].sort(byDate); }
 function isPast(e){ return D(e.endDate||e.date) < today(); }
 function matches(e){ if (eventFilter === "all") return true; if (eventFilter === "county") return /county/i.test(e.title); return (e.section||"group") === eventFilter; }
 function eventCard(e){
   const d = D(e.date), range = e.endDate && e.endDate !== e.date ? `${fmtShort(e.date)} to ${fmtShort(e.endDate)}` : DAYS[d.getDay()];
   const sub = [range, eventWhen(e), e.location].filter(Boolean).join(" · ");
-  return `<div class="event ${isPast(e)?"past":""}" onclick="location.hash='events/${e._i}'">
+  // A night has nothing behind it to open, so it is a plain row rather than a
+  // tappable one, and one that is off is greyed and struck through.
+  const cls = `event ${isPast(e)?"past":""} ${e._night?"night":""} ${e.off?"off":""}`;
+  const tap = e._night ? "" : ` onclick="location.hash='events/${e._i}'"`;
+  return `<div class="${cls.trim()}"${tap}>
     <div class="date"><b>${d.getDate()}</b><small>${MONTHS[d.getMonth()]}</small></div>
     <div style="min-width:0"><h4>${esc(e.title)} <span class="tag ${esc(e.section||"group")}">${esc(e.section||"group")}</span></h4><p class="sub">${esc(sub)}</p></div>
-    <span class="chev">${ICON.chev}</span></div>`;
+    ${e._night?"":`<span class="chev">${ICON.chev}</span>`}</div>`;
 }
 function eventListHtml(list){
   if (!list.length) return `<div class="empty">Nothing listed yet.</div>`;
@@ -508,8 +536,9 @@ function monthGridHtml(list){
   for (let i = 0; i < 42; i++) {
     const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i), k = isoOf(d);
     const on = byDay[k] || [], out = d.getMonth() !== m;
-    const chips = on.slice(0, 3).map(e =>
-      `<button class="dchip tag ${esc(e.section||"group")}" onclick="location.hash='events/${e._i}'" title="${esc(e.title)}">${esc(e.title)}</button>`).join("");
+    const chips = on.slice(0, 3).map(e => e._night
+      ? `<span class="dchip tag ${esc(e.section||"group")} ${e.off?"off":""}" title="${esc(e.title)}">${esc(e.title)}</span>`
+      : `<button class="dchip tag ${esc(e.section||"group")}" onclick="location.hash='events/${e._i}'" title="${esc(e.title)}">${esc(e.title)}</button>`).join("");
     cells += `<div class="day ${out?"out":""} ${k===todayIso?"today":""}"><span class="n">${d.getDate()}</span>${chips}${on.length>3?`<div class="dmore">+${on.length-3} more</div>`:""}</div>`;
   }
   return `<div class="cal-nav">
@@ -535,7 +564,7 @@ async function copySub(){ const t = $("subUrl").textContent; try { await navigat
 
 function renderCalendar(){
   const secs = [["all","All"],["group","Group"],["beavers","Beavers"],["cubs","Cubs"],["scouts","Scouts"],["ventures","Ventures"]];
-  const all = eventsSorted().filter(matches);
+  const all = calendarItems().filter(matches);
   const list = showPast ? all : all.filter(e => !isPast(e));
   const label = eventFilter === "all" ? "All sections" : eventFilter === "county" ? "County events" : sectionName(eventFilter);
   $("calBody").innerHTML = `
@@ -552,6 +581,9 @@ function renderCalendar(){
 }
 
 function sectionEvents(key){ return eventsSorted().filter(e => !isPast(e) && ((e.section||"group") === key || (e.section||"group") === "group")); }
+// The section's page shows its nights alongside its events, so "which Tuesday"
+// is answered where a parent goes looking for it.
+function sectionCalendar(key){ return [...sectionEvents(key), ...nightsSorted().filter(m => m.section === key && !isPast(m))].sort(byDate); }
 function openEvent(i){
   const e = (C.events||[])[+i]; if (!e) return;
   const when = e.endDate && e.endDate !== e.date ? `${fmt(e.date)} to ${fmt(e.endDate)}` : fmt(e.date);
@@ -621,7 +653,7 @@ function contextCard(keys){
 function renderHome(){
   const my = getMy();
   let html = installHtml();
-  if (picking !== null || my === null) { html += pickerHtml(my === null) + noticesHtml(); if (my === null) { const next = eventsSorted().filter(e=>!isPast(e)).slice(0,3); html += `<div class="sec-head"><h2>Coming up</h2><a href="#calendar">Calendar</a></div>` + (next.length?next.map(eventCard).join(""):`<div class="empty">No upcoming events yet.</div>`) + newsHtml(); } $("homeBody").innerHTML = html; return; }
+  if (picking !== null || my === null) { html += pickerHtml(my === null) + noticesHtml(); if (my === null) { const next = [...eventsSorted(), ...nightsOff()].filter(e=>!isPast(e)).sort(byDate).slice(0,3); html += `<div class="sec-head"><h2>Coming up</h2><a href="#calendar">Calendar</a></div>` + (next.length?next.map(eventCard).join(""):`<div class="empty">No upcoming events yet.</div>`) + newsHtml(); } $("homeBody").innerHTML = html; return; }
   const keys = my.length ? my : [];
   if (!keys.includes(focus) && focus !== "all") focus = "all";
   const shown = focus === "all" ? keys : [focus];
@@ -632,7 +664,8 @@ function renderHome(){
     html += `<div class="card section-card ${esc(k)}"><div class="meet"><div><div class="eyebrow">${esc(x.name)} meets</div><div class="when">${ph(x.day)}, ${ph(x.time)}</div><div class="where">${ph(x.venue||"")}</div></div><div style="display:grid;gap:.4rem">${dir?`<a class="btn primary" href="${esc(dir)}" target="_blank" rel="noopener">Directions</a>`:""}<a class="btn" href="#sections/${esc(k)}">Section</a></div></div></div>`; });
   if (!keys.length) html += `<div class="card"><p class="muted" style="margin:0">No sections chosen. <a href="#" onclick="startPick();return false">Pick your sections</a> to personalise Home.</p></div>`;
   // events
-  const list = eventsSorted().filter(e => !isPast(e) && (!keys.length || shown.includes(e.section||"group") || (e.section||"group")==="group")).slice(0,4);
+  const list = [...eventsSorted(), ...nightsOff()].sort(byDate)
+    .filter(e => !isPast(e) && (!keys.length || shown.includes(e.section||"group") || (e.section||"group")==="group")).slice(0,4);
   html += `<div class="sec-head"><h2>Next up${focus!=="all"?" for "+esc(sectionName(focus)):""}</h2><a href="#calendar">Full calendar</a></div>` + (list.length ? list.map(eventCard).join("") : `<div class="empty">Nothing coming up for ${focus==="all"?"your sections":esc(sectionName(focus))} yet.</div>`);
   html += contextCard(focus==="all" ? (keys.length?keys:"all") : [focus]);
   html += newsHtml();
@@ -654,7 +687,7 @@ function showSection(key){
   const x = (C.settings.sections||[]).find(z => z.key === key); if (!x) { location.hash = "sections"; return; }
   $("secIndex").style.display = "none"; $("secDetail").style.display = "block";
   const leaders = (C.settings.team||[]).filter(p => (p.section||"").toLowerCase() === key);
-  const ev = sectionEvents(key), pics = sectionPhotos(key);
+  const pics = sectionPhotos(key);
   $("secDetail").innerHTML = `<a class="back" href="#sections">‹ Sections</a>
     <div class="card section-card ${esc(x.key)}"><div class="age">${esc(x.ages)}</div><h1 style="margin:.1em 0 .3em">${esc(x.name)}</h1>
     <p class="muted" style="font-size:.95rem">${esc(x.blurb)}</p>
@@ -666,7 +699,7 @@ function showSection(key){
     <div class="strip">${pics.slice(0,8).map((p,i) => photoTile(p, i, `sectionPhotos('${esc(key)}')`)).join("")}</div>`:""}
     <div class="sec-head"><h2>Badge board</h2><a href="#more/badges">About the skills</a></div>
     <div id="board"><p class="small muted">Loading…</p></div>
-    <div class="sec-head"><h2>${esc(x.name)} calendar</h2><a href="#calendar">Full calendar</a></div>${eventListHtml(ev)}`;
+    <div class="sec-head"><h2>${esc(x.name)} calendar</h2><a href="#calendar">Full calendar</a></div>${eventListHtml(sectionCalendar(key))}`;
   loadBoard(key);
 }
 /* The public badge board: rows numbered, never named. Read live from the rota

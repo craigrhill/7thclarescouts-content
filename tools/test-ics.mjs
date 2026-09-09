@@ -2,7 +2,7 @@
 // The subscription feed. A calendar app is unforgiving about iCalendar, so the
 // shape is pinned here: all-day dates, the exclusive DTEND, escaping, stable
 // UIDs and the 75 octet fold.
-import { toICS } from "../netlify/src/content.mjs";
+import { toICS, nightsAsEvents, nightTitle } from "../netlify/src/content.mjs";
 
 let pass = 0, fail = 0;
 const ok = (name, got, want) => { const g = JSON.stringify(got) === JSON.stringify(want); g ? pass++ : fail++; console.log(`${g ? "PASS" : "FAIL"}  ${name}${g ? "" : "  got " + JSON.stringify(got)}`); };
@@ -54,6 +54,27 @@ ok("the calendar is named", lines.includes("X-WR-CALNAME:7th Clare Scouts: All s
   ok("an end before the start on the same day is ignored", l.includes("DTEND;TZID=Europe/Dublin:20261003T190000"), true);
   ok("anything that is not a time leaves the event all day", [l.includes("DTSTART;VALUE=DATE:20261004"), t.includes("Time: half six")], [true, true]);
   ok("an all-day feed carries no timezone block", toICS(events, "x", "y").includes("VTIMEZONE"), false);
+}
+
+{ // ---- the weekly nights, on the feed so a parent sees which Tuesdays are on ----
+  const data = { settings: { sections: [{ key: "beavers", name: "Beavers" }] }, meetings: [
+    { id: "a1", section: "beavers", date: "2026-11-17", startTime: "18:00", endTime: "19:00", location: "The Hall" },
+    { id: "a2", section: "beavers", date: "2026-11-24", off: true, title: "No meeting, October midterm" },
+    { id: "a3", section: "beavers", date: "2026-12-01", off: true },
+    { id: "a4", section: "beavers", date: "2026-12-08", title: "Christmas party" },
+  ] };
+  const list = nightsAsEvents(data);
+  ok("an ordinary night is named after its section", list[0].title, "Beavers meeting");
+  ok("one that is off says so, and keeps the reason it was given", list[1].title, "No meeting, October midterm");
+  ok("one that is off with nothing typed still says so", list[2].title, "No meeting");
+  ok("a night with a name of its own keeps it", list[3].title, "Christmas party");
+  ok("a night with no section name still reads", nightTitle({ date: "x" }, ""), "meeting");
+  const t = toICS(list, "x", "7thclarescouts.ie");
+  ok("the night goes out at its hour, in Irish time", t.includes("DTSTART;TZID=Europe/Dublin:20261117T180000"), true);
+  ok("and where it is", t.includes("LOCATION:The Hall"), true);
+  ok("its uid is the night's own id, so moving it does not make a second entry", t.includes("UID:a1@7thclarescouts.ie"), true);
+  ok("a night that is off is on the feed too, because that is the one worth knowing", t.includes("SUMMARY:No meeting\\, October midterm"), true);
+  ok("an all-day night has no time on it", t.includes("DTSTART;VALUE=DATE:20261124"), true);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

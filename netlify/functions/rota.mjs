@@ -901,13 +901,14 @@ async function readContent(storeFactory) {
   if (!doc) throw new Error("The group calendar is not set up yet.");
   return { doc, sha: null };
 }
-async function withContentEvents(storeFactory, fn) {
+async function withContent(storeFactory, fn) {
   const g = gh();
   for (let attempt = 0; ; attempt++) {
     const { doc, sha } = await readContent(storeFactory);
     const out = fn(doc);
     if (out.error || out.noop) return out;
-    doc.events = out.events;
+    if (out.events) doc.events = out.events;
+    if (out.meetings) doc.meetings = out.meetings;
     doc.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
     doc.updatedBy = "secretary";
     try {
@@ -1134,6 +1135,16 @@ function cleanEntry(x, sectionKey) {
   if (x.off) e.off = true;
   return { entry: e };
 }
+function publicNight(e) {
+  const n = { id: e.id, section: e.section, date: e.date };
+  if (e.title) n.title = e.title;
+  if (e.location) n.location = e.location;
+  if (e.startTime) n.startTime = e.startTime;
+  if (e.endTime) n.endTime = e.endTime;
+  if (e.off) n.off = true;
+  return n;
+}
+var sameNights = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 function optNum(v) {
   if (v === void 0 || v === null || v === "") return null;
   const n = Math.round(Number(v));
@@ -1428,7 +1439,7 @@ function createHandler(storeFactory) {
         const want = new Map(Object.entries(doc.items).map(([id, it]) => [id, countyApproved(it, countyTargets(it.event, ourSections)).map((sk) => fromCounty(it.event, sk))]));
         const following = Object.entries(doc.items).filter(([id, it]) => it.changed && want.get(id).length);
         let repaired = 0;
-        await withContentEvents(storeFactory, (cdoc) => {
+        await withContent(storeFactory, (cdoc) => {
           const keep = [], now = /* @__PURE__ */ new Map();
           for (const e of Array.isArray(cdoc.events) ? cdoc.events : []) {
             if (e.countyId && want.has(e.countyId)) {
@@ -1468,6 +1479,7 @@ function createHandler(storeFactory) {
         if (!Array.isArray(b.entries)) return fail(400, "Send the whole list of nights.");
         if (b.entries.length > MAX_ENTRIES) return fail(400, "That is more nights than a term needs.");
         const seen = /* @__PURE__ */ new Set(), list = [];
+        let published = null;
         for (const x of b.entries) {
           const { entry, error } = cleanEntry(x, k);
           if (error) return fail(400, error);
@@ -1482,8 +1494,22 @@ function createHandler(storeFactory) {
           return d;
         });
         for (const e of gone) await dropSlot(store, k, "m:" + e.id);
+        const nights = list.map(publicNight);
+        try {
+          await withContent(storeFactory, (cdoc) => {
+            const all = Array.isArray(cdoc.meetings) ? cdoc.meetings : [];
+            const others = all.filter((m) => m.section !== k);
+            if (sameNights(all.filter((m) => m.section === k), nights)) return { noop: true };
+            return { meetings: [...others, ...nights].sort(byDate) };
+          });
+        } catch (e) {
+          published = String(e.message || e);
+        }
         const mine = canManage ? null : new Set(me.sections || []);
-        return json(200, { calendar: { entries: (doc.entries || []).filter((e) => !mine || mine.has(e.section)), updatedAt: doc.updatedAt || null } });
+        return json(200, {
+          calendar: { entries: (doc.entries || []).filter((e) => !mine || mine.has(e.section)), updatedAt: doc.updatedAt || null },
+          ...published ? { published } : {}
+        });
       }
       if (a === "badge-add" || a === "badge-rename" || a === "badge-remove" || a === "badge-stage") {
         const k = b.section;
@@ -1671,7 +1697,7 @@ function createHandler(storeFactory) {
           return d;
         });
         const approved = countyApproved(doc.items[b.id], targets);
-        await withContentEvents(storeFactory, (cd2) => {
+        await withContent(storeFactory, (cd2) => {
           const list = (Array.isArray(cd2.events) ? cd2.events : []).filter((e) => e.countyId !== b.id);
           for (const sk of approved) list.push(fromCounty(item.event, sk));
           list.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
@@ -1739,7 +1765,7 @@ function createHandler(storeFactory) {
           out = { events: d.events };
         } else {
           try {
-            out = await withContentEvents(storeFactory, (doc) => {
+            out = await withContent(storeFactory, (doc) => {
               const r2 = collect(apply(Array.isArray(doc.events) ? doc.events : [], doc));
               return r2.error ? r2 : { events: sort(r2.events) };
             });

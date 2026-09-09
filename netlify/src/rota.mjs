@@ -43,6 +43,10 @@
 //   POST   ?a=required {section,required?,requiredQualified?,requiredQualifiedEvents?}
 //                                                            { section }   lead
 //   POST   ?a=calendar {section,entries}                      { calendar }  lead of it
+//          Saving also publishes the nights to content.json under "meetings",
+//          stripped to what a parent needs, so the app and the calendar can
+//          show which weeks are on. "published" comes back with a reason if
+//          the nights saved but the public copy could not be written.
 //   POST   ?a=person   {name,sections,lead,secretary,qualified}  { person, code }   secretary
 //   POST   ?a=person-update {id,name?,sections?,lead?,secretary?}  { person }   secretary
 //   POST   ?a=person-remove {id,sections}                     { people }   secretary
@@ -217,13 +221,17 @@ async function readContent(storeFactory) {
 }
 // Read the whole content document, change only its events, write it back,
 // retrying if someone else saved while we were working.
-async function withContentEvents(storeFactory, fn) {
+// Writes part of the public document: the events, the meeting nights, or both.
+// fn returns { error } to refuse, { noop } to leave the file alone, or the keys
+// to put back.
+async function withContent(storeFactory, fn) {
   const g = gh();
   for (let attempt = 0; ; attempt++) {
     const { doc, sha } = await readContent(storeFactory);
     const out = fn(doc);
     if (out.error || out.noop) return out;
-    doc.events = out.events;
+    if (out.events) doc.events = out.events;
+    if (out.meetings) doc.meetings = out.meetings;
     doc.updatedAt = new Date().toISOString();
     doc.updatedBy = "secretary";
     try {
@@ -457,6 +465,20 @@ function cleanEntry(x, sectionKey) {
   if (x.off) e.off = true;
   return { entry: e };
 }
+// What a parent sees of a meeting night, and no more. The details a lead types
+// stay in the leaders' store: they were written while the list was private, and
+// publishing them retroactively is not ours to do. Nothing about adults goes
+// either: how many a night wants is the rota's business.
+function publicNight(e) {
+  const n = { id: e.id, section: e.section, date: e.date };
+  if (e.title) n.title = e.title;
+  if (e.location) n.location = e.location;
+  if (e.startTime) n.startTime = e.startTime;
+  if (e.endTime) n.endTime = e.endTime;
+  if (e.off) n.off = true;
+  return n;
+}
+const sameNights = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 // Blank is not nought. Number(null) and Number("") are both 0, so an empty box
 // would read as "needs nobody" rather than "as the section does".
 function optNum(v) {
@@ -730,7 +752,7 @@ export function createHandler(storeFactory) {
           .map(([id, it]) => [id, countyApproved(it, countyTargets(it.event, ourSections)).map((sk) => fromCounty(it.event, sk))]));
         const following = Object.entries(doc.items).filter(([id, it]) => it.changed && want.get(id).length);
         let repaired = 0;
-        await withContentEvents(storeFactory, (cdoc) => {
+        await withContent(storeFactory, (cdoc) => {
           const keep = [], now = new Map();
           for (const e of (Array.isArray(cdoc.events) ? cdoc.events : [])) {
             if (e.countyId && want.has(e.countyId)) { const arr = now.get(e.countyId) || []; arr.push(e); now.set(e.countyId, arr); }
@@ -774,6 +796,7 @@ export function createHandler(storeFactory) {
         if (!Array.isArray(b.entries)) return fail(400, "Send the whole list of nights.");
         if (b.entries.length > MAX_ENTRIES) return fail(400, "That is more nights than a term needs.");
         const seen = new Set(), list = [];
+        let published = null;
         for (const x of b.entries) {
           const { entry, error } = cleanEntry(x, k);
           if (error) return fail(400, error);
@@ -789,10 +812,24 @@ export function createHandler(storeFactory) {
           return d;
         });
         for (const e of gone) await dropSlot(store, k, "m:" + e.id);
+        // Parents need to know which Tuesday, so the nights go on the group
+        // calendar as well: same file admin.html edits, under "meetings". Only
+        // this section's are replaced, and only when what a parent would see
+        // has actually changed, so a leaders-only tweak does not rewrite it.
+        const nights = list.map(publicNight);
+        try {
+          await withContent(storeFactory, (cdoc) => {
+            const all = Array.isArray(cdoc.meetings) ? cdoc.meetings : [];
+            const others = all.filter((m) => m.section !== k);
+            if (sameNights(all.filter((m) => m.section === k), nights)) return { noop: true };
+            return { meetings: [...others, ...nights].sort(byDate) };
+          });
+        } catch (e) { published = String(e.message || e); }
         // Back come the nights for the sections this person may see, which is
         // all of them for the secretary and their own for a lead.
         const mine = canManage ? null : new Set(me.sections || []);
-        return json(200, { calendar: { entries: (doc.entries || []).filter((e) => !mine || mine.has(e.section)), updatedAt: doc.updatedAt || null } });
+        return json(200, { calendar: { entries: (doc.entries || []).filter((e) => !mine || mine.has(e.section)), updatedAt: doc.updatedAt || null },
+          ...(published ? { published } : {}) });
       }
 
       if (a === "badge-add" || a === "badge-rename" || a === "badge-remove" || a === "badge-stage") {
@@ -962,7 +999,7 @@ export function createHandler(storeFactory) {
         // section approving or undoing never disturbs another's, and an older
         // whole-group copy is tidied away on the first decision.
         const approved = countyApproved(doc.items[b.id], targets);
-        await withContentEvents(storeFactory, (cd2) => {
+        await withContent(storeFactory, (cd2) => {
           const list = (Array.isArray(cd2.events) ? cd2.events : []).filter((e) => e.countyId !== b.id);
           for (const sk of approved) list.push(fromCounty(item.event, sk));
           list.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
@@ -1038,7 +1075,7 @@ export function createHandler(storeFactory) {
           out = { events: d.events };
         } else {
           try {
-            out = await withContentEvents(storeFactory, (doc) => {
+            out = await withContent(storeFactory, (doc) => {
               const r2 = collect(apply(Array.isArray(doc.events) ? doc.events : [], doc));
               return r2.error ? r2 : { events: sort(r2.events) };
             });

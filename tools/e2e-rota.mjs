@@ -10,7 +10,7 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
 import { chromium } from "playwright-core";
 
-const PORT = 8910, H = `http://127.0.0.1:${PORT}/lab/`, H_URL = H;
+const PORT = 8910, H = `http://127.0.0.1:${PORT}/lab/`, H_URL = H, APP_ROOT = `http://127.0.0.1:${PORT}/`;
 const CHROME = process.env.CHROME_PATH || ["/opt/pw-browsers/chromium-1194/chrome-linux/chrome"].find(existsSync) || (() => { try { return chromium.executablePath(); } catch { return undefined; } })();
 mkdirSync(".e2e", { recursive: true });
 
@@ -287,6 +287,39 @@ try {
   // took, which the editor marked before it was ever saved.
   ok("nights that are off are greyed out rather than gone", await L2.locator(".slot", { hasText: "No meeting" }).count(), 2);
   ok("and the school break says which one it is", await L2.locator(".slot", { hasText: "October midterm" }).count(), 1);
+
+  // ---- and out to the parents, because some weeks are off ----
+  step = "the nights reach parents";
+  const nights = await L2.evaluate(async () => (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).meetings || []);
+  ok("saving the nights publishes them to the group calendar", [nights.length, nights.every(m => m.section === "scouts")], [12, true]);
+  ok("with the date, the name and the hours, and nothing about adults or the lead's own notes",
+    [nights.some(m => m.title === "Night hike"), nights.some(m => m.off), nights.some(m => "need" in m || "details" in m)], [true, true, false]);
+  ok("and the subscription feed carries them, so a phone that subscribed sees which Tuesdays are on",
+    await L2.evaluate(async () => ((await (await fetch("/.netlify/functions/content?ics=1&section=scouts")).text()).match(/SUMMARY:/g) || []).length >= 12), true);
+  // The app itself: the section page and the calendar tab.
+  const APP = await page(390, 844);
+  await APP.goto(APP_ROOT + "#sections/scouts", { waitUntil: "load" });
+  await APP.waitForSelector("#secDetail .event.night", { timeout: 20000 });
+  // The app renders once from the built-in defaults and again when the content
+  // function answers, so read the finished page in one go rather than asking
+  // it four questions across a re-render.
+  await APP.waitForTimeout(800);
+  const secPage = await APP.evaluate(() => ({
+    nights: document.querySelectorAll("#secDetail .event.night").length,
+    off: document.querySelectorAll("#secDetail .event.night.off").length,
+    offText: (document.querySelector("#secDetail .event.night.off") || {}).innerText || "",
+    chevs: document.querySelectorAll("#secDetail .event.night .chev").length,
+  }));
+  ok("the section page lists the nights under its calendar", secPage.nights >= 8, true);
+  ok("a week that is off is struck through and says so", [secPage.off >= 1, secPage.offText.includes("No meeting")], [true, true]);
+  ok("and a night is not something to open, so it offers no chevron", secPage.chevs, 0);
+  await APP.screenshot({ path: ".e2e/app-section-nights-390.png", fullPage: true });
+  await APP.goto(APP_ROOT + "#calendar", { waitUntil: "load" });
+  await APP.waitForSelector("#calBody .event.night", { timeout: 20000 });
+  await APP.waitForTimeout(800);
+  ok("the calendar tab has them too, beside the events", await APP.evaluate(() => document.querySelectorAll("#calBody .event.night").length) >= 8, true);
+  await APP.screenshot({ path: ".e2e/app-calendar-nights-390.png", fullPage: true });
+  await APP.close();
 
   step = "first come, first served";
   // Lead Test is the secretary by now, and L2 is the context signed in as them.

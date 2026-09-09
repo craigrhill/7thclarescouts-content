@@ -13,7 +13,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, normalize, join } from "node:path";
 import { createHandler, memoryStore } from "../netlify/src/rota.mjs";
-import contentFn, { toICS, useStore } from "../netlify/src/content.mjs";
+import contentFn, { toICS, nightsAsEvents, useStore } from "../netlify/src/content.mjs";
 
 const port = Number(process.argv[2]) || 8899;
 const contentFile = process.argv[3] || "content.json";
@@ -81,7 +81,10 @@ createServer(async (req, res) => {
       // function does and the browser suite can read what a parent would get.
       if (url.searchParams.get("ics")) {
         const want = (url.searchParams.get("section") || "").trim().toLowerCase();
-        const list = (body.events || []).filter((e) => !want || !e.section || e.section === want);
+        // The weekly nights are on the feed as well, the same as the real one.
+        const list = [...(body.events || []), ...nightsAsEvents(body)]
+          .filter((e) => !want || !e.section || e.section === want)
+          .sort((x, y) => String(x.date).localeCompare(String(y.date)));
         res.writeHead(200, { "Content-Type": "text/calendar; charset=utf-8", "Cache-Control": "no-store" });
         return res.end(toICS(list, "7th Clare Scouts", "7thclarescouts.ie"));
       }
