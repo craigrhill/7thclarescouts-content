@@ -948,6 +948,7 @@ function fromCounty(ce, section) {
   const bits = [ce.description, ce.host ? "Hosted by " + ce.host : "", ce.link].filter(Boolean);
   if (bits.length) e.details = bits.join("\n\n").trim().slice(0, 2e3);
   e.countyId = ce.id;
+  e.id = ("c" + String(ce.id).replace(/[^A-Za-z0-9._-]/g, "") + (section ? "-" + section : "")).slice(0, 40);
   return e;
 }
 var entryKey = (e) => JSON.stringify(Object.keys(e).sort().map((k) => [k, e[k]]));
@@ -1023,6 +1024,8 @@ function readToken(sec, token) {
 var rosterFallback = () => ({ people: [] });
 var eventsFallback = () => ({ events: [] });
 var eventKey = (e) => e.date + "|" + e.title;
+var slotIdOf = (e) => "e:" + (isEntryId(e.id) ? e.id : e.date + ":" + e.title);
+var oldSlotIdOf = (e) => "e:" + e.date + ":" + e.title;
 var sameEvent = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 var isDate = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v + "T12:00:00Z"));
 var oneLine = (v, n) => String(v ?? "").trim().replace(/\s+/g, " ").slice(0, n);
@@ -1031,6 +1034,7 @@ function cleanEvent(b, sectionKeys, kitIds) {
   const title = oneLine(b.title, 120);
   if (!title) return { error: "A title is needed." };
   const e = { date: b.date, title };
+  e.id = isEntryId(b.id) ? b.id : newEntryId();
   if (b.endDate) {
     if (!isDate(b.endDate)) return { error: "That end date is not a date." };
     if (b.endDate < b.date) return { error: "The end date is before the start date." };
@@ -1055,6 +1059,16 @@ function cleanEvent(b, sectionKeys, kitIds) {
   }
   const time = oneLine(b.time, 60);
   if (time && !e.startTime) e.time = time;
+  const need = optNum(b.need);
+  if (need !== null) {
+    if (!(need >= 1 && need <= 9)) return { error: "Adults needed must be 1 to 9." };
+    e.need = need;
+  }
+  const needQ = optNum(b.needQualified);
+  if (needQ !== null) {
+    if (!(needQ >= 0 && needQ <= 9)) return { error: "That number must be 0 to 9." };
+    e.needQualified = needQ;
+  }
   const kitId = oneLine(b.kitId, 32);
   if (kitId) {
     if (!kitIds.includes(kitId)) return { error: "Unknown kit list." };
@@ -1083,6 +1097,73 @@ function readTimes(text) {
   return out;
 }
 var sectionFallback = () => ({ required: 2, slots: {} });
+var calendarFallback = () => ({ entries: [] });
+var messageFallback = () => ({ text: "" });
+var isEntryId = (x) => typeof x === "string" && /^[A-Za-z0-9._-]{1,40}$/.test(x);
+var newEntryId = () => randomBytes(4).toString("hex");
+var MAX_ENTRIES = 250;
+function cleanEntry(x, sectionKey) {
+  if (!x || !isDate(x.date)) return { error: "Every night needs a date." };
+  const e = { id: isEntryId(x.id) ? x.id : newEntryId(), section: sectionKey, date: x.date };
+  const title = oneLine(x.title, 120);
+  if (title) e.title = title;
+  const location = oneLine(x.location, 120);
+  if (location) e.location = location;
+  const details = String(x.details ?? "").trim().slice(0, 2e3);
+  if (details) e.details = details;
+  const need = optNum(x.need);
+  if (need !== null) {
+    if (!(need >= 1 && need <= 9)) return { error: "Adults needed must be 1 to 9." };
+    e.need = need;
+  }
+  const needQ = optNum(x.needQualified);
+  if (needQ !== null) {
+    if (!(needQ >= 0 && needQ <= 9)) return { error: "That number must be 0 to 9." };
+    e.needQualified = needQ;
+  }
+  if (x.startTime) {
+    if (!isTime(x.startTime)) return { error: "That start time is not a time." };
+    e.startTime = x.startTime;
+  }
+  if (x.endTime) {
+    if (!isTime(x.endTime)) return { error: "That end time is not a time." };
+    if (!e.startTime) return { error: "An end time needs a start time." };
+    if (x.endTime <= e.startTime) return { error: "The end time is not after the start time." };
+    e.endTime = x.endTime;
+  }
+  if (x.off) e.off = true;
+  return { entry: e };
+}
+function optNum(v) {
+  if (v === void 0 || v === null || v === "") return null;
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? n : NaN;
+}
+var byDate = (a, b) => a.date.localeCompare(b.date) || String(a.title || "").localeCompare(String(b.title || ""));
+async function moveSlot(store, k, from, to) {
+  if (from === to) return;
+  await update(store, "section/" + k, sectionFallback, (d) => {
+    const s = d.slots[from];
+    if (!s || !(s.who || []).length) {
+      if (s) {
+        delete d.slots[from];
+        return d;
+      }
+      return false;
+    }
+    const dest = d.slots[to] = d.slots[to] || { who: [], off: false };
+    dest.who = [.../* @__PURE__ */ new Set([...dest.who, ...s.who])];
+    delete d.slots[from];
+    return d;
+  });
+}
+async function dropSlot(store, k, id) {
+  await update(store, "section/" + k, sectionFallback, (d) => {
+    if (!d.slots[id]) return false;
+    delete d.slots[id];
+    return d;
+  });
+}
 var canSeeSection = (me, canManage, k) => canManage || (me.sections || []).includes(k);
 var SKILLS = ["camping", "backwoods", "pioneering", "hillwalking", "emergencies", "air", "paddling", "rowing", "sailing"];
 var isSkill = (x) => SKILLS.includes(x);
@@ -1093,9 +1174,9 @@ var byNumber = (youth) => [...youth].sort((x, y) => x.n - y.n);
 var boardFor = (doc) => ({ next: doc.next, youth: byNumber(doc.youth), stages: doc.stages, updatedAt: doc.updatedAt || null });
 var attendanceFallback = () => ({ meetings: {} });
 var publicBoard = (k, doc) => ({ section: k, updatedAt: doc.updatedAt || null, rows: byNumber(doc.youth).map((y) => ({ n: y.n, stages: doc.stages[y.id] || {} })) });
-var pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, ...withCode ? { code: p.code || null } : {} });
+var pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, qualified: !!p.qualified, ...withCode ? { code: p.code || null } : {} });
 var isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
-var isSlotId = (s) => typeof s === "string" && /^[me]:\d{4}-\d{2}-\d{2}(:.{1,140})?$/.test(s);
+var isSlotId = (s) => typeof s === "string" && /^[me]:[A-Za-z0-9._-]{1,60}(:.{1,140})?$/.test(s);
 var cleanName = (n) => String(n || "").trim().replace(/\s+/g, " ").slice(0, 60);
 var cleanSections = (a) => Array.isArray(a) ? [...new Set(a.filter(isKey))] : [];
 async function body(req) {
@@ -1162,6 +1243,70 @@ function createHandler(storeFactory) {
         const { doc } = await readDoc(store, "badges/" + k, badgesFallback);
         return json(200, publicBoard(k, doc));
       }
+      if (req.method === "GET" && a === "cover") {
+        const k = url.searchParams.get("section") || "";
+        if (!isKey(k)) return fail(400, "Bad section.");
+        const today = /* @__PURE__ */ new Date();
+        today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+        const t2 = today.toISOString().slice(0, 10);
+        const { doc: sect } = await readDoc(store, "section/" + k, sectionFallback);
+        const { doc: cal } = await readDoc(store, "calendar", calendarFallback);
+        const { doc: roster2 } = await readDoc(store, "roster", rosterFallback);
+        const qual = new Set(roster2.people.filter((p) => p.qualified).map((p) => p.id));
+        let content = null;
+        try {
+          content = (await readContent(storeFactory)).doc;
+        } catch {
+        }
+        const count = (id) => {
+          const who = ((sect.slots || {})[id] || {}).who || [];
+          return { on: who.length, qualified: who.filter((x) => qual.has(x)).length };
+        };
+        const nights = [];
+        for (const e of cal.entries || []) {
+          if (e.section !== k || e.date < t2) continue;
+          nights.push({
+            kind: "m",
+            date: e.date,
+            title: e.title || "",
+            location: e.location || "",
+            details: e.details || "",
+            startTime: e.startTime || "",
+            endTime: e.endTime || "",
+            off: !!e.off,
+            need: e.need > 0 ? e.need : null,
+            needQualified: Number.isFinite(e.needQualified) ? e.needQualified : null,
+            ...count("m:" + e.id)
+          });
+        }
+        for (const e of content && content.events || []) {
+          if ((e.endDate || e.date) < t2) continue;
+          if (e.section && e.section !== k) continue;
+          nights.push({
+            kind: "e",
+            date: e.date,
+            endDate: e.endDate || "",
+            title: e.title || "",
+            location: e.location || "",
+            details: e.details || "",
+            startTime: e.startTime || "",
+            endTime: e.endTime || "",
+            off: false,
+            need: e.need > 0 ? e.need : null,
+            needQualified: Number.isFinite(e.needQualified) ? e.needQualified : null,
+            ...count("e:" + (isEntryId(e.id) ? e.id : e.date + ":" + e.title))
+          });
+        }
+        nights.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
+        return json(200, {
+          section: k,
+          required: sect.required,
+          requiredQualified: sect.requiredQualified || 0,
+          requiredQualifiedEvents: sect.requiredQualifiedEvents || 0,
+          updatedAt: sect.updatedAt || null,
+          nights
+        });
+      }
       const t = readToken(sec, req.headers.get("x-rota-token"));
       if (!t) return fail(401, "Please sign in.");
       const roster = await readDoc(store, "roster", rosterFallback);
@@ -1202,6 +1347,8 @@ function createHandler(storeFactory) {
         const mine = new Set(me.sections || []);
         const visible = me.lead || canManage ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
         const { doc: ev } = await readDoc(store, "events", eventsFallback);
+        const { doc: cal } = await readDoc(store, "calendar", calendarFallback);
+        const msg = canManage ? (await readDoc(store, "message", messageFallback)).doc.text || "" : void 0;
         const { doc: cd } = await readDoc(store, "county", countyFallback);
         const ourSections = new Set(wanted);
         const allKeys = [...ourSections];
@@ -1210,7 +1357,17 @@ function createHandler(storeFactory) {
           const rows = (canManage ? targets : targets.filter((k) => mine.has(k))).map((k) => ({ section: k, status: countyStatus(it, k, targets), by: (countyDecisions(it, targets)[k] || {}).by || null }));
           return { id, changed: !!it.changed, gone: !!it.gone, event: it.event, targets, rows };
         }).filter((x) => x.rows.length);
-        return json(200, { me: pub(me, canManage), people: visible.map((p) => pub(p, canManage)), sections, events: ev.events || [], county, countySyncedAt: cd.syncedAt || null });
+        return json(200, {
+          me: pub(me, canManage),
+          people: visible.map((p) => pub(p, canManage)),
+          sections,
+          events: ev.events || [],
+          // The nights themselves, for the sections this person may see.
+          calendar: { entries: (cal.entries || []).filter((e) => keys.includes(e.section)), updatedAt: cal.updatedAt || null },
+          county,
+          countySyncedAt: cd.syncedAt || null,
+          ...msg === void 0 ? {} : { message: msg }
+        });
       }
       if (req.method !== "POST") return fail(405, "Method not allowed.");
       if (a === "county-sync") {
@@ -1274,6 +1431,13 @@ function createHandler(storeFactory) {
           keep.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
           return { events: keep };
         });
+        if (!doc.movedSlots) {
+          for (const list of want.values()) for (const e of list) await moveSlot(store, e.section || ourSections[0], oldSlotIdOf(e), slotIdOf(e));
+          await update(store, "county", countyFallback, (d) => {
+            d.movedSlots = true;
+            return d;
+          });
+        }
         if (following.length) await update(store, "county", countyFallback, (d) => {
           for (const [id] of following) if (d.items[id]) delete d.items[id].changed;
           return d;
@@ -1282,6 +1446,31 @@ function createHandler(storeFactory) {
       }
       const b = await body(req);
       if (!b) return fail(400, "Body must be JSON.");
+      if (a === "calendar") {
+        const k = b.section;
+        if (!isKey(k)) return fail(400, "Bad section.");
+        if (!canSeeSection(me, canManage, k)) return fail(403, "That section is not on your roster entry.");
+        if (!canManage && !me.lead) return fail(403, "Only a section lead can change the nights.");
+        if (!Array.isArray(b.entries)) return fail(400, "Send the whole list of nights.");
+        if (b.entries.length > MAX_ENTRIES) return fail(400, "That is more nights than a term needs.");
+        const seen = /* @__PURE__ */ new Set(), list = [];
+        for (const x of b.entries) {
+          const { entry, error } = cleanEntry(x, k);
+          if (error) return fail(400, error);
+          if (seen.has(entry.id)) entry.id = newEntryId();
+          seen.add(entry.id);
+          list.push(entry);
+        }
+        const { doc: before } = await readDoc(store, "calendar", calendarFallback);
+        const gone = (before.entries || []).filter((e) => e.section === k && !seen.has(e.id));
+        const doc = await update(store, "calendar", calendarFallback, (d) => {
+          d.entries = [...(d.entries || []).filter((e) => e.section !== k), ...list].sort(byDate);
+          return d;
+        });
+        for (const e of gone) await dropSlot(store, k, "m:" + e.id);
+        const mine = canManage ? null : new Set(me.sections || []);
+        return json(200, { calendar: { entries: (doc.entries || []).filter((e) => !mine || mine.has(e.section)), updatedAt: doc.updatedAt || null } });
+      }
       if (a === "badge-add" || a === "badge-rename" || a === "badge-remove" || a === "badge-stage") {
         const k = b.section;
         if (!isKey(k)) return fail(400, "Bad section.");
@@ -1360,35 +1549,78 @@ function createHandler(storeFactory) {
         const known = new Set(roster.doc.people.map((p) => p.id));
         const add = Array.isArray(b.add) ? b.add : [], remove = Array.isArray(b.remove) ? b.remove : [];
         if ([...add, ...remove].some((id) => !known.has(id))) return fail(400, "Unknown person.");
-        if (!me.lead) {
-          if ("off" in b || "need" in b) return fail(403, "Only a section lead can change that.");
-          if ([...add, ...remove].some((id) => id !== me.id)) return fail(403, "You can only tick yourself.");
-        }
-        const doc = await update(store, "section/" + b.section, sectionFallback, (d) => {
-          const s = d.slots[b.id] = d.slots[b.id] || { who: [], off: false };
-          s.who = [.../* @__PURE__ */ new Set([...s.who.filter((id) => !remove.includes(id)), ...add])].filter((id) => known.has(id));
-          if ("off" in b) s.off = !!b.off;
-          if ("need" in b) {
-            const n = Number(b.need);
-            if (n >= 1 && n <= 9 && n !== d.required) s.need = Math.round(n);
-            else delete s.need;
+        if ("off" in b || "need" in b) return fail(403, "Whether a night is on, and how many adults it needs, are set with the night itself on the Events page.");
+        if (!me.lead && [...add, ...remove].some((id) => id !== me.id)) return fail(403, "You can only tick yourself.");
+        const wants = a === "slot" && !me.lead && !canManage && add.includes(me.id);
+        let entryNeed = null, entryNeedQ = null;
+        if (wants) {
+          const isEvent = b.id.startsWith("e:");
+          const eid = b.id.slice(2);
+          let night = null;
+          if (isEvent) {
+            let content = null;
+            try {
+              content = (await readContent(storeFactory)).doc;
+            } catch {
+            }
+            const list = [...content && content.events || [], ...(await readDoc(store, "events", eventsFallback)).doc.events || []];
+            night = list.find((e) => slotIdOf(e) === b.id || oldSlotIdOf(e) === b.id) || null;
+          } else {
+            const { doc: cal } = await readDoc(store, "calendar", calendarFallback);
+            night = (cal.entries || []).find((e) => e.section === b.section && e.id === eid) || null;
           }
+          if (night && night.off) return fail(409, "That night is off.");
+          entryNeed = night && night.need > 0 ? night.need : null;
+          entryNeedQ = night && Number.isFinite(night.needQualified) ? night.needQualified : null;
+        }
+        const qualIds = new Set(roster.doc.people.filter((p) => p.qualified).map((p) => p.id));
+        let refused = null;
+        const doc = await update(store, "section/" + b.section, sectionFallback, (d) => {
+          const s = d.slots[b.id] = d.slots[b.id] || { who: [] };
+          if (wants && !s.who.includes(me.id)) {
+            const need = entryNeed || d.required;
+            const defQ = b.id.startsWith("e:") ? d.requiredQualifiedEvents || 0 : d.requiredQualified || 0;
+            const needQ = Math.min(entryNeedQ === null ? defQ : entryNeedQ, need);
+            const on = s.who.length, q = s.who.filter((id) => qualIds.has(id)).length;
+            const held = Math.max(0, needQ - q);
+            const okForMe = qualIds.has(me.id) ? on < need || held > 0 : on < need - held;
+            if (!okForMe) {
+              refused = held > 0 && on < need ? "That night is full apart from a place held for someone the group's rule asks for." : "That night is full. Ask your section lead if you need to be on it.";
+              return false;
+            }
+          }
+          s.who = [.../* @__PURE__ */ new Set([...s.who.filter((id) => !remove.includes(id)), ...add])].filter((id) => known.has(id));
           return d;
         });
+        if (refused) return fail(409, refused);
         return json(200, { section: doc });
       }
       if (a === "required") {
         if (!me.lead) return fail(403, "Only a section lead can change that.");
         if (!isKey(b.section)) return fail(400, "Bad section.");
         if (!canSeeSection(me, canManage, b.section)) return fail(403, "That section is not on your roster entry.");
-        const n = Math.round(Number(b.required));
-        if (!(n >= 1 && n <= 9)) return fail(400, "Required must be 1 to 9.");
+        const set = {};
+        for (const [field, lo] of [["required", 1], ["requiredQualified", 0], ["requiredQualifiedEvents", 0]]) {
+          if (!(field in b)) continue;
+          const n = optNum(b[field]);
+          if (!(n >= lo && n <= 9)) return fail(400, "That number must be " + lo + " to 9.");
+          set[field] = n;
+        }
+        if (!Object.keys(set).length) return fail(400, "Nothing to set.");
         const doc = await update(store, "section/" + b.section, sectionFallback, (d) => {
-          d.required = n;
-          for (const s of Object.values(d.slots)) if (s.need === n) delete s.need;
+          Object.assign(d, set);
           return d;
         });
         return json(200, { section: doc });
+      }
+      if (a === "message") {
+        if (!canManage) return fail(403, "Only the secretary can change that.");
+        const text = String(b.text ?? "").slice(0, 2e3);
+        const doc = await update(store, "message", messageFallback, (d) => {
+          d.text = text.trim() ? text : "";
+          return d;
+        });
+        return json(200, { message: doc.text });
       }
       if (a === "county-decide") {
         const decision = String(b.decision || "");
@@ -1436,11 +1668,12 @@ function createHandler(storeFactory) {
         const apply = (list, content) => {
           const sectionKeys = (content && content.settings.sections || []).map((x) => x.key);
           const kitIds = (content && content.kits || []).map((k) => k.id);
+          const touches = (e) => e.section ? [e.section] : sectionKeys;
           if (a === "event-remove") {
             const ex = list.find((e) => sameEvent(eventKey(e), b.key));
             if (!ex) return { error: [404, "No such event."] };
             if (!mayEdit(ex)) return { error: deny(ex) };
-            return { events: list.filter((e) => e !== ex) };
+            return { events: list.filter((e) => e !== ex), drop: [[touches(ex), slotIdOf(ex)], [touches(ex), oldSlotIdOf(ex)]] };
           }
           const { event, error } = cleanEvent(b, sectionKeys, kitIds);
           if (error) return { error: [400, error] };
@@ -1455,11 +1688,18 @@ function createHandler(storeFactory) {
           if (i < 0) return { error: [404, "No such event."] };
           if (!mayEdit(list[i])) return { error: deny(list[i]) };
           if (clash(i)) return { error: [409, "There is already an event with that date and title."] };
+          if (!isEntryId(b.id) && isEntryId(list[i].id)) event.id = list[i].id;
           const next = [...list];
           next[i] = event;
-          return { events: next };
+          const from = slotIdOf(list[i]), to = slotIdOf(event);
+          return { events: next, move: from === to ? [] : [[touches(event), from, to]] };
         };
         const sort = (l) => l.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
+        let after = { move: [], drop: [] };
+        const collect = (r2) => {
+          after = { move: r2.move || [], drop: r2.drop || [] };
+          return r2;
+        };
         let out;
         if (isPrivate) {
           let content = null;
@@ -1469,7 +1709,7 @@ function createHandler(storeFactory) {
           }
           let err = null;
           const d = await update(store, "events", eventsFallback, (doc) => {
-            const r2 = apply(doc.events || [], content);
+            const r2 = collect(apply(doc.events || [], content));
             if (r2.error) {
               err = r2.error;
               return false;
@@ -1482,7 +1722,7 @@ function createHandler(storeFactory) {
         } else {
           try {
             out = await withContentEvents(storeFactory, (doc) => {
-              const r2 = apply(Array.isArray(doc.events) ? doc.events : [], doc);
+              const r2 = collect(apply(Array.isArray(doc.events) ? doc.events : [], doc));
               return r2.error ? r2 : { events: sort(r2.events) };
             });
           } catch (e) {
@@ -1490,6 +1730,8 @@ function createHandler(storeFactory) {
           }
           if (out.error) return fail(out.error[0], out.error[1]);
         }
+        for (const [ks, from, to] of after.move) for (const k of ks) await moveSlot(store, k, from, to);
+        for (const [ks, id] of after.drop) for (const k of ks) await dropSlot(store, k, id);
         return json(200, { events: out.events, private: isPrivate });
       }
       if (!canManage) return fail(403, "Only the secretary can do that.");
@@ -1500,7 +1742,7 @@ function createHandler(storeFactory) {
         let person;
         await update(store, "roster", rosterFallback, (d) => {
           if (d.people.some((p) => p.name.toLowerCase() === name.toLowerCase())) return false;
-          person = { id: randomBytes(4).toString("hex"), name, sections: cleanSections(b.sections), lead: !!b.lead, secretary: !!b.secretary, code, codeHash: codeHash(sec, code), createdAt: (/* @__PURE__ */ new Date()).toISOString() };
+          person = { id: randomBytes(4).toString("hex"), name, sections: cleanSections(b.sections), lead: !!b.lead, secretary: !!b.secretary, qualified: !!b.qualified, code, codeHash: codeHash(sec, code), createdAt: (/* @__PURE__ */ new Date()).toISOString() };
           d.people.push(person);
           return d;
         });
@@ -1536,6 +1778,7 @@ function createHandler(storeFactory) {
             if ("sections" in b) person.sections = cleanSections(b.sections);
             if ("lead" in b) person.lead = !!b.lead;
             if ("secretary" in b) person.secretary = !!b.secretary;
+            if ("qualified" in b) person.qualified = !!b.qualified;
             return d;
           });
           return json(200, { person: pub(person) });

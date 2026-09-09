@@ -7,6 +7,36 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 // years does not read as jumbled while this year's dates stay short.
 const fmt = s => { const d = new Date(s + "T12:00:00"); return d.toLocaleDateString("en-IE", { weekday: "short", day: "numeric", month: "short", ...(d.getFullYear() === new Date().getFullYear() ? {} : { year: "numeric" }) }); };
 let token = null; try { token = localStorage.getItem(TK); } catch {}
+// Nobody types a code. It is handed out as a link, ?c=XXXX-XXXX on the rota
+// page, spent on the first load and taken straight back out of the address bar
+// so it is not left sitting in the tab for the next person to read.
+const linkCode = new URLSearchParams(location.search).get("c");
+function dropCodeFromUrl(){
+  try { const u = new URL(location.href); if (u.searchParams.has("c")) { u.searchParams.delete("c"); history.replaceState(null, "", u.pathname + u.search + u.hash); } } catch {}
+}
+// A link to a page beside this one, whether Netlify is serving these pretty
+// (/lab/rota) or as files (/lab/rota.html).
+function pageLink(page, query){
+  const path = location.pathname.replace(/(rota|roster|events|badges|attendance|needed)(\.html)?$/, (m, name, ext) => page + (ext || ""));
+  return location.origin + (path === location.pathname ? "/lab/" + page + ".html" : path) + (query || "");
+}
+// The link to send someone. The same code, nothing for them to remember.
+const codeLink = code => pageLink("rota") + "?c=" + encodeURIComponent(code);
+// The standard wording that goes with it. The secretary can word it herself on
+// the roster page; {name}, {link}, {from} and {section} are filled in.
+const STANDARD_MESSAGE = "Hi {name}, here is your own link to the 7th Clare rota:\n\n{link}\n\nIt is yours alone, so please keep it to yourself. Open it and you can put yourself down for the meetings and events you can help at. Your phone stays signed in, so keep this message in case you need the link again.\n\nThanks, {from}";
+function messageFor(person, code, from, wording){
+  const fill = { name: person.name, link: codeLink(code), from: from || "", section: (person.sections || []).join(", ") || "the group" };
+  return String(wording || STANDARD_MESSAGE).replace(/\{(name|link|from|section)\}/g, (m, k) => fill[k]);
+}
+// Sign in from the link, if there is one, before anything else: a personal
+// link beats whoever this phone was signed in as before, so handing a phone
+// round does the obvious thing.
+async function signInFromLink(after){
+  if (!linkCode) return false;
+  try { const r = await api("POST", "?a=login", { code: linkCode }); setToken(r.token); dropCodeFromUrl(); await after(); return true; }
+  catch { dropCodeFromUrl(); return false; }
+}
 function setToken(t){ token = t; try { if (t) localStorage.setItem(TK, t); else localStorage.removeItem(TK); } catch {} }
 let onUnauthorized = () => {};
 
@@ -18,10 +48,25 @@ async function api(method, q, body, extra = {}) {
   if (!r.ok) throw new Error(j.error || ("Error " + r.status));
   return j;
 }
+// What the group asks of at least one adult on a night, where it asks
+// anything: Garda vetting, a first aider, whatever the rule is. The wording is
+// the secretary's, in settings.rota; the numbers are per section and start at
+// nought, so until somebody sets one nothing about this shows at all.
+let QUAL = { label: "the training", short: "trained" };
 async function loadContent(){
-  try { const r = await fetch("/.netlify/functions/content", { cache: "no-store" }); const c = await r.json(); if (!c || !c.settings) throw 0; return c; }
-  catch { return { settings: { sections: [{ key: "scouts", name: "Scouts", day: "Thursday", time: "6:00 to 7:30 pm" }] }, events: [] }; }
+  let c;
+  try { const r = await fetch("/.netlify/functions/content", { cache: "no-store" }); c = await r.json(); if (!c || !c.settings) throw 0; }
+  catch { c = { settings: { sections: [{ key: "scouts", name: "Scouts", day: "Thursday", time: "6:00 to 7:30 pm" }] }, events: [] }; }
+  const r0 = (c.settings && c.settings.rota) || {};
+  QUAL = { label: r0.qualifiedLabel || QUAL.label, short: r0.qualifiedShort || r0.qualifiedLabel || QUAL.short };
+  document.querySelectorAll("[data-qual-label]").forEach(el => { el.textContent = QUAL.label; });
+  return c;
 }
+const qualTag = p => p.qualified ? `<span class="tag" title="${esc(QUAL.label)}">${esc(QUAL.short)}</span>` : "";
+// On a rota the people who answer the rule come first: a night is not covered
+// without one of them, so they are the ones being looked for.
+const byName2 = (a, b) => String(a.name).localeCompare(String(b.name), "en-IE");
+const byQualifiedThenName = (a, b) => (!!b.qualified - !!a.qualified) || byName2(a, b);
 // The admin password, which admin.html keeps on the device, signs these
 // pages in as the current secretary without a code. It is tried on every
 // load, so a handover is picked up at once. Signing out here switches it

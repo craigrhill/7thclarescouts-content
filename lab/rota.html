@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
 <title>Volunteer rota: 7th Clare Scouts leaders</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -37,7 +38,7 @@
     </div>
 
     <h1>Who is covering what</h1>
-    <p class="muted">Meetings for the next eight weeks and the section's events. Tick yourself in for the nights you can do. Anything below the number needed shows as a gap.</p>
+    <p class="muted">The term's meetings and the section's events. Tick yourself in for the nights you can do. Anything below the number needed shows as a gap.</p>
     <div class="chips" id="chips"></div>
 
     <div id="none" class="card" hidden>
@@ -45,18 +46,33 @@
     </div>
     <div id="rotaBody">
 
-    <div class="card">
-      <div class="row"><label for="req">Default adults needed</label><input type="number" id="req" min="1" max="9"></div>
-      <p class="small muted" style="margin:.5rem 0 0" id="reqNote"></p>
+    <div id="callout" class="banner" hidden></div>
+
+    <div class="tabs" id="tabs" role="tablist" onkeydown="tabKey(event)">
+      <button role="tab" id="tab-gaps" aria-controls="pane-gaps" onclick="setTab('gaps')">Gaps<span class="tally" id="tallyGaps"></span></button>
+      <button role="tab" id="tab-all" aria-controls="pane-all" onclick="setTab('all')">Every night</button>
+      <button role="tab" id="tab-mine" aria-controls="pane-mine" onclick="setTab('mine')">My nights<span class="tally" id="tallyMine"></span></button>
     </div>
 
-    <div class="card"><h2>Gaps</h2><div class="gaps" id="gaps"></div></div>
-    <div class="card"><h2>Upcoming</h2><div id="slots"></div></div>
+    <div class="tabpane" role="tabpanel" aria-labelledby="tab-gaps" id="pane-gaps">
+      <div class="card"><h2>Still short</h2><div class="gaps" id="gaps"></div></div>
+    </div>
+    <div class="tabpane" role="tabpanel" aria-labelledby="tab-all" id="pane-all" hidden>
+      <div class="card"><h2>Every night</h2><div id="slots"></div></div>
+      <div class="card">
+        <h2 id="peopleTitle">Scouters</h2>
+        <p class="small muted" id="peopleNote"></p>
+        <div id="people"></div>
+      </div>
+    </div>
+    <div class="tabpane" role="tabpanel" aria-labelledby="tab-mine" id="pane-mine" hidden>
+      <div class="card"><h2>Nights you are on</h2><p class="small muted" id="mineNote"></p><div id="mines"></div></div>
+    </div>
 
-    <div class="card">
-      <h2 id="peopleTitle">Scouters</h2>
-      <p class="small muted" id="peopleNote"></p>
-      <div id="people"></div>
+    <div class="card" id="shareCard" hidden>
+      <h2>A link for chasing</h2>
+      <p class="small muted">Send this to the section's helpers when you are short. It asks nobody to sign in and carries no names: only the dates and how many are still needed.</p>
+      <div class="row"><span class="link small" id="shareLink"></span><button class="btn" onclick="copyShare()">Copy</button></div>
     </div>
     </div>
   </section>
@@ -65,9 +81,33 @@
 
 <script src="rota-lib.js"></script>
 <script>
-const SK = "rota-section";
+const SK = "rota-section", TABK = "rota-tab";
 const DAYS = { sunday:0, monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6 };
 let C = null, D = null;
+const TABS = ["gaps", "all", "mine"];
+// Where this person lands: a lead or the secretary on the whole list, because
+// theirs is the ticking; anyone else on what is still short, because theirs is
+// the taking. Whatever they last chose beats both.
+let TAB = null;
+try { TAB = TABS.includes(localStorage.getItem(TABK)) ? localStorage.getItem(TABK) : null; } catch {}
+function setTab(t, focus){
+  TAB = t; try { localStorage.setItem(TABK, t); } catch {}
+  for (const name of TABS) {
+    $("pane-" + name).hidden = name !== t;
+    const b = $("tab-" + name);
+    b.classList.toggle("on", name === t); b.setAttribute("aria-selected", String(name === t));
+    // Only the open tab takes a Tab press, the way a tablist is meant to work;
+    // the arrow keys move between them.
+    b.tabIndex = name === t ? 0 : -1;
+  }
+  if (focus) $("tab-" + t).focus();
+}
+function tabKey(e){
+  const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+  if (!step) return;
+  e.preventDefault();
+  setTab(TABS[(TABS.indexOf(TAB) + step + TABS.length) % TABS.length], true);
+}
 function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
 function allKeys(){ return C.settings.sections.map(x => x.key); }
 // The function returns only the sections on this person's roster entry; the chips follow that.
@@ -78,19 +118,64 @@ function iso(d){ return d.toISOString().slice(0, 10); }
 function upcoming(k){
   const section = C.settings.sections.find(x => x.key === k) || {};
   const today = new Date(); today.setHours(12, 0, 0, 0);
-  const out = [], wd = DAYS[(section.day || "").toLowerCase()];
-  if (wd !== undefined) {
-    const d = new Date(today); while (d.getDay() !== wd) d.setDate(d.getDate() + 1);
-    for (let i = 0; i < 8; i++) { out.push({ id: "m:" + iso(d), date: iso(d), title: (section.name || "") + " meeting", sub: [section.time, section.venue].filter(Boolean).join(", "), kind: "meeting" }); d.setDate(d.getDate() + 7); }
+  const out = [];
+  // The nights a lead has set, if there are any. Until then, the ones worked
+  // out from the section's meeting night, which is what this always did.
+  const entries = ((D.calendar && D.calendar.entries) || []).filter(e => e.section === k);
+  if (entries.length) {
+    entries.filter(e => e.date >= iso(today)).forEach(e => out.push({
+      id: "m:" + e.id, date: e.date, title: e.title || ((section.name || "") + " meeting"),
+      sub: [eventWhen(e) || section.time, e.location || section.venue].filter(Boolean).join(", "),
+      details: e.details || "", need: e.need, off: !!e.off, kind: "meeting" }));
+  } else {
+    const wd = DAYS[(section.day || "").toLowerCase()];
+    if (wd !== undefined) {
+      const d = new Date(today); while (d.getDay() !== wd) d.setDate(d.getDate() + 1);
+      for (let i = 0; i < 8; i++) { out.push({ id: "m:" + iso(d), date: iso(d), title: (section.name || "") + " meeting", sub: [section.time, section.venue].filter(Boolean).join(", "), details: "", kind: "meeting" }); d.setDate(d.getDate() + 7); }
+    }
   }
   // Public events from the group calendar, plus any leaders-only ones.
   [...(C.events || []), ...((D && D.events) || [])].filter(e => e.date >= iso(today) && (e.section === k || !e.section || e.section === "all"))
-    .forEach(e => out.push({ id: "e:" + e.date + ":" + e.title, date: e.date, title: e.title, sub: [e.location, e.endDate ? "to " + fmt(e.endDate) : ""].filter(Boolean).join(", "), kind: "event" }));
+    .forEach(e => out.push({ id: "e:" + (e.id || (e.date + ":" + e.title)), date: e.date, title: e.title,
+      sub: [eventWhen(e), e.location, e.endDate ? "to " + fmt(e.endDate) : ""].filter(Boolean).join(", "),
+      details: e.details || "", need: e.need, kind: "event" }));
   return out.sort((a, b) => a.date.localeCompare(b.date));
 }
 const personById = id => (D.people || []).find(p => p.id === id);
-const slotOf = (k, id) => (D.sections[k] && D.sections[k].slots[id]) || { who: [], off: false };
-const needOf = (k, id) => { const s = slotOf(k, id); return s.need > 0 ? s.need : D.sections[k].required; };
+const slotOf = (k, id) => (D.sections[k] && D.sections[k].slots[id]) || { who: [] };
+// What a night needs, and whether it is on at all, ride on the night itself,
+// set where it is created and edited on the Events page. Blank there means the
+// section's own number.
+const needOf = (k, x) => (x.need > 0 ? x.need : D.sections[k].required);
+// How many of the adults on a night have to answer the group's rule, whatever
+// Craig sets that to be. Nought by default, so until it is set nothing changes.
+const needQOf = (k, x) => {
+  const sect = D.sections[k] || {};
+  const def = x.kind === "event" ? (sect.requiredQualifiedEvents || 0) : (sect.requiredQualified || 0);
+  return Math.min(Number.isFinite(x.needQualified) ? x.needQualified : def, needOf(k, x));
+};
+function stateOf(k, x){
+  const who = slotOf(k, x.id).who, need = needOf(k, x), needQ = needQOf(k, x);
+  const q = who.filter(id => { const p = personById(id); return p && p.qualified; }).length;
+  return { who, n: who.length, q, need, needQ, shortPeople: who.length < need, shortQual: q < needQ, ok: who.length >= need && q >= needQ };
+}
+// Whether there is a place on this night for the person looking at it, the
+// same rule the function enforces. While a night still wants somebody who
+// answers the rule, that place is held: otherwise the last one could go to
+// somebody who does not, and the night could never be covered.
+function placeForMe(k, x){
+  const st = stateOf(k, x);
+  if (st.who.includes(D.me.id)) return "on";
+  const held = Math.max(0, st.needQ - st.q);
+  if (D.me.qualified ? (st.n < st.need || held > 0) : (st.n < st.need - held)) return "can";
+  return held > 0 && st.n < st.need ? "held" : "full";
+}
+// A night with nobody on it is short of everyone, so saying it is also short
+// of a qualified adult adds nothing. Only say that once somebody is on it.
+function reason(st){
+  if (!st.shortPeople) return `no ${QUAL.short}`;
+  return `${st.n} of ${st.need}` + (st.shortQual && st.n ? ", none " + QUAL.short.toLowerCase() : "");
+}
 
 function render(){
   const me = D.me;
@@ -98,37 +183,91 @@ function render(){
   const v = keys();
   $("none").hidden = !!v.length; $("rotaBody").hidden = !v.length;
   if (!v.length) { $("chips").innerHTML = ""; return; }
-  const k = sec(), lead = !!me.lead, sect = D.sections[k] || { required: 2, slots: {} };
+  const k = sec(), lead = !!me.lead, boss = lead || !!me.secretary, sect = D.sections[k] || { required: 2, slots: {} };
   $("chips").innerHTML = C.settings.sections.filter(x => v.includes(x.key)).map(x => `<button class="chip ${x.key === k ? "on" : ""}" onclick="pick('${esc(x.key)}')">${esc(x.name)}</button>`).join("");
-  $("req").value = sect.required; $("req").disabled = !lead;
-  $("reqNote").textContent = lead ? "Applies to every meeting and event unless you change the number on that one below." : "Only a section lead can change this.";
-  const slots = upcoming(k), names = (D.people || []).filter(p => (p.sections || []).includes(k));
-  const live = slots.filter(x => !slotOf(k, x.id).off);
-  const gaps = live.filter(x => slotOf(k, x.id).who.length < needOf(k, x.id));
-  $("gaps").innerHTML = (live.length ? `<div class="gap ok"><span>${live.length - gaps.length} of ${live.length} covered</span><span class="count">${queued ? "saving…" : "default " + sect.required}</span></div>` : "")
-    + (gaps.map(x => `<div class="gap"><span>${esc(fmt(x.date))}, ${esc(x.title)}</span><span class="count">${slotOf(k, x.id).who.length} of ${needOf(k, x.id)}</span></div>`).join("") || (live.length ? "" : `<div class="empty">No meeting day set for this section.</div>`));
-  $("slots").innerHTML = slots.map(x => {
-    const s = slotOf(k, x.id), n = s.who.length, kk = needOf(k, x.id), custom = s.need > 0;
-    const status = s.off ? `<span class="status off">No meeting</span>` : n >= kk ? `<span class="status ok">Covered</span>` : `<span class="status gap">${n} of ${kk}</span>`;
-    const listed = [...names]; s.who.forEach(id => { if (!listed.some(p => p.id === id)) { const p = personById(id); if (p) listed.push(p); } });
-    const boxes = listed.map(p => { const on = s.who.includes(p.id), can = lead || p.id === me.id;
-      return `<label class="${p.id === me.id ? "me" : ""} ${can ? "" : "locked"}"><input type="checkbox" ${on ? "checked" : ""} ${can ? "" : "disabled"} onchange="tick('${esc(k)}','${esc(x.id)}','${esc(p.id)}',this.checked)">${esc(p.name)}${p.id === me.id ? " (you)" : ""}</label>`; }).join("");
-    return `<div class="slot">
+  setTab(TAB || (boss ? "all" : "gaps"));
+  $("shareCard").hidden = !boss;
+  if (boss) $("shareLink").textContent = pageLink("needed", "?section=" + encodeURIComponent(k));
+  const slots = upcoming(k), names = (D.people || []).filter(p => (p.sections || []).includes(k)).sort(byQualifiedThenName);
+  const live = slots.filter(x => !x.off);
+  const bad = live.map(x => ({ x, st: stateOf(k, x) })).filter(o => !o.st.ok);
+  // Worth saying separately: a night with the adults on it but nobody who
+  // answers the rule the group has set.
+  const noQual = bad.filter(o => o.st.shortQual && !o.st.shortPeople).length;
+  const openToMe = boss ? 0 : live.filter(x => placeForMe(k, x) === "can").length;
+
+  // The one thing the person who just opened this needs to know.
+  const call = $("callout");
+  call.hidden = !live.length;
+  if (live.length) {
+    call.className = "banner" + (bad.length ? "" : " good");
+    call.innerHTML = !bad.length
+      ? `<b>Every night is covered.</b> Nothing needed from you.`
+      : boss
+        ? `<b>${bad.length} of ${live.length} still short.</b> ${noQual ? `${noQual} of those ${noQual === 1 ? "has" : "have"} the adults but nobody with ${esc(QUAL.short)}. ` : ""}Tick people in below, or send the section's helpers the link at the foot of this page.`
+        : openToMe
+          ? `<b>${bad.length} night${bad.length === 1 ? "" : "s"} still short.</b> You can take ${openToMe === bad.length ? (openToMe === 1 ? "it" : "any of them") : openToMe + " of them"}, marked below.`
+          : `<b>${bad.length} night${bad.length === 1 ? "" : "s"} still short</b>, but none you can take: they are either full or waiting on someone with ${esc(QUAL.short)}.`;
+  }
+
+  $("gaps").innerHTML = (live.length
+      ? `<div class="gap ${bad.length ? "" : "ok"}"><span>${live.length - bad.length} of ${live.length} covered${noQual ? `, ${noQual} with the adults but nobody with ${esc(QUAL.short)}` : ""}</span><span class="count">${queued ? "saving…" : sect.required + " needed" + (sect.requiredQualified ? ", " + sect.requiredQualified + " with " + esc(QUAL.short) : "")}</span></div>`
+      : "")
+    + (bad.map(o => { const can = !boss && placeForMe(k, o.x) === "can";
+        return `<div class="gap${can ? " open" : ""}"><span>${esc(fmt(o.x.date))}, ${esc(o.x.title)}</span><span class="count">${esc(reason(o.st))}</span>${can ? `<button class="btn primary tiny" onclick="tick('${esc(k)}','${esc(o.x.id)}','${esc(me.id)}',true)">I can do it</button>` : ""}</div>`; }).join("")
+      || (live.length ? `<div class="empty">Nothing is short. Every night has who it needs.</div>`
+                      : `<div class="empty">No nights yet. They are set on the Events page, under Meeting nights.</div>`));
+  $("tallyGaps").textContent = bad.length || "";
+
+  // One card, drawn the same in Every night and in My nights, so the two
+  // cannot drift apart.
+  const slotCard = (x) => {
+    const st = stateOf(k, x);
+    const status = x.off ? `<span class="status off">No meeting</span>`
+      : st.ok ? `<span class="status ok">Covered</span>`
+      : st.shortPeople ? `<span class="status gap">${st.n} of ${st.need}</span>`
+      : `<span class="status warn">No ${esc(QUAL.short)}</span>`;
+    const listed = [...names]; st.who.forEach(id => { if (!listed.some(p => p.id === id)) { const p = personById(id); if (p) listed.push(p); } });
+    const boxes = listed.map(p => { const on = st.who.includes(p.id), can = boss || p.id === me.id;
+      return `<label class="${p.id === me.id ? "me" : ""} ${can ? "" : "locked"}"><input type="checkbox" ${on ? "checked" : ""} ${can ? "" : "disabled"} onchange="tick('${esc(k)}','${esc(x.id)}','${esc(p.id)}',this.checked)">${esc(p.name)}${p.id === me.id ? " (you)" : ""}${qualTag(p)}</label>`; }).join("");
+    const place = placeForMe(k, x);
+    // A helper gets one button, not the whole list: they can only put
+    // themselves on, and only while there is a place for them.
+    const mine = {
+      on: `<button class="btn" onclick="tick('${esc(k)}','${esc(x.id)}','${esc(me.id)}',false)">Take me off this night</button>`,
+      can: `<button class="btn primary" onclick="tick('${esc(k)}','${esc(x.id)}','${esc(me.id)}',true)">I can do this night</button>`,
+      held: `<span class="small muted">Full, apart from a place held for someone with ${esc(QUAL.short)}.</span>`,
+      full: `<span class="small muted">Full. First come, first served.</span>`
+    }[place];
+    return `<div class="slot${x.off ? "" : place === "can" && !boss ? " open" : !st.ok ? " short" : ""}">
       <div class="slot-head"><div><span class="when">${esc(fmt(x.date))}</span> <span class="sub">${esc(x.title)}${x.sub ? ", " + esc(x.sub) : ""}</span></div>${status}</div>
-      ${s.off ? "" : `<div class="who">${boxes || `<span class="empty">No Scouters on the roster for ${esc(sectionName(k))} yet.</span>`}</div>`}
+      ${x.details ? `<p class="small muted" style="margin:.2rem 0 0">${esc(x.details)}</p>` : ""}
+      ${x.off ? "" : `<div class="who">${boss ? (boxes || `<span class="empty">No Scouters on the roster for ${esc(sectionName(k))} yet.</span>`) : boxes}</div>`}
+      ${x.off || boss ? "" : `<div class="row" style="margin-top:.4rem">${mine}</div>`}
       <div class="slot-foot">
-        ${s.off ? "" : lead ? `<label class="need">Adults needed <input type="number" min="1" max="9" value="${kk}" onchange="setNeed('${esc(k)}','${esc(x.id)}',this.value)">${custom ? `<span class="custom">changed</span>` : ""}</label>` : `<span>${kk} adult${kk === 1 ? "" : "s"} needed${custom ? " (set for this one)" : ""}</span>`}
-        ${x.kind === "meeting" && lead ? `<label><input type="checkbox" ${s.off ? "checked" : ""} onchange="setOff('${esc(k)}','${esc(x.id)}',this.checked)"> No meeting this week</label>` : ""}
+        ${x.off ? "" : `<span>${st.need} adult${st.need === 1 ? "" : "s"} needed${st.needQ ? `, ${st.needQ} with ${esc(QUAL.short)}` : ""}</span>${x.need > 0 ? `<span class="custom">set for this one</span>` : ""}`}
+        ${st.n && !x.off && st.needQ ? `<span>${st.q} with ${esc(QUAL.short)} on it</span>` : ""}
       </div>
     </div>`;
-  }).join("") || `<div class="empty">Nothing coming up.</div>`;
+  };
+  $("slots").innerHTML = slots.map(slotCard).join("") || `<div class="empty">Nothing coming up.</div>`;
+
+  // My nights: the ones this person is actually down for, and going ahead. A
+  // night called off is not theirs to plan around.
+  const mineList = slots.filter(x => !x.off && slotOf(k, x.id).who.includes(me.id));
+  $("tallyMine").textContent = mineList.length || "";
+  $("mineNote").textContent = mineList.length ? `${mineList.length} night${mineList.length === 1 ? "" : "s"} between now and the end of the list. Anything called off is left out.` : "";
+  $("mines").innerHTML = mineList.map(slotCard).join("")
+    || `<div class="empty">You are not down for anything yet. Every night is where you put yourself on one.</div>`;
+
   // The roster is the secretary's. Here it is read-only: who can cover this section.
   $("peopleTitle").textContent = "Scouters for " + sectionName(k);
   $("peopleNote").textContent = lead ? "From the roster the secretary keeps. To add someone or change their sections, ask the secretary." : "Your sections: " + ((me.sections || []).map(sectionName).join(", ") || "none yet") + ". To change them, ask the secretary.";
-  $("people").innerHTML = lead ? (names.map(p => `<div class="person"><span class="nm">${esc(p.name)}${p.lead ? "<small>lead</small>" : ""}</span><span>${pills(C, p.sections)}</span></div>`).join("") || `<div class="empty">Nobody on the roster for ${esc(sectionName(k))} yet.</div>`) : "";
+  $("people").innerHTML = lead ? (names.map(p => `<div class="person"><span class="nm">${esc(p.name)}${p.lead ? "<small>lead</small>" : ""}${qualTag(p)}</span><span>${pills(C, p.sections)}</span></div>`).join("") || `<div class="empty">Nobody on the roster for ${esc(sectionName(k))} yet.</div>`) : "";
 }
 async function load(){ showErr(""); D = await api("GET", "?sections=" + allKeys().join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
 function pick(k){ try { localStorage.setItem(SK, k); } catch {} render(); }
+async function copyShare(){ await copyText($("shareLink").textContent, event && event.target); }
 function putSection(k, doc){ D.sections[k] = { required: doc.required, slots: doc.slots, updatedAt: doc.updatedAt }; render(); }
 // A tick changes the page at once and the save follows it. Requests go one at
 // a time in the order they were made, and the section the server sends back is
@@ -137,7 +276,7 @@ function putSection(k, doc){ D.sections[k] = { required: doc.required, slots: do
 // function does with the same request, down to a needed number that matches
 // the section default counting as no change at all.
 let queued = 0, chain = Promise.resolve(), missed = false;
-const slotIn = (k, id) => { const s = D.sections[k].slots; return (s[id] = s[id] || { who: [], off: false }); };
+const slotIn = (k, id) => { const s = D.sections[k].slots; return (s[id] = s[id] || { who: [] }); };
 function send(k, q, body, apply){
   apply(); render(); queued++;
   chain = chain.then(async () => {
@@ -151,23 +290,13 @@ function send(k, q, body, apply){
 const tick = (k, id, pid, on) => send(k, "?a=slot", { section: k, id, [on ? "add" : "remove"]: [pid] }, () => {
   const s = slotIn(k, id); s.who = on ? [...s.who.filter(x => x !== pid), pid] : s.who.filter(x => x !== pid);
 });
-const setNeed = (k, id, v) => send(k, "?a=slot", { section: k, id, need: Number(v) }, () => {
-  const n = Math.round(Number(v)), s = slotIn(k, id);
-  if (n >= 1 && n <= 9 && n !== D.sections[k].required) s.need = n; else delete s.need;
-});
-const setOff = (k, id, off) => send(k, "?a=slot", { section: k, id, off }, () => { slotIn(k, id).off = !!off; });
-$("req").addEventListener("change", () => { const k = sec(), n = Math.round(Number($("req").value));
-  send(k, "?a=required", { section: k, required: n }, () => {
-    if (!(n >= 1 && n <= 9)) return;
-    D.sections[k].required = n;
-    for (const s of Object.values(D.sections[k].slots)) if (s.need === n) delete s.need;
-  });
-});
 function signOut(msg){ leaveBridge(); setToken(null); D = null; $("app").hidden = true; $("gate").hidden = false; $("adminHint").hidden = !adminPw(); $("gateMsg").textContent = msg || ""; $("gateMsg").className = "msg"; }
 onUnauthorized = signOut;
 async function boot(){
   C = await loadContent();
   await bridgeIfAdmin();
+  // A personal link, if this is one, before the token already on the phone.
+  if (await signInFromLink(load)) return;
   if (token) { try { await load(); return; } catch (e) { if (token) showErr(e.message); } }
   $("adminHint").hidden = !adminPw();
   $("gate").hidden = false;

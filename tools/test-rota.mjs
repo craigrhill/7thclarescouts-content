@@ -26,6 +26,13 @@ async function call(method, q, { token, admin, body: b } = {}) {
   return { status: r.status, j };
 }
 
+// Reach into the store the way an older version of the function would have
+// left it, to prove what happens to data that is already there.
+async function withStore(st, key, fn) {
+  const cur = await st.get(key, { type: "json" }) || { required: 2, slots: {} };
+  await st.setJSON(key, fn(cur));
+}
+
 let r = await call("OPTIONS", "");                         ok("OPTIONS is 204", r.status, 204);
 r = await call("GET", "?sections=scouts");                  ok("GET without token is 401", r.status, 401);
 r = await call("POST", "?a=admin-login", { admin: "admin-for-test" }); ok("admin-login before a secretary exists says so", [r.status, /No secretary yet/.test(r.j.error)], [409, true]);
@@ -185,11 +192,15 @@ ok("but a lead is not given anyone's code", r.j.people.some(p => "code" in p) ||
 r = await call("GET", "?sections=scouts", { token: member }); ok("nor is a member", r.j.people.some(p => "code" in p), false);
 r = await call("GET", "?sections=scouts", { token: lead });
 ok("the secretary sees every code, and they are the ones issued", [r.j.people.find(p => p.id === memberId).code, r.j.people.find(p => p.id === cubsLeadId).code, r.j.me.code], [memberCode, cubsLeadCode, leadCode]);
-r = await call("POST", "?a=slot", { token: lead, body: { section: "scouts", id: slot, add: [leadId], need: 3 } });
-ok("lead ticks self and sets need", [r.j.section.slots[slot].who.length, r.j.section.slots[slot].need], [2, 3]);
-r = await call("POST", "?a=slot", { token: lead, body: { section: "scouts", id: "m:2030-01-10", off: true } }); ok("lead marks a week off", r.j.section.slots["m:2030-01-10"].off, true);
+r = await call("POST", "?a=slot", { token: lead, body: { section: "scouts", id: slot, add: [leadId] } });
+ok("lead ticks self", r.j.section.slots[slot].who.length, 2);
+// What a night needs, and whether it is on, belong to the night itself now.
+r = await call("POST", "?a=slot", { token: lead, body: { section: "scouts", id: slot, need: 3 } });
+ok("the slot will not take what a night needs", [r.status, /set with the night itself/.test(r.j.error)], [403, true]);
+r = await call("POST", "?a=slot", { token: lead, body: { section: "scouts", id: "m:2030-01-10", off: true } });
+ok("nor whether it is on, from anyone at all", r.status, 403);
 r = await call("POST", "?a=required", { token: lead, body: { section: "scouts", required: 3 } });
-ok("required updated and a matching per-slot need collapses into it", [r.j.section.required, "need" in r.j.section.slots[slot]], [3, false]);
+ok("the section's own number is still the lead's", r.j.section.required, 3);
 r = await call("POST", "?a=slot", { token: lead, body: { section: "scouts", id: "e:2030-02-01:Camp", add: ["nope"] } }); ok("unknown person id is 400", r.status, 400);
 r = await call("POST", "?a=slot", { token: lead, body: { section: "Scouts!", id: slot } });                ok("bad section key is 400", r.status, 400);
 
@@ -226,7 +237,9 @@ ok("no code hashes leak in GET", JSON.stringify(r.j).includes("codeHash"), false
 // ---- calendar events ----
 r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14", title: "Spring camp", section: "scouts", location: "Ruan", kitId: "sionnach", details: "Two nights." } });
 ok("secretary adds a public event", [r.status, r.j.events.map(e => e.title)], [200, ["Spring camp", "Existing camp"]]);
-ok("it carries only the fields given", r.j.events[0], { date: "2030-03-14", title: "Spring camp", section: "scouts", location: "Ruan", kitId: "sionnach", details: "Two nights." });
+{ const { id, ...rest } = r.j.events[0];
+  ok("it carries only the fields given, plus an id of its own", rest, { date: "2030-03-14", title: "Spring camp", section: "scouts", location: "Ruan", kitId: "sionnach", details: "Two nights." });
+  ok("and that id is the one the ticks will hang off", /^[a-f0-9]{8}$/.test(id), true); }
 { const doc = await contentStore.get("content", { type: "json" });
   ok("it is written into the group calendar, and the rest of the content is untouched", [doc.events.length, doc.notices[0].title, doc.updatedBy], [2, "keep me", "secretary"]); }
 r = await call("POST", "?a=event", { token: m2, body: { date: "2030-03-14", title: "spring camp " } });
@@ -335,6 +348,115 @@ ok("a private event can be removed", r.j.events.length, 0);
   delete process.env.GITHUB_REPO; delete process.env.GITHUB_TOKEN; globalThis.fetch = realFetch;
   ok("a concurrent save is retried, and neither event is lost", [r.status, puts, doc.events.map(e => e.title)], [200, 2, ["Theirs", "Ours"]]); }
 
+{ // ---- an event's ticks follow it through a rename or a move ----
+  // Everything saved before ids existed hangs off the date and the name, which
+  // is why fixing a spelling used to drop everyone down for it. Make one of
+  // those, then rename it.
+  await call("POST", "?a=event", { token: m2, body: { date: "2030-06-01", title: "Legacy camp", section: "scouts" } });
+  { const c = await contentStore.get("content", { type: "json" });
+    c.events = c.events.map(e => { if (e.title === "Legacy camp") { const { id, ...rest } = e; return rest; } return e; });
+    await contentStore.setJSON("content", c); }
+  await withStore(store, "section/scouts", (d) => { d.slots["e:2030-06-01:Legacy camp"] = { who: [cubsLeadId] }; return d; });
+  r = await call("POST", "?a=event-update", { token: m2, body: { key: "2030-06-01|Legacy camp", date: "2030-06-08", title: "Legacy camp, moved", section: "scouts" } });
+  ok("the event moves", [r.status, r.j.error || "", (r.j.events || []).some(e => e.title === "Legacy camp, moved")], [200, "", true]);
+  const moved = r.j.events.find(e => e.title === "Legacy camp, moved");
+  ok("and picks up an id on the way", /^[a-f0-9]{8}$/.test(moved.id), true);
+  r = await call("GET", "?sections=scouts", { token: m2 });
+  ok("whoever was down for it went with it", r.j.sections.scouts.slots["e:" + moved.id].who, [cubsLeadId]);
+  ok("with nothing left on the old shape", "e:2030-06-01:Legacy camp" in r.j.sections.scouts.slots, false);
+  r = await call("POST", "?a=event-update", { token: m2, body: { key: "2030-06-08|Legacy camp, moved", date: "2030-06-08", title: "Renamed again", section: "scouts", id: moved.id } });
+  r = await call("GET", "?sections=scouts", { token: m2 });
+  ok("a second rename does not move it again, the id is the id", r.j.sections.scouts.slots["e:" + moved.id].who, [cubsLeadId]);
+  r = await call("POST", "?a=event-remove", { token: m2, body: { key: "2030-06-08|Renamed again" } });
+  r = await call("GET", "?sections=scouts", { token: m2 });
+  ok("removing an event takes its ticks with it", ("e:" + moved.id) in r.j.sections.scouts.slots, false);
+}
+
+{ // ---- the term's nights, kept per section ----
+  r = await call("POST", "?a=person", { token: m2, body: { name: "Cal Helper", sections: ["cubs"] } });
+  const calHelper = (await call("POST", "?a=login", { body: { code: r.j.code } })).j.token;
+  r = await call("POST", "?a=calendar", { token: cubsLead, body: { section: "scouts", entries: [{ date: "2030-09-03" }] } });
+  ok("a lead cannot set another section's nights", r.status, 403);
+  r = await call("POST", "?a=calendar", { token: calHelper, body: { section: "cubs", entries: [] } });
+  ok("nor can a helper set their own section's", [r.status, /section lead/.test(r.j.error)], [403, true]);
+  r = await call("POST", "?a=calendar", { token: m2, body: { section: "scouts", entries: [{ date: "not a date" }] } });
+  ok("a night with no date is refused", [r.status, /needs a date/.test(r.j.error)], [400, true]);
+  r = await call("POST", "?a=calendar", { token: m2, body: { section: "scouts", entries: [{ date: "2030-09-03", need: 12 }] } });
+  ok("and one asking for twelve adults", r.status, 400);
+  r = await call("POST", "?a=calendar", { token: m2, body: { section: "scouts", entries: [{ date: "2030-09-03", startTime: "20:00", endTime: "19:00" }] } });
+  ok("and an end time before the start", r.status, 400);
+  // The seeded shape: the date as the id, so the ticks the derived weeks left
+  // behind still match and nobody is dropped by the first save.
+  r = await call("POST", "?a=calendar", { token: m2, body: { section: "scouts", entries: [
+    { id: "2030-01-03", date: "2030-01-03", title: "Scouts meeting" },
+    { id: "2030-01-10", date: "2030-01-10", off: true },
+    { date: "2030-01-17", title: "Night hike", location: "Black Head", details: "Bring a torch", need: 3, startTime: "18:00", endTime: "20:00" },
+  ] } });
+  const cal = ((r.j.calendar || {}).entries || []).filter(e => e.section === "scouts");
+  ok("the secretary sets a section's nights", [r.status, r.j.error || "", cal.length], [200, "", 3]);
+  ok("a seeded night keeps its date as its id, so its ticks still match", cal[0].id, "2030-01-03");
+  ok("one called off says so, and a new one gets an id of its own", [cal[1].off, /^[a-f0-9]{8}$/.test(cal[2].id)], [true, true]);
+  ok("what one night wants is on the night", [cal[2].need, cal[2].startTime, cal[2].endTime, cal[2].location], [3, "18:00", "20:00", "Black Head"]);
+  r = await call("POST", "?a=calendar", { token: cubsLead, body: { section: "cubs", entries: [{ id: "2030-01-08", date: "2030-01-08" }] } });
+  ok("a lead sets their own section's", [r.status, r.j.calendar.entries.filter(e => e.section === "cubs").length], [200, 1]);
+  r = await call("GET", "?sections=cubs", { token: calHelper });
+  ok("a helper is given the nights for their own section", r.j.calendar.entries.map(e => e.date), ["2030-01-08"]);
+  ok("and not another section's", r.j.calendar.entries.some(e => e.section === "scouts"), false);
+  // Somebody down for a night that is then taken off the list loses that place
+  // rather than keeping it invisibly.
+  r = await call("POST", "?a=slot", { token: m2, body: { section: "scouts", id: "m:2030-01-03", add: [cubsLeadId] } });
+  ok("someone is put down for the first night", r.j.section.slots["m:2030-01-03"].who.includes(cubsLeadId), true);
+  await call("POST", "?a=calendar", { token: m2, body: { section: "scouts", entries: [{ id: "2030-01-10", date: "2030-01-10" }] } });
+  r = await call("GET", "?sections=scouts", { token: m2 });
+  ok("taking a night off the list takes its ticks with it", "m:2030-01-03" in r.j.sections.scouts.slots, false);
+}
+
+{ // ---- a night fills up and then closes ----
+  // The group can ask that one of the adults on a night answers a rule of its
+  // own. Nought by default, so none of this shows until somebody sets it.
+  r = await call("POST", "?a=required", { token: m2, body: { section: "beavers", required: 2, requiredQualified: 1 } });
+  ok("the section's numbers are the lead's", [r.j.section.required, r.j.section.requiredQualified], [2, 1]);
+  r = await call("POST", "?a=required", { token: m2, body: { section: "beavers", requiredQualified: 12 } });
+  ok("and are refused if they are silly", r.status, 400);
+  await call("POST", "?a=calendar", { token: m2, body: { section: "beavers", entries: [{ id: "2030-02-06", date: "2030-02-06" }] } });
+  const night = "m:2030-02-06";
+  const add = async (tok, id) => call("POST", "?a=slot", { token: tok, body: { section: "beavers", id: night, add: [id] } });
+  const help = async (name, qualified) => {
+    const p = (await call("POST", "?a=person", { token: m2, body: { name, sections: ["beavers"], qualified } })).j;
+    return { id: p.person.id, token: (await call("POST", "?a=login", { body: { code: p.code } })).j.token, qualified: p.person.qualified };
+  };
+  const h1 = await help("Q Helper", true), h2 = await help("B Helper Two", false), h3 = await help("B Helper Three", false);
+  ok("the flag comes back on the person", h1.qualified, true);
+  r = await add(h2.token, h2.id);
+  ok("the first helper takes a place", [r.status, r.j.section.slots[night].who.length], [200, 1]);
+  r = await add(h3.token, h3.id);
+  ok("the second cannot: the last place is held for the rule", [r.status, /place held/.test(r.j.error)], [409, true]);
+  r = await add(h1.token, h1.id);
+  ok("but somebody who answers it can", [r.status, r.j.section.slots[night].who.length], [200, 2]);
+  r = await add(h3.token, h3.id);
+  ok("and now it is simply full", [r.status, /full/.test(r.j.error)], [409, true]);
+  r = await call("POST", "?a=slot", { token: m2, body: { section: "beavers", id: night, add: [h3.id] } });
+  ok("the secretary is held to none of it", [r.status, r.j.section.slots[night].who.length], [200, 3]);
+  r = await call("POST", "?a=slot", { token: h3.token, body: { section: "beavers", id: night, remove: [h3.id] } });
+  ok("anyone can always take themselves off", r.j.section.slots[night].who.includes(h3.id), false);
+  // The escape hatch: a night that ended up full with nobody who answers the
+  // rule still has room for somebody who does.
+  await call("POST", "?a=slot", { token: m2, body: { section: "beavers", id: night, remove: [h1.id, h2.id, h3.id] } });
+  await call("POST", "?a=slot", { token: m2, body: { section: "beavers", id: night, add: [h2.id, h3.id] } });
+  r = await add(h1.token, h1.id);
+  ok("a full night with nobody qualified still takes one", [r.status, r.j.section.slots[night].who.length], [200, 3]);
+  // What one night asks for beats the section's own number.
+  await call("POST", "?a=calendar", { token: m2, body: { section: "beavers", entries: [{ id: "2030-02-06", date: "2030-02-06" }, { id: "2030-02-13", date: "2030-02-13", need: 1, needQualified: 0 }] } });
+  r = await call("POST", "?a=slot", { token: h2.token, body: { section: "beavers", id: "m:2030-02-13", add: [h2.id] } });
+  ok("a night that wants one adult takes one", r.status, 200);
+  r = await call("POST", "?a=slot", { token: h3.token, body: { section: "beavers", id: "m:2030-02-13", add: [h3.id] } });
+  ok("and then closes at one", r.status, 409);
+  await call("POST", "?a=calendar", { token: m2, body: { section: "beavers", entries: [{ id: "2030-02-06", date: "2030-02-06" }, { id: "2030-02-20", date: "2030-02-20", off: true }] } });
+  r = await call("POST", "?a=slot", { token: h2.token, body: { section: "beavers", id: "m:2030-02-20", add: [h2.id] } });
+  ok("nobody puts themselves down for a night that is off", [r.status, /night is off/.test(r.j.error)], [409, true]);
+  await call("POST", "?a=required", { token: m2, body: { section: "beavers", required: 2, requiredQualified: 0 } });
+}
+
 // ---- one-way sync from the county calendar ----
 {
   const realFetch = globalThis.fetch;
@@ -366,7 +488,7 @@ ok("a private event can be removed", r.j.events.length, 0);
   r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c1", section: "scouts", decision: "approve" } });
   ok("the Scouts lead approves the camp", [r.status, r.j.status], [200, "approved"]);
   { const e = (await contentStore.get("content", { type: "json" })).events.find(x => x.countyId === "c1");
-    ok("it lands on the group calendar in the app's own shape, with the county's time read as a real one", e, { date: "2030-10-02", title: "Chill Camp", endDate: "2030-10-03", section: "scouts", location: "Ruan", startTime: "18:00", details: "County camp.\n\nHosted by County Team\n\nhttps://example.test/book", countyId: "c1" }); }
+    ok("it lands on the group calendar in the app's own shape, with the county's time read as a real one", e, { date: "2030-10-02", title: "Chill Camp", endDate: "2030-10-03", section: "scouts", location: "Ruan", startTime: "18:00", details: "County camp.\n\nHosted by County Team\n\nhttps://example.test/book", countyId: "c1", id: "cc1-scouts" }); }
 
   // The county naming several sections is an offer to each of them, not one
   // group event: our sections decide separately.
@@ -457,6 +579,19 @@ ok("a private event can be removed", r.j.events.length, 0);
   r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c5", section: "cubs", decision: "decline" } });
   r = await call("POST", "?a=county-decide", { token: m2, body: { id: "c5", section: "scouts", decision: "decline" } });
   ok("declining both takes the legacy event off entirely", (await contentStore.get("content", { type: "json" })).events.some(e => e.countyId === "c5"), false);
+
+  { // A county event's ticks used to hang off its date and name too, so the
+    // county moving one lost everyone. They have an id made from the county's
+    // own now, and the first sync after that carries the old ticks across.
+    await call("POST", "?a=county-decide", { token: m2, body: { id: "c4", section: "scouts", decision: "approve" } });
+    await withStore(store, "section/scouts", (d) => { d.slots["e:2030-09-09:County Planning Meeting"] = { who: [cubsLeadId] }; return d; });
+    { const c = await store.get("county", { type: "json" }); delete c.movedSlots; await store.setJSON("county", c); }
+    await call("POST", "?a=county-sync", { token: m2 });
+    r = await call("GET", "?sections=scouts", { token: m2 });
+    ok("a county event's ticks are carried onto its new id", (r.j.sections.scouts.slots["e:cc4-scouts"] || {}).who, [cubsLeadId]);
+    ok("and the old shape is gone", "e:2030-09-09:County Planning Meeting" in r.j.sections.scouts.slots, false);
+    await call("POST", "?a=county-decide", { token: m2, body: { id: "c4", section: "scouts", decision: "reset" } });
+  }
 
   feedFails = true;
   r = await call("POST", "?a=county-sync", { token: m2 });

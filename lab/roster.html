@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
 <title>Roster: 7th Clare Scouts secretary</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -52,15 +53,32 @@
       <div class="add">
         <input type="text" id="newName" placeholder="Name (or several, separated by commas)" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addPeople()}">
         <div class="secs" id="newSecs"></div>
-        <div class="row"><button class="btn primary" onclick="addPeople()">Add</button><label class="small"><input type="checkbox" id="newLead"> Section lead</label><span class="small muted" id="addMsg"></span></div>
+        <div class="row"><button class="btn primary" onclick="addPeople()">Add</button><label class="small"><input type="checkbox" id="newLead"> Section lead</label><label class="small"><input type="checkbox" id="newQualified"> <span data-qual-label>the training</span></label><span class="small muted" id="addMsg"></span></div>
       </div>
     </div>
 
     <div class="card">
       <table class="roster">
-        <thead><tr><th>Name</th><th>Sections</th><th>Role</th><th id="codeHead">Code</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Sections</th><th>Role</th><th id="codeHead">Their link</th><th></th></tr></thead>
         <tbody id="people"></tbody>
       </table>
+    </div>
+
+    <div class="card" id="msgCard" hidden>
+      <h2>The message that goes with a link</h2>
+      <p class="small muted">This is what Copy message puts on your phone, with the blanks filled in. Change the wording if it is not how you would say it. <b>{name}</b> becomes the person's name, <b>{link}</b> their link, <b>{from}</b> your name and <b>{section}</b> their sections.</p>
+      <div class="add">
+        <textarea id="msgText" rows="7" spellcheck="true" aria-label="The message" oninput="msgChanged()"></textarea>
+        <div class="row"><button class="btn primary" id="msgSave" onclick="saveMessage()">Save the message</button><button class="btn quiet" onclick="resetMessage()">Back to the standard wording</button><span class="msg" id="msgMsg" style="margin:0"></span></div>
+      </div>
+      <p class="small muted" style="margin:.8rem 0 .3rem">How it reads, sent to someone called Mary:</p>
+      <pre class="preview" id="msgPreview"></pre>
+    </div>
+
+    <div class="card" id="loadCard" hidden>
+      <h2>Who is down for what</h2>
+      <p class="small muted" id="loadNote"></p>
+      <table class="roster" id="loadTable"></table>
     </div>
 
   </section>
@@ -80,30 +98,89 @@ function render(){
   const me = D.me, manage = canManage();
   $("leaderNav").innerHTML = leaderNav(me); $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
   $("intro").textContent = manage
-    ? "Type a name, tap the sections they can cover, press Add. Their code appears in the row; Copy it and send it to them. Edit a row to change anything later."
+    ? "Type a name, tap the sections they can cover, press Add. Their own link appears in the row: Copy message and send it to them, and they never type anything. Edit a row to change anything later."
     : "Only the secretary can change the roster. This is the list as it stands.";
   $("addCard").hidden = !manage; $("codeHead").hidden = !manage;
+  $("msgCard").hidden = !manage; $("loadCard").hidden = !manage;
+  if (manage) { renderMessage(); renderLoad(); }
   const people = D.people || [];
   $("people").innerHTML = people.length ? people.map(p => {
     const row = `<tr class="person" data-id="${esc(p.id)}">
-      <td class="nm">${esc(p.name)}${p.id === me.id ? ` <span class="small muted">(you)</span>` : ""}</td>
+      <td class="nm">${esc(p.name)}${p.id === me.id ? ` <span class="small muted">(you)</span>` : ""}${qualTag(p)}</td>
       <td>${pills(C, p.sections)}</td>
       <td>${roleBadges(p)}</td>
-      ${manage ? `<td class="code-cell">${p.code ? `<code>${esc(p.code)}</code> <button class="btn quiet" onclick="copyText('${esc(p.code)}', this)">Copy</button>` : `<span class="small muted">none yet</span>`}</td>` : ""}
+      ${manage ? `<td class="code-cell">${p.code
+        ? `<span class="link small">${esc(codeLink(p.code))}</span><span class="row" style="gap:.3rem;margin-top:.25rem"><button class="btn quiet" onclick="copyLink('${esc(p.id)}', this)">Copy link</button><button class="btn quiet" onclick="copyMessage('${esc(p.id)}', this)">Copy message</button></span>`
+        : `<span class="small muted">none yet</span>`}</td>` : ""}
       <td class="act">${manage ? `<button class="btn quiet" onclick="edit('${esc(p.id)}')">${editing === p.id ? "Close" : "Edit"}</button>` : ""}</td>
     </tr>`;
     if (!manage || editing !== p.id) return row;
     return row + `<tr class="editor"><td colspan="5"><div class="edrow">
       <div class="row"><input type="text" id="edName" value="${esc(p.name)}"><button class="btn" onclick="saveName('${esc(p.id)}')">Save name</button></div>
       <div class="secs">${chips(p.sections || [], k => `setSections('${esc(p.id)}','${k}',this.checked)`)}</div>
-      <div class="row"><label><input type="checkbox" ${p.lead ? "checked" : ""} onchange="setFlag('${esc(p.id)}','lead',this.checked)"> Section lead</label></div>
-      <div class="row"><button class="btn" onclick="recode('${esc(p.id)}')">New code</button><button class="btn quiet" onclick="removePerson('${esc(p.id)}')">Remove from roster</button>${p.id !== me.id && !p.secretary ? `<button class="btn quiet" onclick="handOver('${esc(p.id)}')">Make secretary instead of me</button>` : ""}</div>
+      <div class="row"><label><input type="checkbox" ${p.lead ? "checked" : ""} onchange="setFlag('${esc(p.id)}','lead',this.checked)"> Section lead</label><label><input type="checkbox" ${p.qualified ? "checked" : ""} onchange="setFlag('${esc(p.id)}','qualified',this.checked)"> <span data-qual-label>the training</span></label></div>
+      <div class="row"><button class="btn" onclick="recode('${esc(p.id)}')">New link</button><button class="btn quiet" onclick="removePerson('${esc(p.id)}')">Remove from roster</button>${p.id !== me.id && !p.secretary ? `<button class="btn quiet" onclick="handOver('${esc(p.id)}')">Make secretary instead of me</button>` : ""}</div>
     </div></td></tr>`;
   }).join("") : `<tr><td colspan="5" class="empty">Nobody yet. Add the first Scouter below.</td></tr>`;
   if (manage && !$("newSecs").children.length) $("newSecs").innerHTML = chips([], null);
 }
 
-async function load(){ showErr(""); D = await api("GET", "?sections="); $("gate").hidden = true; $("app").hidden = false; render(); }
+// The link, and the whole message it goes in, ready to paste into WhatsApp.
+const copyLink = (id, btn) => { const p = personById(id); if (p && p.code) copyText(codeLink(p.code), btn); };
+const copyMessage = (id, btn) => { const p = personById(id); if (p && p.code) copyText(messageFor(p, p.code, D.me.name, wording()), btn); };
+const wording = () => (D.message && D.message.trim()) ? D.message : STANDARD_MESSAGE;
+// The box is only refilled when it is not being edited, so a save elsewhere on
+// the page cannot wipe half-typed text.
+let msgDirty = false;
+function renderMessage(){ if (!msgDirty) $("msgText").value = wording(); previewMessage(); }
+function previewMessage(){ $("msgPreview").textContent = messageFor({ name: "Mary", sections: ["cubs"] }, "XXXX-XXXX", D.me.name, $("msgText").value.trim() || STANDARD_MESSAGE); }
+function msgChanged(){ msgDirty = true; $("msgSave").textContent = "Save the message"; $("msgMsg").textContent = ""; previewMessage(); }
+const saveMessage = () => guarded(async () => {
+  const r = await api("POST", "?a=message", { text: $("msgText").value });
+  D.message = r.message; msgDirty = false;
+  $("msgSave").textContent = "Saved"; $("msgMsg").textContent = r.message ? "" : "Blank, so the standard wording is in use.";
+  renderMessage();
+});
+function resetMessage(){ $("msgText").value = STANDARD_MESSAGE; msgDirty = true; previewMessage(); $("msgSave").textContent = "Save the message"; }
+
+// How much each person has taken on, counted over the nights still to come
+// that are going ahead. Somebody down for nothing is the one to ask, so that
+// row is marked.
+function loadOf(){
+  const today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+  const t = today.toISOString().slice(0, 10);
+  const counts = new Map(); let meetings = 0, events = 0;
+  const entries = ((D.calendar && D.calendar.entries) || []).filter(e => !e.off && e.date >= t);
+  const evs = [...(C.events || []), ...((D.events) || [])].filter(e => (e.endDate || e.date) >= t);
+  const bump = (k, id, kind) => { const c = counts.get(id) || { meetings: 0, events: 0 }; c[kind]++; counts.set(id, c); };
+  for (const e of entries) {
+    meetings++;
+    ((D.sections[e.section] || {}).slots || {})["m:" + e.id]?.who?.forEach(id => bump(e.section, id, "meetings"));
+  }
+  for (const e of evs) {
+    const keys = e.section ? [e.section] : Object.keys(D.sections || {});
+    let counted = false;
+    for (const k of keys) {
+      const who = ((D.sections[k] || {}).slots || {})["e:" + (e.id || (e.date + ":" + e.title))]?.who || [];
+      who.forEach(id => bump(k, id, "events"));
+      if (who.length || keys.length === 1) counted = true;
+    }
+    if (counted) events++;
+  }
+  return { counts, meetings, events };
+}
+function renderLoad(){
+  const { counts, meetings, events } = loadOf();
+  const rows = (D.people || []).map(p => { const c = counts.get(p.id) || { meetings: 0, events: 0 }; return { p, ...c, total: c.meetings + c.events }; });
+  const none = rows.filter(r => r.total === 0).length;
+  $("loadNote").textContent = `${meetings} meeting${meetings === 1 ? "" : "s"} and ${events} event${events === 1 ? "" : "s"} still to come.`
+    + (none ? ` ${none} ${none === 1 ? "person is" : "people are"} down for nothing yet.` : " Everyone is down for something.");
+  $("loadTable").innerHTML = `<thead><tr><th>Scouter</th><th>Meetings</th><th>Events</th><th>Total</th></tr></thead><tbody>`
+    + rows.map(r => `<tr class="person${r.total ? "" : " zero"}"><td class="nm">${esc(r.p.name)}${qualTag(r.p)}</td><td>${r.meetings}</td><td>${r.events}</td><td><b>${r.total}</b>${r.total ? "" : ` <span class="small muted">none yet</span>`}</td></tr>`).join("")
+    + `</tbody>`;
+}
+
+async function load(){ showErr(""); D = await api("GET", "?sections=" + (C.settings.sections || []).map(x => x.key).join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
 async function guarded(fn){ try { await fn(); } catch (e) { await load().catch(() => {}); showErr(e.message); } }
 function edit(id){ editing = editing === id ? null : id; render(); }
 const addPeople = () => guarded(async () => {
@@ -111,8 +188,8 @@ const addPeople = () => guarded(async () => {
   const sections = [...$("newSecs").querySelectorAll("input:checked")].map(i => i.dataset.key);
   if (!sections.length) { $("addMsg").textContent = "Tap at least one section."; return; }
   const added = [], failed = [];
-  for (const name of names) { try { added.push((await api("POST", "?a=person", { name, sections, lead: $("newLead").checked })).person.id); } catch (e) { failed.push(name + " (" + e.message.replace(/\.$/, "") + ")"); } }
-  $("newName").value = ""; $("newLead").checked = false;
+  for (const name of names) { try { added.push((await api("POST", "?a=person", { name, sections, lead: $("newLead").checked, qualified: $("newQualified").checked })).person.id); } catch (e) { failed.push(name + " (" + e.message.replace(/\.$/, "") + ")"); } }
+  $("newName").value = ""; $("newLead").checked = false; $("newQualified").checked = false;
   $("addMsg").textContent = failed.length ? "Not added: " + failed.join(", ") : "";
   await load();
   for (const id of added) { const row = document.querySelector(`tr.person[data-id="${id}"]`); if (row) row.classList.add("fresh"); }
@@ -140,6 +217,8 @@ onUnauthorized = signOut;
 async function boot(){
   C = await loadContent();
   await bridgeIfAdmin();
+  // A personal link, if this is one, before the token already on the phone.
+  if (await signInFromLink(load)) return;
   if (token) { try { await load(); return; } catch (e) { if (token) showErr(e.message); } }
   $("adminHint").hidden = !adminPw();
   $("gate").hidden = false;

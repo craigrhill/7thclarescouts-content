@@ -10,7 +10,7 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
 import { chromium } from "playwright-core";
 
-const PORT = 8910, H = `http://127.0.0.1:${PORT}/lab/`;
+const PORT = 8910, H = `http://127.0.0.1:${PORT}/lab/`, H_URL = H;
 const CHROME = process.env.CHROME_PATH || ["/opt/pw-browsers/chromium-1194/chrome-linux/chrome"].find(existsSync) || (() => { try { return chromium.executablePath(); } catch { return undefined; } })();
 mkdirSync(".e2e", { recursive: true });
 
@@ -25,7 +25,14 @@ const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"]
 const page = async (w, h) => { const p = await (await b.newContext({ viewport: { width: w, height: h } })).newPage(); p.on("dialog", (d) => d.accept()); return p; };
 const go = async (p, f) => { await p.goto(H + f, { waitUntil: "load" }); await p.waitForTimeout(600); };
 const signInBtn = (p) => p.getByRole("button", { name: "Sign in", exact: true });
+// The roster shows each person's own link rather than a bare code, so read the
+// code back out of it. That is what the secretary copies and sends.
+const codeIn = async (loc) => { const t = (await loc.innerText()).trim(); return (t.match(/[?&]c=([A-Z2-9-]+)/) || [])[1] || t; };
+const codeFor = (p, name) => codeIn(p.locator("#people tr.person", { hasText: name }).locator("td.code-cell .link"));
 const status = (p, i) => p.locator(".slot").nth(i).locator(".status").innerText().then((t) => t.trim());
+// The rota opens on the tab that suits the person: a lead on the whole list,
+// a helper on what is still short. Open a named one to look at the rest.
+const openTab = async (p, name) => { await p.locator("#tabs button", { hasText: name }).click(); await p.waitForTimeout(200); };
 const pickSec = async (p, n) => { await p.getByRole("button", { name: n, exact: true }).first().click(); await p.waitForTimeout(150); };
 const names = async (p) => (await p.locator("#people .person .nm").allInnerTexts()).map((t) => t.split("\n")[0].replace(/\s*\(you\)\s*$/, "").trim());
 // Adds via the form and returns the new person's code, read from their row.
@@ -33,7 +40,7 @@ const addOnRoster = async (p, name, secs, lead) => {
   for (const i of await p.locator("#newSecs input").all()) await i.uncheck();
   await p.fill("#newName", name); for (const s of secs) await p.locator(`#newSecs input[data-key=${s}]`).check(); if (lead) await p.check("#newLead");
   await p.locator("#addCard").getByRole("button", { name: "Add", exact: true }).click(); await p.waitForTimeout(800);
-  return (await p.locator("#people tr.person", { hasText: name.split(",")[0].trim() }).locator("td.code-cell code").innerText()).trim();
+  return await codeFor(p, name.split(",")[0].trim());
 };
 
 try {
@@ -47,7 +54,7 @@ try {
   ok("setup refuses a wrong admin password", (await S.locator("#bootMsg").innerText()).includes("Wrong password"), true);
   await S.fill("#bootPw", "local"); await S.getByRole("button", { name: "Create the secretary" }).click(); await S.waitForTimeout(900);
   ok("setup creates the secretary", [await S.locator("#app").isVisible(), await S.locator("#meRole").innerText()], [true, ", secretary, section lead"]);
-  const secCode = (await S.locator("#people tr.person", { hasText: "Sec Test" }).locator("td.code-cell code").innerText()).trim();
+  const secCode = await codeFor(S, "Sec Test");
   ok("the secretary's own code is in their row, with no banner", [/^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(secCode), await S.locator("#codeBox").count()], [true, 0]);
   const leadCode = await addOnRoster(S, "Lead Test", ["scouts"], true);
   const memberCode = await addOnRoster(S, "Member Test", ["scouts"], false);
@@ -58,12 +65,12 @@ try {
   ok("no secretary checkbox on the add form", await S.locator("#newSecretary").count(), 0);
   await S.fill("#newName", "Bulk One, Bulk Two"); await S.locator("#addCard").getByRole("button", { name: "Add", exact: true }).click(); await S.waitForTimeout(1200);
   ok("several names at once, comma separated", (await names(S)).slice(-2), ["Bulk One", "Bulk Two"]);
-  ok("both got codes", await S.locator("#people tr.person td.code-cell code").count(), 6);
+  ok("both got a link of their own", await S.locator("#people tr.person td.code-cell .link").count(), 6);
   for (const n of ["Bulk One", "Bulk Two"]) { await S.locator("#people tr.person", { hasText: n }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(150); await S.locator("#people tr.editor button:has-text('Remove from roster')").click(); await S.waitForTimeout(700); }
   await S.locator("#newSecs input[data-key=beavers]").uncheck();
   ok("bulk rows removed again", (await names(S)).length, 4);
-  ok("secretary sees a code for everyone", await S.locator("#people tr.person td.code-cell code").count(), 4);
-  ok("the lead's shown code is the one issued", (await S.locator("#people tr.person", { hasText: "Lead Test" }).locator("td.code-cell code").innerText()).trim(), leadCode);
+  ok("secretary sees a link for everyone", await S.locator("#people tr.person td.code-cell .link").count(), 4);
+  ok("the lead's shown link carries the code that was issued", await codeFor(S, "Lead Test"), leadCode);
   ok("section pills rendered, one per section held (the secretary has none)", await S.locator("#people .spill").count(), 3);
   ok("no editor open until Edit is tapped", await S.locator("#people tr.editor").count(), 0);
   await S.screenshot({ path: ".e2e/roster-390.png", fullPage: true });
@@ -83,8 +90,9 @@ try {
   ok("no roster controls on the rota page", await L.locator("#newName, #addForm, button:has-text('New code')").count(), 0);
   ok("first slot offers Scouts people only", (await L.locator(".slot").first().locator(".who label").allInnerTexts()).map((t) => t.trim()), ["Lead Test (you)", "Member Test"]);
   await L.locator(".slot").first().locator(".who label", { hasText: "(you)" }).locator("input").check(); await L.waitForTimeout(500);
-  await L.locator(".slot").first().locator(".need input").fill("3"); await L.locator(".slot").first().locator(".need input").press("Enter"); await L.waitForTimeout(500);
-  ok("lead ticks self and raises the slot to 3", await status(L, 0), "1 OF 3");
+  ok("lead ticks self", await status(L, 0), "1 OF 2");
+  // What a night needs is set with the night now, not here.
+  ok("no numbers to set on the rota page at all", await L.locator(".slot .need input, #req").count(), 0);
   // Ticks on a phone with one bar: the count follows the tap, not the reply,
   // and a reply landing late cannot put an older picture back on screen.
   await L.route("**/functions/rota?a=slot", async (r) => { await new Promise((x) => setTimeout(x, 700)); await r.continue(); });
@@ -103,21 +111,23 @@ try {
   ok("member signs in (code case-insensitive)", [await M.locator("#app").isVisible(), await M.locator("#meRole").innerText()], [true, ""]);
   ok("member sees only their own section's chip", (await M.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()), ["Scouts"]);
   await pickSec(M, "Scouts");
-  ok("member sees the lead's tick", await status(M, 0), "1 OF 3");
+  ok("a helper lands on what is still short", (await M.locator("#tabs button.on").innerText()).split("\n")[0], "Gaps");
+  await openTab(M, "Every night");
+  ok("member sees the lead's tick", await status(M, 0), "1 OF 2");
   ok("member cannot tick the lead", await M.locator(".slot").first().locator(".who label", { hasText: "Lead Test" }).locator("input").isDisabled(), true);
   ok("member sees only people sharing a section", (await M.locator(".slot").first().locator(".who label").allInnerTexts()).map((t) => t.trim()), ["Lead Test", "Member Test (you)"]);
-  ok("member has no needed control and a disabled default", [await M.locator(".slot").first().locator(".need input").count(), await M.locator("#req").isDisabled()], [0, true]);
+  ok("a helper gets one button rather than the whole list", [await M.locator(".slot").first().locator(".need input").count(), await M.locator(".slot").first().getByRole("button", { name: /I can do this night|Take me off/ }).count()], [0, 1]);
   ok("member's roster card is just their sections", (await M.locator("#peopleNote").innerText()).startsWith("Your sections: Scouts"), true);
   await M.locator(".slot").first().locator(".who label", { hasText: "(you)" }).locator("input").check(); await M.waitForTimeout(500);
-  ok("member ticks self", await status(M, 0), "2 OF 3");
+  ok("member ticks self, and the night is covered", await status(M, 0), "COVERED");
   await M.screenshot({ path: ".e2e/rota-member-390.png", fullPage: true });
 
   await L.reload({ waitUntil: "load" }); await L.waitForTimeout(700); await pickSec(L, "Scouts");
-  ok("lead sees the member's tick after reload", await status(L, 0), "2 OF 3");
+  ok("lead sees the member's tick after reload", await status(L, 0), "COVERED");
   await S.locator("#people tr.person", { hasText: "Member Test" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(200);
   ok("Edit opens one editor row", await S.locator("#people tr.editor").count(), 1);
-  await S.locator("#people tr.editor button:has-text('New code')").click(); await S.waitForTimeout(800);
-  const newCode = (await S.locator("#people tr.person", { hasText: "Member Test" }).locator("td.code-cell code").innerText()).trim();
+  await S.locator("#people tr.editor button:has-text('New link')").click(); await S.waitForTimeout(800);
+  const newCode = await codeFor(S, "Member Test");
   ok("secretary issues a new code and the row shows it", /^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(newCode) && newCode !== memberCode, true);
   await S.locator("#people tr.person", { hasText: "Beaver Helper" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(200);
   await S.locator("#people tr.editor button:has-text('Remove from roster')").click(); await S.waitForTimeout(800);
@@ -127,7 +137,7 @@ try {
   await M.reload({ waitUntil: "load" }); await M.waitForTimeout(800);
   ok("removed member is signed out on reload", [await M.locator("#gate").isVisible(), (await M.locator("#gateMsg").innerText()).includes("removed")], [true, true]);
   await L.reload({ waitUntil: "load" }); await L.waitForTimeout(700); await pickSec(L, "Scouts");
-  ok("and their tick is gone for the lead", await status(L, 0), "1 OF 3");
+  ok("and their tick is gone for the lead", await status(L, 0), "1 OF 2");
 
   const S2 = await page(1280, 900); await go(S2, "rota.html"); await S2.fill("#code", secCode); await signInBtn(S2).click(); await S2.waitForTimeout(900);
   ok("secretary on the rota page gets a Roster pill", await S2.locator("#leaderNav").getByRole("link", { name: "Roster" }).isVisible(), true);
@@ -248,6 +258,56 @@ try {
   await L2.locator("table.board tr.youth").first().locator("td.nm button:has-text('Edit')").click(); await L2.waitForTimeout(200);
   await L2.locator("tr.editor button:has-text('Remove from board')").click(); await L2.waitForTimeout(900);
   ok("removing keeps the other Scout's number", await L2.locator("table.board tr.youth td.nm small").allInnerTexts(), ["Scout 2 on the public board"]);
+
+  // ---- the term's nights, and a night that fills up ----
+  step = "the term's nights";
+  await go(L2, "events.html"); await L2.waitForTimeout(800); await pickSec(L2, "Scouts");
+  ok("the meetings card offers the term, worked out from the section's night", await L2.locator("#meetList .entry").count(), 12);
+  ok("and says it is not saved yet", (await L2.locator("#meetNote").innerText()).includes("Save them to take the list over"), true);
+  await L2.locator("#meetList .entry").nth(1).getByRole("button", { name: "Edit" }).click(); await L2.waitForTimeout(200);
+  await L2.locator("#meetList .entry.open input[type=checkbox]").check();
+  await L2.locator("#meetList .entry.open input[type=number]").fill("1");
+  await L2.locator("#meetList .entry").first().getByRole("button", { name: "Edit" }).click(); await L2.waitForTimeout(200);
+  await L2.locator("#meetList .entry.open input[type=text]").first().fill("Night hike");
+  await L2.getByRole("button", { name: "Save the nights" }).click(); await L2.waitForTimeout(1200);
+  ok("saving takes the list over", (await L2.locator("#meetMsg").innerText()).includes("12 nights saved"), true);
+  await go(L2, "rota.html"); await L2.waitForTimeout(800); await pickSec(L2, "Scouts");
+  const slotFor = (p, text) => p.locator(".slot", { hasText: text }).first();
+  ok("the rota shows the renamed night", await slotFor(L2, "Night hike").count(), 1);
+  ok("and the one called off, greyed out rather than gone", await L2.locator(".slot", { hasText: "No meeting" }).count(), 1);
+
+  step = "first come, first served";
+  // Lead Test is the secretary by now, and L2 is the context signed in as them.
+  await go(L2, "roster.html"); await L2.waitForTimeout(700);
+  const spare = await addOnRoster(L2, "Spare Helper", ["scouts"], false);
+  const HP = await page(390, 844); await go(HP, "rota.html"); await HP.fill("#code", spare); await signInBtn(HP).click(); await HP.waitForTimeout(900);
+  await pickSec(HP, "Scouts");
+  ok("a helper is told what they can take", (await HP.locator("#callout").innerText()).includes("You can take"), true);
+  await HP.locator("#gaps .gap.open").first().getByRole("button", { name: "I can do it" }).click(); await HP.waitForTimeout(900);
+  ok("and takes it from the gaps list", (await HP.locator("#tallyMine").innerText()), "1");
+  await openTab(HP, "My nights");
+  ok("which is then on their own list", await HP.locator("#mines .slot").count(), 1);
+  await HP.screenshot({ path: ".e2e/rota-helper-390.png", fullPage: true });
+
+  step = "a personal link";
+  const P = await page(390, 844);
+  await P.goto(H_URL + "rota.html?c=" + encodeURIComponent(spare), { waitUntil: "load" }); await P.waitForTimeout(1200);
+  ok("a link signs the phone in with nothing typed", [await P.locator("#app").isVisible(), await P.locator("#meName").innerText()], [true, "Spare Helper"]);
+  ok("and the code is taken back out of the address bar", P.url().includes("c="), false);
+
+  step = "the link for chasing";
+  const N = await page(390, 844);
+  await N.goto(H_URL + "needed.html?section=scouts", { waitUntil: "load" }); await N.waitForTimeout(1200);
+  ok("the chasing link needs no sign-in and shows what is short", [await N.locator("#gate").count(), await N.locator("#list .gap").count() > 0], [0, true]);
+  ok("and carries no names at all", (await N.locator("body").innerText()).includes("Spare Helper"), false);
+  await N.screenshot({ path: ".e2e/needed-390.png", fullPage: true });
+
+  step = "who is down for what";
+  await go(L2, "roster.html"); await L2.waitForTimeout(900);
+  ok("the secretary sees how much each person has taken on", await L2.locator("#loadTable tr.person").count() >= 4, true);
+  ok("and who is down for nothing is marked", await L2.locator("#loadTable tr.person.zero").count() > 0, true);
+  ok("the message that goes with a link is theirs to word", (await L2.locator("#msgPreview").innerText()).includes("Hi Mary"), true);
+  await L2.screenshot({ path: ".e2e/roster-1280.png", fullPage: true });
 
   // ---- attendance: the helper takes it at the door, the secretary sees it ----
   await go(Hh, "attendance.html"); await Hh.waitForTimeout(700);

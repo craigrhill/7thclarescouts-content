@@ -39,9 +39,30 @@ input[type=text],input[type=password]{flex:1;min-width:10rem;font:inherit;paddin
 .btn{font:inherit;font-weight:600;border:0;border-radius:999px;padding:.55em 1.1em;background:var(--sea-100);color:var(--sea-700);cursor:pointer}
 .btn.primary{background:var(--sea-700);color:#fff}
 .btn.quiet{background:none;color:var(--stone-600);padding:.4em .6em}
+/* The rota in three tabs: what is short, everything, and your own nights. */
+.tabs{display:flex;gap:.3rem;margin:1rem 0 .9rem;border-bottom:2px solid var(--stone-100);max-width:100%;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{font:inherit;font-weight:600;font-size:.95rem;border:0;background:none;color:var(--stone-600);padding:.55em .9em;min-width:0;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;display:inline-flex;align-items:center;gap:.4rem;white-space:nowrap}
+.tabs button.on{color:var(--sea-700);border-bottom-color:var(--sea-700)}
+.tabs button:focus-visible{outline:2px solid var(--sea-500);outline-offset:-2px}
+.tally:empty{display:none}
+.tally{font-size:.72rem;font-weight:700;background:var(--stone-100);color:var(--stone-600);border-radius:999px;padding:.1em .5em;min-width:1.4em;text-align:center}
+.tabs button.on .tally{background:var(--sea-100);color:var(--sea-700)}
 .gaps{display:grid;gap:.4rem}
 .gap{display:flex;justify-content:space-between;gap:.6rem;padding:.5rem .7rem;border-radius:10px;background:#FBE9EC;color:#7A1F2E;font-weight:500}
 .gap.ok{background:#E9F1E4;color:#33532A}
+.gap.warn{background:var(--orange-soft);color:#7A4A00}
+/* A gap this person can take is marked, and carries the button to take it. */
+.gap.open{box-shadow:inset 3px 0 0 var(--sea-700)}
+.gap .btn.tiny{padding:.25em .7em;font-size:.8rem;white-space:nowrap;flex:none}
+.gap>span:first-child{flex:1 1 8rem}
+.slot.open{box-shadow:inset 3px 0 0 var(--sea-700);padding-left:.6rem;border-radius:8px}
+.slot.short{box-shadow:inset 3px 0 0 #B0306A;padding-left:.6rem;border-radius:8px}
+/* The night editor on the Events page. */
+.entry{display:grid;gap:.45rem;padding:.7rem 0;border-top:1px solid var(--stone-100)}
+.entry:first-child{border-top:0}
+.entry.open{background:var(--stone-50);border-radius:12px;padding:.75rem;margin:.35rem 0;border-top-color:transparent}
+.entry .row{gap:.5rem}
 .count{font-variant-numeric:tabular-nums;white-space:nowrap}
 .slot{border-top:1px solid var(--stone-100);padding:.8rem 0}
 .slot:first-of-type{border-top:0}
@@ -58,6 +79,8 @@ input[type=text],input[type=password]{flex:1;min-width:10rem;font:inherit;paddin
 .slot-foot{display:flex;flex-wrap:wrap;align-items:center;gap:.2rem 1rem;margin-top:.45rem;font-size:.85rem;color:var(--stone-600)}
 .need{display:inline-flex;align-items:center;gap:.45rem}
 .need input{width:3.4rem;padding:.25em .4em}
+/* Beside a name: the rule this person answers, where the group has one. */
+.tag{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--sea-100);color:var(--sea-700);padding:.1em .45em;border-radius:999px;margin-left:.35rem;white-space:nowrap}
 .custom{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--orange-dark);background:var(--orange-soft);padding:.15em .5em;border-radius:999px}
 div.person{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .8rem;padding:.6rem 0;border-top:1px solid var(--stone-100)}
 div.person:first-child{border-top:0}
@@ -159,3 +182,10 @@ table.roster tr.person.past td.nm{font-weight:500}
 .crow{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem;margin-top:.55rem}
 .crow .cname{flex:none}
 .crow .cacts{display:flex;gap:.4rem;flex-wrap:wrap}
+
+/* A link to hand out: long, so it wraps rather than pushing the page wide. */
+.link{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;background:var(--stone-100);border-radius:8px;padding:.25em .5em;word-break:break-all;display:inline-block}
+/* The message that goes with a link, as it will read. */
+.preview{white-space:pre-wrap;background:var(--stone-50);border:1px solid var(--stone-100);border-radius:12px;padding:.7rem .8rem;font:inherit;font-size:.9rem;margin:0}
+/* Somebody down for nothing at all: the one to ask next. */
+tr.person.zero td{background:#FBE9EC}

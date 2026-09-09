@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
 <title>Events: 7th Clare Scouts leaders</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -49,6 +50,20 @@
       <div id="countyList"></div>
     </div>
 
+    <div id="meetCard" class="card" hidden>
+      <div class="row" style="justify-content:space-between;align-items:baseline">
+        <h2 style="margin:0">Meeting nights</h2>
+        <label class="small">Adults needed <input type="number" min="1" max="9" id="meetReq" onchange="setRequired(this.value)"></label>
+      </div>
+      <p class="small muted" id="meetNote"></p>
+      <div id="meetList"></div>
+      <div class="row" style="margin-top:.8rem">
+        <button class="btn" onclick="addNight()">Add a night</button>
+        <span style="margin-left:auto"><button class="btn primary" id="meetSave" onclick="saveNights()">Save the nights</button></span>
+      </div>
+      <p class="msg" id="meetMsg"></p>
+    </div>
+
     <div id="addCard" class="card" hidden>
       <h2 id="addTitle"></h2>
       <div class="add">
@@ -70,6 +85,92 @@
 <script>
 const SK = "events-section";
 let C = null, D = null, editingEvent = null, showPast = false, syncNote = "";
+// The section's meeting nights, held here while they are being edited and
+// written in one go. A short list, and one write keeps the etag guard
+// meaningful: two leads editing together conflict and retry rather than
+// interleaving halves.
+let MEET = [], meetFor = null, meetOpen = new Set(), meetDirty = false;
+const DAYS = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+const isoDay = d => { const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 10); };
+const entriesFor = k => ((D.calendar && D.calendar.entries) || []).filter(e => e.section === k).sort((a, b) => a.date.localeCompare(b.date));
+// Until a section has saved a list, offer the term it would have had anyway:
+// the next twelve of its own night, carrying across anything already set
+// against those nights so the first save loses nothing.
+function seedNights(k){
+  const x = (C.settings.sections || []).find(s => s.key === k) || {};
+  const wd = DAYS[String(x.day || "").toLowerCase()];
+  if (wd === undefined) return [];
+  const slots = (D.sections[k] || {}).slots || {};
+  const out = [], d = new Date(); d.setHours(12, 0, 0, 0);
+  while (d.getDay() !== wd) d.setDate(d.getDate() + 1);
+  for (let i = 0; i < 12; i++) {
+    const date = isoDay(d), was = slots["m:" + date] || {};
+    out.push({ id: date, date, title: "", location: "", details: "", need: was.need ?? null, off: !!was.off, startTime: "", endTime: "" });
+    d.setDate(d.getDate() + 7);
+  }
+  return out;
+}
+function loadNights(k){
+  meetFor = k; meetOpen = new Set(); meetDirty = false;
+  const saved = entriesFor(k);
+  MEET = saved.length ? saved.map(e => ({ ...e, need: e.need ?? null })) : seedNights(k);
+}
+function renderMeetings(k){
+  const saved = entriesFor(k).length > 0;
+  const x = (C.settings.sections || []).find(s => s.key === k) || {};
+  $("meetReq").value = (D.sections[k] || {}).required ?? 2;
+  $("meetNote").textContent = saved
+    ? "The nights on the rota for " + sectionName(k) + ". Edit opens one up. Changing a date or a name keeps whoever is already down for it, and Called off leaves it on the rota greyed out rather than losing them."
+    : "These are the next twelve " + (x.day || "meeting") + "s, worked out from the section's meeting night. Save them to take the list over: after that a night can be moved, renamed, called off or given its own numbers.";
+  $("meetSave").textContent = meetDirty || !saved ? "Save the nights" : "Saved";
+  $("meetList").innerHTML = MEET.map((e, i) => meetOpen.has(i) ? `<div class="entry open">
+      <div class="row"><input type="date" value="${esc(e.date)}" oninput="setNight(${i},'date',this.value)" aria-label="Date"><input type="text" value="${esc(e.title || "")}" placeholder="${esc(sectionName(k))} meeting" oninput="setNight(${i},'title',this.value)" aria-label="What it is"><button class="btn quiet" title="Remove" onclick="removeNight(${i})">&#x2715;</button></div>
+      <div class="row"><input type="text" value="${esc(e.location || "")}" placeholder="Where, if not the usual" oninput="setNight(${i},'location',this.value)" aria-label="Place"><label class="small">from <input type="time" value="${esc(e.startTime || "")}" oninput="setNight(${i},'startTime',this.value)" aria-label="Starts"></label><label class="small">to <input type="time" value="${esc(e.endTime || "")}" oninput="setNight(${i},'endTime',this.value)" aria-label="Ends"></label></div>
+      <div class="row"><input type="text" value="${esc(e.details || "")}" placeholder="A line about it, shown on the rota" oninput="setNight(${i},'details',this.value)" aria-label="Description"></div>
+      <div class="row small muted"><label class="small">Adults <input type="number" min="1" max="9" value="${e.need ?? ""}" placeholder="${(D.sections[k] || {}).required ?? 2}" oninput="setNight(${i},'need',this.value)" aria-label="Adults needed"></label><span data-usual="${i}">${e.need == null ? "as usual" : "just this one"}</span><label class="small"><input type="checkbox" ${e.off ? "checked" : ""} onchange="setNight(${i},'off',this.checked)"> No meeting this week</label><span style="margin-left:auto"><button class="btn" onclick="openNight(${i})">Done</button></span></div>
+    </div>` : `<div class="entry"><div class="slot-head">
+      <div><span class="when">${esc(e.date ? fmt(e.date) : "No date")}</span> <span class="sub">${esc(e.title || sectionName(k) + " meeting")}${esc([e.location, e.startTime ? e.startTime + (e.endTime ? " to " + e.endTime : "") : ""].filter(Boolean).join(", ") ? ", " + [e.location, e.startTime ? e.startTime + (e.endTime ? " to " + e.endTime : "") : ""].filter(Boolean).join(", ") : "")}</span></div>
+      <span>${e.off ? `<span class="status off">Called off</span>` : ""}${e.need != null ? `<span class="custom">${e.need} adults</span>` : ""}<button class="btn quiet" onclick="openNight(${i})">Edit</button><button class="btn quiet" title="Remove" onclick="removeNight(${i})">&#x2715;</button></span>
+    </div>${e.details ? `<p class="small muted" style="margin:.2rem 0 0">${esc(e.details)}</p>` : ""}</div>`).join("")
+    || `<div class="empty">No nights yet. Add one, or set the section's meeting night in the admin editor and reload.</div>`;
+}
+function openNight(i){ meetOpen.has(i) ? meetOpen.delete(i) : meetOpen.add(i); renderMeetings(sec()); }
+function addNight(){
+  const d = new Date(); d.setDate(d.getDate() + 7);
+  MEET.push({ date: isoDay(d), title: "", location: "", details: "", need: null, off: false, startTime: "", endTime: "" });
+  meetDirty = true; meetOpen = new Set([MEET.length - 1]); renderMeetings(sec());
+}
+function removeNight(i){
+  if (!confirm("Take " + (MEET[i].title || fmt(MEET[i].date)) + " off the list? Anyone already down for it loses their place on it.")) return;
+  MEET.splice(i, 1); meetDirty = true; meetOpen = new Set(); renderMeetings(sec());
+}
+// An editor held in the page has to track input, not change: the box someone
+// is typing in has not reached the local copy when they click Save otherwise,
+// and its value is dropped silently.
+function setNight(i, field, v){
+  if (field === "need") v = v === "" ? null : Number(v);
+  MEET[i][field] = v; meetDirty = true;
+  // Redrawing the list on every keystroke would take the focus with it, so
+  // this one hint is changed in place.
+  const tag = document.querySelector(`[data-usual="${i}"]`);
+  if (tag) tag.textContent = MEET[i].need == null ? "as usual" : "just this one";
+  $("meetSave").textContent = "Save the nights"; $("meetMsg").textContent = "";
+}
+const saveNights = () => guarded(async () => {
+  const k = sec();
+  $("meetMsg").textContent = "";
+  const r = await api("POST", "?a=calendar", { section: k, entries: MEET });
+  D.calendar = r.calendar; meetDirty = false; meetOpen = new Set();
+  MEET = entriesFor(k).map(e => ({ ...e, need: e.need ?? null }));
+  $("meetMsg").textContent = MEET.length + " night" + (MEET.length === 1 ? "" : "s") + " saved.";
+  render();
+});
+const setRequired = (v) => guarded(async () => {
+  const k = sec();
+  const r = await api("POST", "?a=required", { section: k, required: Number(v) });
+  D.sections[k] = { ...D.sections[k], required: r.section.required };
+  render();
+});
 function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
 function allKeys(){ return C.settings.sections.map(x => x.key); }
 function sectionName(k){ return k === "all" ? "Whole group" : k === "county" ? "County" + (countyNews() ? " (" + countyNews() + ")" : "") : ((C.settings.sections.find(x => x.key === k) || {}).name || k); }
@@ -109,6 +210,11 @@ function render(){
   }
   $("countyCard").hidden = true; $("listCard").hidden = false;
   $("addCard").hidden = !can;
+  // The nights themselves, for a real section: not for the whole group, which
+  // has no meeting night of its own.
+  const showMeet = can && k !== "all" && k !== "county";
+  $("meetCard").hidden = !showMeet;
+  if (showMeet) { if (meetFor !== k) loadNights(k); renderMeetings(k); }
   $("addTitle").textContent = k === "all" ? "Add a whole-group event" : "Add a " + sectionName(k) + " event";
   const today = new Date().toISOString().slice(0, 10);
   const all = forChip(k), soon = all.filter(e => (e.endDate || e.date) >= today), past = all.filter(e => (e.endDate || e.date) < today);
@@ -131,7 +237,8 @@ function render(){
       <div class="row"><input type="text" id="edTitle" value="${esc(e.title)}"></div>
       <div class="row"><select id="edSection">${secs}</select><select id="edKit"><option value="">No kit list</option>${kits}</select></div>
       <div class="row"><input type="text" id="edLocation" placeholder="Where" value="${esc(e.location || "")}"></div>
-      <div class="row"><label class="small">Starts at <input type="time" id="edStart" value="${esc(e.startTime || "")}"></label><label class="small">Ends at <input type="time" id="edEnd2" value="${esc(e.endTime || "")}"></label><span class="small muted">${e.time ? `Was typed as "${esc(e.time)}"` : "Leave both empty for an all-day event."}</span><input type="hidden" id="edWas" value="${esc(e.time || "")}"></div>
+      <div class="row"><label class="small">Adults <input type="number" min="1" max="9" id="edNeed" value="${e.need ?? ""}" placeholder="${(D.sections[e.section] || {}).required ?? 2}"></label><span class="small muted">Blank asks for the section's usual number.</span></div>
+      <div class="row"><label class="small">Starts at <input type="time" id="edStart" value="${esc(e.startTime || "")}"></label><label class="small">Ends at <input type="time" id="edEnd2" value="${esc(e.endTime || "")}"></label><span class="small muted">${e.time ? `Was typed as "${esc(e.time)}"` : "Leave both empty for an all-day event."}</span><input type="hidden" id="edWas" value="${esc(e.time || "")}"><input type="hidden" id="edId" value="${esc(e.id || "")}"></div>
       <div class="row"><textarea id="edDetails" placeholder="Details for parents" style="min-height:4rem">${esc(e.details || "")}</textarea></div>
       <div class="row"><button class="btn primary" onclick="saveEvent('${esc(key)}',${e.priv})">Save</button><button class="btn quiet" onclick="removeEvent('${esc(key)}',${e.priv})">Remove</button><span class="small muted">${e.priv ? "Leaders only." : "On the public calendar."}</span></div>
     </div></td></tr>`;
@@ -180,7 +287,7 @@ const countySync = () => guarded(async () => {
 const countyDecide = (id, section, decision) => guarded(async () => { await api("POST", "?a=county-decide", { id, section, decision }); await afterEvents(); });
 
 function editEvent(key){ editingEvent = editingEvent === key ? null : key; render(); }
-function pickSection(k){ try { localStorage.setItem(SK, k); } catch {} editingEvent = null; syncNote = ""; render(); }
+function pickSection(k){ try { localStorage.setItem(SK, k); } catch {} editingEvent = null; syncNote = ""; meetFor = null; render(); }
 async function load(){ showErr(""); D = await api("GET", "?sections=" + allKeys().join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
 async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); } }
 // A public event changes the group content, so reload that as well as the rota data.
@@ -195,7 +302,7 @@ const addEvent = () => guarded(async () => {
 const saveEvent = (key, priv) => guarded(async () => {
   await api("POST", "?a=event-update", { key, private: priv, date: $("edDate").value, endDate: $("edEnd").value, title: $("edTitle").value,
     section: $("edSection").value, kitId: $("edKit").value, location: $("edLocation").value,
-    startTime: $("edStart").value, endTime: $("edEnd2").value,
+    startTime: $("edStart").value, endTime: $("edEnd2").value, need: $("edNeed").value, id: $("edId").value,
     // Free text from before there were real times: kept until a start time
     // replaces it, so editing anything else does not quietly lose it.
     time: $("edWas").value, details: $("edDetails").value });
@@ -210,6 +317,8 @@ onUnauthorized = signOut;
 async function boot(){
   C = await loadContent();
   await bridgeIfAdmin();
+  // A personal link, if this is one, before the token already on the phone.
+  if (await signInFromLink(load)) return;
   if (token) { try { await load(); return; } catch (e) { if (token) showErr(e.message); } }
   $("adminHint").hidden = !adminPw();
   $("gate").hidden = false;

@@ -103,12 +103,15 @@ warning fires correctly for leaders.
                         read by content.json. Delete a file to remove it.
     photo/<id>          uploaded pictures, served from the Blobs store by the
                         content function (see the gotcha below)
-    lab/rota.html       the rota: coverage per section (see below)
+    lab/rota.html       the rota: coverage per section, in three tabs (see below)
+    lab/needed.html     the link a lead sends when chasing: dates and how many
+                        are still needed, no sign-in and no names
     lab/events.html     calendar events: a lead for their sections, the secretary for all
     lab/roster.html     the secretary's roster: people, sections, codes
     lab/badges.html     the Adventure Skills badge board, names and all (see below)
     lab/attendance.html attendance per meeting, taken at the door (see below)
-    lab/rota-lib.js     sign-in, API calls and helpers shared by both
+    lab/rota-lib.js     sign-in (code or link), API calls and helpers shared
+                        by all of them
     lab/rota.css        styles shared by both
     photos/            images referenced from content, such as the badge
                        placement chart on the Full uniform kit list
@@ -133,8 +136,11 @@ Shared, private data behind a personal code. Nothing in it is published.
 
 Store keys: `secret` (HMAC key, generated on first use, never leaves the
 server), `roster` (people with `id`, `name`, `sections`, `lead`, `secretary`,
-`code`, `codeHash`), `section/<key>` (`required` and `slots`, each slot `who` as
-person ids, `off`, optional `need`), `events` (leaders-only calendar events),
+`qualified`, `code`, `codeHash`), `section/<key>` (`required`,
+`requiredQualified`, `requiredQualifiedEvents`, and `slots`, each slot holding
+only `who` as person ids), `calendar` (the term's meetings, per section, see
+below), `message` (the wording that goes out with a link), `admin-tries` (the
+guard in front of the password), `events` (leaders-only calendar events),
 `badges/<key>` (the section's badge board: `next`, `youth` with `id`, `n`,
 `name`, and `stages` keyed by youth id then skill), `attendance/<key>`
 (`meetings` keyed by ISO date: `present` youth ids, `note`, `by`, `at`).
@@ -185,8 +191,11 @@ Roles are flags on a person, and the function enforces them, not the pages:
   and the rota alike; a "leaders only" one is kept in the rota store and
   shows on the rota only.
 * **lead** runs coverage on `rota.html` for the sections on their own
-  roster entry: adults needed per section and per meeting, anyone's ticks,
-  weeks off. Leads see the roster there read-only. A tick changes the page
+  roster entry: anyone's ticks, and the section's own numbers. Leads see the
+  roster there read-only. **The rota page has no settings on it**: what a
+  night needs, and whether it is on at all, are set with the night itself,
+  under Meeting nights on `events.html`, and `?a=slot` refuses `need` and
+  `off` from anyone at all. A tick changes the page
   first and the save follows: requests go one at a time in the order they
   were made, and the section the function sends back is taken only when
   nothing else is waiting, so a reply that lands late cannot put an older
@@ -233,6 +242,75 @@ assigned at creation and never changed or reused, so a removal retires a
 number rather than shifting everyone else's. Skills are the fixed nine, in
 the order the public Adventure Skills page lists them; keys match between
 `rota.mjs`, `rota-lib.js` and `index.html`.
+
+### The term's nights, and the places on them
+
+A meeting used to be worked out from the section's weekday: the next eight,
+for ever. There was no way to say a night was off for half term, that one of
+them was somewhere else, or that this one wanted three adults. The nights are
+a list now, in the store under `calendar`, kept per section by its lead on
+`events.html` under **Meeting nights**, and written whole by `?a=calendar`
+(one section at a time, so a lead can only touch their own).
+
+    entries: [{ id, section, date, title, location, details,
+                need, needQualified, off, startTime, endTime }]
+
+**The ticks hang off the entry's id, not its date and name.** `m:<entryId>`,
+so moving or renaming a night keeps everyone already down for it. Events got
+the same treatment: `cleanEvent` gives one an id and the slot is `e:<id>`,
+with `?a=event-update` carrying the ticks across from the old
+`e:<date>:<title>` shape the first time an older event is edited, and
+`?a=event-remove` taking them away with it. County events take an id made from
+the county's own, so a sync never shuffles anyone off; the first sync after
+this carries the old ticks across once and records `movedSlots`. `isSlotId`
+still accepts both shapes. Until a section has saved a list, both the rota and
+the editor fall back to the weeks worked out from its weekday, and the editor
+seeds from those, **using each date as the entry id**, so the first save keeps
+every tick that is already there.
+
+**A night fills up and then closes.** A helper puts themselves on while there
+is a place; once there is not, `?a=slot` answers 409 and the button is gone.
+Two things stop that deadlocking, and both matter: while a night still wants
+somebody who answers the group's rule, that many places are **held**, so the
+last one cannot go to somebody who does not; and somebody who does can get on
+a night that is already full but has nobody. A lead and the secretary are held
+to none of it, which is what makes the rota the place to put right what self
+service has left. The rule is enforced inside the read-modify-write, so two
+people racing for the last place cannot both win, and mirrored in
+`placeForMe()` on the page purely so the button knows what to say.
+
+**The rule itself is Craig's to name, and is off until he does.** A person
+carries a `qualified` flag, a section carries `requiredQualified` (meetings)
+and `requiredQualifiedEvents`, and both default to 0, so nothing about this
+shows anywhere until a number is set. The wording comes from
+`settings.rota.qualifiedLabel` and `qualifiedShort` in `content.json`, so it
+can be Garda vetting, a first aider, or anything else without the store
+moving.
+
+**The rota is three tabs**, remembered in `localStorage` under `rota-tab`:
+Gaps (what is still short, each row offering itself to anyone who can take
+it), Every night (the whole list with the ticks), and My nights. A lead lands
+on Every night, because theirs is the ticking; anyone else on Gaps, because
+theirs is the taking. One `slotCard()` draws a night for both of the last two,
+so they cannot drift apart.
+
+**Nobody has to type a code.** A person's link is `lab/rota.html?c=XXXX-XXXX`,
+built by `codeLink()`; `signInFromLink()` spends it on the first load and
+`dropCodeFromUrl()` takes it out of the address bar with `history.replaceState`.
+A link beats the token already on the phone, so handing a phone round does the
+obvious thing. The roster shows each person's link with **Copy link** and
+**Copy message** beside it; the message is a template the secretary words
+herself with a live preview, kept under `message` and filled with `{name}`,
+`{link}`, `{from}` and `{section}`. Every `lab/` page carries
+`<meta name="referrer" content="no-referrer">`, or the Google Fonts request
+would carry the whole URL, code and all, in the Referer header.
+
+**Who is down for what** on the roster counts each person over the nights
+still to come that are going ahead, meetings and events apart, and marks
+anyone at nothing. **The link for chasing** is `lab/needed.html?section=<key>`,
+reading `?a=cover&section=<key>`, which takes no token and returns dates and
+counts: no names, no ids, and no leaders-only events. It is on the rota page
+for leads under "A link for chasing".
 
 ### Attendance
 
@@ -406,6 +484,15 @@ link in the footer.
   list admin has already offered, so a list a leader deleted on purpose is not
   auto-added back on the next load. Admin writes it on every save. Do not hand
   edit it to force a list back; delete the id instead.
+* **The admin password is throttled.** Both functions count wrong tries in
+  their own store under `admin-tries`: fifteen goes, then it shuts for five
+  minutes, then fifteen, then an hour. A correct password wipes the count. On
+  the rota function the gate covers `?a=admin-login` and `?a=bootstrap` alike.
+  **A deploy clears it**, which is the way back in if Craig ever locks himself
+  out: the guard records the deploy that was live when it was last written
+  (`DEPLOY_ID`, falling back to `COMMIT_REF`) and a newer one starts again.
+  With neither set, under the preview and the harnesses, the count persists.
+  The password is trimmed at both ends before it is compared.
 * **This repo is public and so is the site.** Reverting a commit does not
   unpublish anything already fetched, cached or indexed. Treat names, contact
   details and photos of young people as one-way, and confirm with Craig before
@@ -415,6 +502,7 @@ link in the footer.
 ## Content shape
 
     { settings: { heroTitle, heroLede, about, venue, email, phone,
+                  rota: { qualifiedLabel?, qualifiedShort? },
                   social: [{name, url}],
                   logoUrl?, aboutPhotoUrl?, joinPhotoUrl?,
                   venues: [{name, query, link}],
@@ -426,8 +514,9 @@ link in the footer.
                      campaigns: [{title, blurb, goal, raised, link, linkLabel}],
                      help, sponsors: [{name, url, logoUrl}] },
       notices: [{title, body}],
-      events: [{date, endDate?, title, section, location?,
-                startTime?, endTime?, time?, kitId?, details}],
+      events: [{id?, date, endDate?, title, section, location?,
+                startTime?, endTime?, time?, need?, needQualified?,
+                kitId?, details}],
       news: [{date, title, body}],
       gallery: [{url, thumb?, caption?, section?, album?, w?, h?}],
       kits: [{id, title, event, summary, imageUrl?, imageCaption?,

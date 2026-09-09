@@ -14,13 +14,21 @@
 //
 // Keys in the store:
 //   secret          HMAC key, generated on first use, never leaves the server
+//   message         { text }  the wording the secretary sends with a link
 //   admin-tries     wrong tries at the admin password, when it reopens, how
 //                   many times it has shut, and the deploy that was live at
 //                   the time: a newer one starts the count again
 //   roster          { people: [{ id, name, sections, lead, secretary, code, codeHash }] }
 //                   The code itself is kept so the secretary can see it again;
 //                   the store is private, and GET returns codes to secretaries only.
-//   section/<key>   { required, slots: { <slotId>: { who: [personId], off, need } } }
+//   section/<key>   { required, slots: { <slotId>: { who: [personId] } } }
+//                   Only who is down for a night lives here. What it needs,
+//                   and whether it is on at all, are on the night itself.
+//   calendar        { entries: [{ id, section, date, title, location, details,
+//                                 need, off, startTime, endTime }] }
+//                   The term's meetings, kept per section by its lead. While a
+//                   section has none, the pages fall back to the eight weeks
+//                   worked out from its weekday.
 //
 // Every write is read-modify-write guarded by the document's etag, retried on
 // a conflict, so two people editing at once cannot overwrite each other.
@@ -31,18 +39,26 @@
 //   POST   ?a=bootstrap  x-admin-password  {name}   { person, code }   first secretary
 //   POST   ?a=login                        {code}   { token, me }
 //   POST   ?a=admin-login  x-admin-password          { token, me }   as the secretary
-//   POST   ?a=slot     {section,id,add?,remove?,off?,need?}   { section }
-//   POST   ?a=required {section,required}                     { section }   lead
-//   POST   ?a=person   {name,sections,lead,secretary}         { person, code }   secretary
+//   POST   ?a=slot     {section,id,add?,remove?}             { section }
+//   POST   ?a=required {section,required?,requiredQualified?,requiredQualifiedEvents?}
+//                                                            { section }   lead
+//   POST   ?a=calendar {section,entries}                      { calendar }  lead of it
+//   POST   ?a=person   {name,sections,lead,secretary,qualified}  { person, code }   secretary
 //   POST   ?a=person-update {id,name?,sections?,lead?,secretary?}  { person }   secretary
 //   POST   ?a=person-remove {id,sections}                     { people }   secretary
 //   POST   ?a=recode   {id}                                   { code }   secretary
+//   POST   ?a=message  {text}                                 { message }   secretary
+//                        The wording that goes out with a link. Blank puts the
+//                        standard one back. Only the secretary's GET carries it.
 //   POST   ?a=event        {date,title,section?,...,private?}  { events }   secretary, or a lead for their section
 //   POST   ?a=event-update {key,...}                           { events }   secretary, or a lead for their section
 //   POST   ?a=event-remove {key,private?}                      { events }   secretary, or a lead for their section
 //   POST   ?a=county-sync                        { added, changed, gone, followed, repaired }   lead
 //   POST   ?a=county-decide {id,section,decision}  { status }   lead of that section
 //   GET    ?a=board&section=k     (no auth)     { section, updatedAt, rows: [{n, stages}] }
+//   GET    ?a=cover&section=k     (no auth)     { required, nights: [{date, title, on, ...}] }
+//                        Dates and counts for the chasing link. No names, no
+//                        ids, and no leaders-only events.
 //   GET    ?a=badges&sections=a,b               { me, boards, canEdit }
 //   POST   ?a=badge-add    {section,name}                      { board }   lead of it
 //   POST   ?a=badge-rename {section,id,name}                   { board }   lead of it
@@ -245,6 +261,10 @@ function fromCounty(ce, section) {
   const bits = [ce.description, ce.host ? "Hosted by " + ce.host : "", ce.link].filter(Boolean);
   if (bits.length) e.details = bits.join("\n\n").trim().slice(0, 2000);
   e.countyId = ce.id;
+  // Made from the county's own id, so it is the same after every sync: an
+  // event rebuilt on Thursday is the same night as the one people put
+  // themselves down for on Tuesday.
+  e.id = ("c" + String(ce.id).replace(/[^A-Za-z0-9._-]/g, "") + (section ? "-" + section : "")).slice(0, 40);
   return e;
 }
 // Whether the calendar's entries for one county event match what the
@@ -319,6 +339,11 @@ function readToken(sec, token) {
 const rosterFallback = () => ({ people: [] });
 const eventsFallback = () => ({ events: [] });
 const eventKey = (e) => e.date + "|" + e.title;
+// Where an event's ticks hang. On its own id where it has one, and on the old
+// date-and-name shape where it does not, which is everything saved before ids
+// existed. The page works the same out, so the two agree.
+const slotIdOf = (e) => "e:" + (isEntryId(e.id) ? e.id : e.date + ":" + e.title);
+const oldSlotIdOf = (e) => "e:" + e.date + ":" + e.title;
 const sameEvent = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 const isDate = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v + "T12:00:00Z"));
 const oneLine = (v, n) => String(v ?? "").trim().replace(/\s+/g, " ").slice(0, n);
@@ -328,6 +353,10 @@ function cleanEvent(b, sectionKeys, kitIds) {
   const title = oneLine(b.title, 120);
   if (!title) return { error: "A title is needed." };
   const e = { date: b.date, title };
+  // A stable id, so the ticks hang off the event rather than off its date and
+  // name. Anything already saved has none; it gets one the first time it is
+  // edited here, and its ticks are carried across with it.
+  e.id = isEntryId(b.id) ? b.id : newEntryId();
   if (b.endDate) {
     if (!isDate(b.endDate)) return { error: "That end date is not a date." };
     if (b.endDate < b.date) return { error: "The end date is before the start date." };
@@ -346,6 +375,10 @@ function cleanEvent(b, sectionKeys, kitIds) {
     e.endTime = b.endTime;
   }
   const time = oneLine(b.time, 60); if (time && !e.startTime) e.time = time;
+  const need = optNum(b.need);
+  if (need !== null) { if (!(need >= 1 && need <= 9)) return { error: "Adults needed must be 1 to 9." }; e.need = need; }
+  const needQ = optNum(b.needQualified);
+  if (needQ !== null) { if (!(needQ >= 0 && needQ <= 9)) return { error: "That number must be 0 to 9." }; e.needQualified = needQ; }
   const kitId = oneLine(b.kitId, 32);
   if (kitId) { if (!kitIds.includes(kitId)) return { error: "Unknown kit list." }; e.kitId = kitId; }
   const details = String(b.details ?? "").trim().slice(0, 2000); if (details) e.details = details;
@@ -373,6 +406,72 @@ export function readTimes(text) {
 
 const sectionFallback = () => ({ required: 2, slots: {} });
 
+// ---- the meeting calendar ----
+// A meeting used to be worked out from the section's weekday: the next eight,
+// for ever, with no way to say a night is off for half term, or that one of
+// them is somewhere else, or that this one needs three adults. It is a list
+// now, kept per section by its lead. The ticks hang off an entry's id rather
+// than its date and name, so moving or renaming a night keeps everyone already
+// down for it. A seeded entry carries its date as its id, so the ids the
+// derived weeks produced still match and nothing is lost on the first save.
+const calendarFallback = () => ({ entries: [] });
+// The message that goes out with somebody's link, as the secretary words it.
+// Blank means the standard wording, which lives on the page.
+const messageFallback = () => ({ text: "" });
+const isEntryId = (x) => typeof x === "string" && /^[A-Za-z0-9._-]{1,40}$/.test(x);
+const newEntryId = () => randomBytes(4).toString("hex");
+const MAX_ENTRIES = 250;
+function cleanEntry(x, sectionKey) {
+  if (!x || !isDate(x.date)) return { error: "Every night needs a date." };
+  const e = { id: isEntryId(x.id) ? x.id : newEntryId(), section: sectionKey, date: x.date };
+  const title = oneLine(x.title, 120); if (title) e.title = title;
+  const location = oneLine(x.location, 120); if (location) e.location = location;
+  const details = String(x.details ?? "").trim().slice(0, 2000); if (details) e.details = details;
+  const need = optNum(x.need);
+  if (need !== null) { if (!(need >= 1 && need <= 9)) return { error: "Adults needed must be 1 to 9." }; e.need = need; }
+  const needQ = optNum(x.needQualified);
+  if (needQ !== null) { if (!(needQ >= 0 && needQ <= 9)) return { error: "That number must be 0 to 9." }; e.needQualified = needQ; }
+  if (x.startTime) { if (!isTime(x.startTime)) return { error: "That start time is not a time." }; e.startTime = x.startTime; }
+  if (x.endTime) {
+    if (!isTime(x.endTime)) return { error: "That end time is not a time." };
+    if (!e.startTime) return { error: "An end time needs a start time." };
+    if (x.endTime <= e.startTime) return { error: "The end time is not after the start time." };
+    e.endTime = x.endTime;
+  }
+  if (x.off) e.off = true;
+  return { entry: e };
+}
+// Blank is not nought. Number(null) and Number("") are both 0, so an empty box
+// would read as "needs nobody" rather than "as the section does".
+function optNum(v) {
+  if (v === undefined || v === null || v === "") return null;
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? n : NaN;
+}
+const byDate = (a, b) => a.date.localeCompare(b.date) || String(a.title || "").localeCompare(String(b.title || ""));
+
+// Move who is down for a night from one slot id to another, in one section.
+// Used where an id changes: nobody should lose their place because a name was
+// fixed or the county shifted an event by a week.
+async function moveSlot(store, k, from, to) {
+  if (from === to) return;
+  await update(store, "section/" + k, sectionFallback, (d) => {
+    const s = d.slots[from];
+    if (!s || !(s.who || []).length) { if (s) { delete d.slots[from]; return d; } return false; }
+    const dest = d.slots[to] = d.slots[to] || { who: [], off: false };
+    dest.who = [...new Set([...dest.who, ...s.who])];
+    delete d.slots[from];
+    return d;
+  });
+}
+// And take one away entirely, which is what removing a night means.
+async function dropSlot(store, k, id) {
+  await update(store, "section/" + k, sectionFallback, (d) => {
+    if (!d.slots[id]) return false;
+    delete d.slots[id]; return d;
+  });
+}
+
 // Coverage, like the boards, is per section: a person sees and ticks the
 // sections on their own roster entry; the secretary sees all of them.
 const canSeeSection = (me, canManage, k) => canManage || (me.sections || []).includes(k);
@@ -388,9 +487,13 @@ const boardFor = (doc) => ({ next: doc.next, youth: byNumber(doc.youth), stages:
 // What the public site gets: numbers and stages, nothing that names anyone.
 const attendanceFallback = () => ({ meetings: {} });
 const publicBoard = (k, doc) => ({ section: k, updatedAt: doc.updatedAt || null, rows: byNumber(doc.youth).map((y) => ({ n: y.n, stages: doc.stages[y.id] || {} })) });
-const pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, ...(withCode ? { code: p.code || null } : {}) });
+const pub = (p, withCode) => ({ id: p.id, name: p.name, sections: p.sections || [], lead: !!p.lead, secretary: !!p.secretary, qualified: !!p.qualified, ...(withCode ? { code: p.code || null } : {}) });
 const isKey = (k) => typeof k === "string" && /^[a-z0-9-]{1,32}$/.test(k);
-const isSlotId = (s) => typeof s === "string" && /^[me]:\d{4}-\d{2}-\d{2}(:.{1,140})?$/.test(s);
+// A slot id is the kind, then the id of the night it belongs to: "m:<entryId>"
+// for a meeting, "e:<eventId>" for an event. The older shapes, "m:<date>" and
+// "e:<date>:<title>", still pass: a date is a valid id, and nobody's ticks
+// should stop working because the shape was widened.
+const isSlotId = (s) => typeof s === "string" && /^[me]:[A-Za-z0-9._-]{1,60}(:.{1,140})?$/.test(s);
 const cleanName = (n) => String(n || "").trim().replace(/\s+/g, " ").slice(0, 60);
 const cleanSections = (a) => Array.isArray(a) ? [...new Set(a.filter(isKey))] : [];
 async function body(req) { try { const b = await req.json(); return b && typeof b === "object" ? b : null; } catch { return null; } }
@@ -445,6 +548,45 @@ export function createHandler(storeFactory) {
         return json(200, publicBoard(k, doc));
       }
 
+      // What a section still needs, for the link a lead sends round when they
+      // are chasing helpers. No token, and nothing personal in it: dates and
+      // counts, never a name or an id. Leaders-only events are left out
+      // entirely; only what is already on the parents' calendar appears.
+      if (req.method === "GET" && a === "cover") {
+        const k = url.searchParams.get("section") || "";
+        if (!isKey(k)) return fail(400, "Bad section.");
+        const today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+        const t = today.toISOString().slice(0, 10);
+        const { doc: sect } = await readDoc(store, "section/" + k, sectionFallback);
+        const { doc: cal } = await readDoc(store, "calendar", calendarFallback);
+        const { doc: roster2 } = await readDoc(store, "roster", rosterFallback);
+        const qual = new Set(roster2.people.filter((p) => p.qualified).map((p) => p.id));
+        let content = null;
+        try { content = (await readContent(storeFactory)).doc; } catch {}
+        const count = (id) => {
+          const who = ((sect.slots || {})[id] || {}).who || [];
+          return { on: who.length, qualified: who.filter((x) => qual.has(x)).length };
+        };
+        const nights = [];
+        for (const e of (cal.entries || [])) {
+          if (e.section !== k || e.date < t) continue;
+          nights.push({ kind: "m", date: e.date, title: e.title || "", location: e.location || "", details: e.details || "",
+            startTime: e.startTime || "", endTime: e.endTime || "", off: !!e.off,
+            need: e.need > 0 ? e.need : null, needQualified: Number.isFinite(e.needQualified) ? e.needQualified : null, ...count("m:" + e.id) });
+        }
+        for (const e of ((content && content.events) || [])) {
+          if ((e.endDate || e.date) < t) continue;
+          if (e.section && e.section !== k) continue;
+          nights.push({ kind: "e", date: e.date, endDate: e.endDate || "", title: e.title || "", location: e.location || "",
+            details: e.details || "", startTime: e.startTime || "", endTime: e.endTime || "", off: false,
+            need: e.need > 0 ? e.need : null, needQualified: Number.isFinite(e.needQualified) ? e.needQualified : null,
+            ...count("e:" + (isEntryId(e.id) ? e.id : e.date + ":" + e.title)) });
+        }
+        nights.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
+        return json(200, { section: k, required: sect.required, requiredQualified: sect.requiredQualified || 0,
+          requiredQualifiedEvents: sect.requiredQualifiedEvents || 0, updatedAt: sect.updatedAt || null, nights });
+      }
+
       // Everything else needs a valid token for a person still on the roster.
       const t = readToken(sec, req.headers.get("x-rota-token"));
       if (!t) return fail(401, "Please sign in.");
@@ -485,6 +627,8 @@ export function createHandler(storeFactory) {
         const mine = new Set(me.sections || []);
         const visible = (me.lead || canManage) ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
         const { doc: ev } = await readDoc(store, "events", eventsFallback);
+        const { doc: cal } = await readDoc(store, "calendar", calendarFallback);
+        const msg = canManage ? (await readDoc(store, "message", messageFallback)).doc.text || "" : undefined;
         const { doc: cd } = await readDoc(store, "county", countyFallback);
         const ourSections = new Set(wanted);
         const allKeys = [...ourSections];
@@ -499,7 +643,11 @@ export function createHandler(storeFactory) {
             return { id, changed: !!it.changed, gone: !!it.gone, event: it.event, targets, rows };
           })
           .filter((x) => x.rows.length);
-        return json(200, { me: pub(me, canManage), people: visible.map((p) => pub(p, canManage)), sections, events: ev.events || [], county, countySyncedAt: cd.syncedAt || null });
+        return json(200, { me: pub(me, canManage), people: visible.map((p) => pub(p, canManage)), sections,
+          events: ev.events || [],
+          // The nights themselves, for the sections this person may see.
+          calendar: { entries: (cal.entries || []).filter((e) => keys.includes(e.section)), updatedAt: cal.updatedAt || null },
+          county, countySyncedAt: cd.syncedAt || null, ...(msg === undefined ? {} : { message: msg }) });
       }
       if (req.method !== "POST") return fail(405, "Method not allowed.");
       if (a === "county-sync") {
@@ -551,6 +699,14 @@ export function createHandler(storeFactory) {
           keep.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
           return { events: keep };
         });
+        // County events used to hang their ticks off the date and the name, so
+        // the county moving one lost everyone on it. They have an id of their
+        // own now, made from the county's, which no sync changes. Carry the old
+        // ticks across once, the first sync after that came in.
+        if (!doc.movedSlots) {
+          for (const list of want.values()) for (const e of list) await moveSlot(store, e.section || ourSections[0], oldSlotIdOf(e), slotIdOf(e));
+          await update(store, "county", countyFallback, (d) => { d.movedSlots = true; return d; });
+        }
         // The calendar now matches the county, so an approved item no longer
         // needs its "changed" flag; a pending one keeps it for the lead to see.
         if (following.length) await update(store, "county", countyFallback, (d) => { for (const [id] of following) if (d.items[id]) delete d.items[id].changed; return d; });
@@ -559,6 +715,40 @@ export function createHandler(storeFactory) {
 
       const b = await body(req);
       if (!b) return fail(400, "Body must be JSON.");
+
+      // The term's nights, written whole for one section at a time. Whole,
+      // because it is a short list the page holds while it is being edited and
+      // one write keeps the etag guard meaningful: two leads editing together
+      // conflict and retry rather than interleaving halves. One section at a
+      // time, because a lead may only touch their own.
+      if (a === "calendar") {
+        const k = b.section;
+        if (!isKey(k)) return fail(400, "Bad section.");
+        if (!canSeeSection(me, canManage, k)) return fail(403, "That section is not on your roster entry.");
+        if (!canManage && !me.lead) return fail(403, "Only a section lead can change the nights.");
+        if (!Array.isArray(b.entries)) return fail(400, "Send the whole list of nights.");
+        if (b.entries.length > MAX_ENTRIES) return fail(400, "That is more nights than a term needs.");
+        const seen = new Set(), list = [];
+        for (const x of b.entries) {
+          const { entry, error } = cleanEntry(x, k);
+          if (error) return fail(400, error);
+          if (seen.has(entry.id)) entry.id = newEntryId();
+          seen.add(entry.id); list.push(entry);
+        }
+        // A night taken off the list takes its ticks with it, or they would sit
+        // there invisibly and come back if the id ever did.
+        const { doc: before } = await readDoc(store, "calendar", calendarFallback);
+        const gone = (before.entries || []).filter((e) => e.section === k && !seen.has(e.id));
+        const doc = await update(store, "calendar", calendarFallback, (d) => {
+          d.entries = [...(d.entries || []).filter((e) => e.section !== k), ...list].sort(byDate);
+          return d;
+        });
+        for (const e of gone) await dropSlot(store, k, "m:" + e.id);
+        // Back come the nights for the sections this person may see, which is
+        // all of them for the secretary and their own for a lead.
+        const mine = canManage ? null : new Set(me.sections || []);
+        return json(200, { calendar: { entries: (doc.entries || []).filter((e) => !mine || mine.has(e.section)), updatedAt: doc.updatedAt || null } });
+      }
 
       if (a === "badge-add" || a === "badge-rename" || a === "badge-remove" || a === "badge-stage") {
         const k = b.section;
@@ -613,17 +803,60 @@ export function createHandler(storeFactory) {
         const known = new Set(roster.doc.people.map((p) => p.id));
         const add = Array.isArray(b.add) ? b.add : [], remove = Array.isArray(b.remove) ? b.remove : [];
         if ([...add, ...remove].some((id) => !known.has(id))) return fail(400, "Unknown person.");
-        if (!me.lead) {
-          if ("off" in b || "need" in b) return fail(403, "Only a section lead can change that.");
-          if ([...add, ...remove].some((id) => id !== me.id)) return fail(403, "You can only tick yourself.");
+        // What a night needs, and whether it is on at all, belong to the night
+        // itself: they are set where it is created and edited, on the Events
+        // page, and are not taken here from anyone.
+        if ("off" in b || "need" in b) return fail(403, "Whether a night is on, and how many adults it needs, are set with the night itself on the Events page.");
+        if (!me.lead && [...add, ...remove].some((id) => id !== me.id)) return fail(403, "You can only tick yourself.");
+        // A night fills up and then closes: that is what makes it first come,
+        // first served for a helper. Two things stop it deadlocking. While a
+        // night still wants somebody who answers the group's rule, that many
+        // places are held, so the last one cannot go to somebody who does not;
+        // and if a night ends up full without one anyway, somebody who does
+        // can still get on it. A lead and the secretary are held to none of
+        // it: the rota is where they put right what self service has left.
+        // Enforced inside the read-modify-write, so two people racing for the
+        // last place cannot both win.
+        const wants = a === "slot" && !me.lead && !canManage && add.includes(me.id);
+        let entryNeed = null, entryNeedQ = null;
+        if (wants) {
+          const isEvent = b.id.startsWith("e:");
+          const eid = b.id.slice(2);
+          let night = null;
+          if (isEvent) {
+            let content = null; try { content = (await readContent(storeFactory)).doc; } catch {}
+            const list = [...((content && content.events) || []), ...((await readDoc(store, "events", eventsFallback)).doc.events || [])];
+            night = list.find((e) => slotIdOf(e) === b.id || oldSlotIdOf(e) === b.id) || null;
+          } else {
+            const { doc: cal } = await readDoc(store, "calendar", calendarFallback);
+            night = (cal.entries || []).find((e) => e.section === b.section && e.id === eid) || null;
+          }
+          if (night && night.off) return fail(409, "That night is off.");
+          entryNeed = night && night.need > 0 ? night.need : null;
+          entryNeedQ = night && Number.isFinite(night.needQualified) ? night.needQualified : null;
         }
+        const qualIds = new Set(roster.doc.people.filter((p) => p.qualified).map((p) => p.id));
+        let refused = null;
         const doc = await update(store, "section/" + b.section, sectionFallback, (d) => {
-          const s = d.slots[b.id] = d.slots[b.id] || { who: [], off: false };
+          const s = d.slots[b.id] = d.slots[b.id] || { who: [] };
+          if (wants && !s.who.includes(me.id)) {
+            const need = entryNeed || d.required;
+            const defQ = b.id.startsWith("e:") ? (d.requiredQualifiedEvents || 0) : (d.requiredQualified || 0);
+            const needQ = Math.min(entryNeedQ === null ? defQ : entryNeedQ, need);
+            const on = s.who.length, q = s.who.filter((id) => qualIds.has(id)).length;
+            const held = Math.max(0, needQ - q);
+            const okForMe = qualIds.has(me.id) ? (on < need || held > 0) : (on < need - held);
+            if (!okForMe) {
+              refused = held > 0 && on < need
+                ? "That night is full apart from a place held for someone the group's rule asks for."
+                : "That night is full. Ask your section lead if you need to be on it.";
+              return false;
+            }
+          }
           s.who = [...new Set([...s.who.filter((id) => !remove.includes(id)), ...add])].filter((id) => known.has(id));
-          if ("off" in b) s.off = !!b.off;
-          if ("need" in b) { const n = Number(b.need); if (n >= 1 && n <= 9 && n !== d.required) s.need = Math.round(n); else delete s.need; }
           return d;
         });
+        if (refused) return fail(409, refused);
         return json(200, { section: doc });
       }
 
@@ -631,10 +864,22 @@ export function createHandler(storeFactory) {
         if (!me.lead) return fail(403, "Only a section lead can change that.");
         if (!isKey(b.section)) return fail(400, "Bad section.");
         if (!canSeeSection(me, canManage, b.section)) return fail(403, "That section is not on your roster entry.");
-        const n = Math.round(Number(b.required));
-        if (!(n >= 1 && n <= 9)) return fail(400, "Required must be 1 to 9.");
-        const doc = await update(store, "section/" + b.section, sectionFallback, (d) => { d.required = n; for (const s of Object.values(d.slots)) if (s.need === n) delete s.need; return d; });
+        const set = {};
+        for (const [field, lo] of [["required", 1], ["requiredQualified", 0], ["requiredQualifiedEvents", 0]]) {
+          if (!(field in b)) continue;
+          const n = optNum(b[field]);
+          if (!(n >= lo && n <= 9)) return fail(400, "That number must be " + lo + " to 9.");
+          set[field] = n;
+        }
+        if (!Object.keys(set).length) return fail(400, "Nothing to set.");
+        const doc = await update(store, "section/" + b.section, sectionFallback, (d) => { Object.assign(d, set); return d; });
         return json(200, { section: doc });
+      }
+      if (a === "message") {
+        if (!canManage) return fail(403, "Only the secretary can change that.");
+        const text = String(b.text ?? "").slice(0, 2000);
+        const doc = await update(store, "message", messageFallback, (d) => { d.text = text.trim() ? text : ""; return d; });
+        return json(200, { message: doc.text });
       }
       if (a === "county-decide") {
         const decision = String(b.decision || "");
@@ -691,11 +936,14 @@ export function createHandler(storeFactory) {
         const apply = (list, content) => {
           const sectionKeys = ((content && content.settings.sections) || []).map((x) => x.key);
           const kitIds = ((content && content.kits) || []).map((k) => k.id);
+          const touches = (e) => (e.section ? [e.section] : sectionKeys);
           if (a === "event-remove") {
             const ex = list.find((e) => sameEvent(eventKey(e), b.key));
             if (!ex) return { error: [404, "No such event."] };
             if (!mayEdit(ex)) return { error: deny(ex) };
-            return { events: list.filter((e) => e !== ex) };
+            // Its ticks go with it. Left behind they would be invisible, and
+            // would come back if the same night were ever added again.
+            return { events: list.filter((e) => e !== ex), drop: [[touches(ex), slotIdOf(ex)], [touches(ex), oldSlotIdOf(ex)]] };
           }
           const { event, error } = cleanEvent(b, sectionKeys, kitIds);
           if (error) return { error: [400, error] };
@@ -710,17 +958,28 @@ export function createHandler(storeFactory) {
           if (i < 0) return { error: [404, "No such event."] };
           if (!mayEdit(list[i])) return { error: deny(list[i]) };
           if (clash(i)) return { error: [409, "There is already an event with that date and title."] };
-          const next = [...list]; next[i] = event; return { events: next };
+          // Keep the id it already had unless one was sent: a save from a page
+          // that does not know about ids must not shuffle everyone off it.
+          if (!isEntryId(b.id) && isEntryId(list[i].id)) event.id = list[i].id;
+          const next = [...list]; next[i] = event;
+          // Anything saved before ids existed is on the old key. Moving it now
+          // is what keeps a renamed or shifted event's leaders with it.
+          const from = slotIdOf(list[i]), to = slotIdOf(event);
+          return { events: next, move: from === to ? [] : [[touches(event), from, to]] };
         };
         const sort = (l) => l.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
 
+        // Slot moves and drops are collected by apply and run after the write,
+        // so a refused change never touches anybody's place.
+        let after = { move: [], drop: [] };
+        const collect = (r2) => { after = { move: r2.move || [], drop: r2.drop || [] }; return r2; };
         let out;
         if (isPrivate) {
           let content = null;
           try { content = (await readContent(storeFactory)).doc; } catch {}
           let err = null;
           const d = await update(store, "events", eventsFallback, (doc) => {
-            const r2 = apply(doc.events || [], content);
+            const r2 = collect(apply(doc.events || [], content));
             if (r2.error) { err = r2.error; return false; }
             doc.events = sort(r2.events); return doc;
           });
@@ -729,12 +988,14 @@ export function createHandler(storeFactory) {
         } else {
           try {
             out = await withContentEvents(storeFactory, (doc) => {
-              const r2 = apply(Array.isArray(doc.events) ? doc.events : [], doc);
+              const r2 = collect(apply(Array.isArray(doc.events) ? doc.events : [], doc));
               return r2.error ? r2 : { events: sort(r2.events) };
             });
           } catch (e) { return fail(503, String(e.message || e)); }
           if (out.error) return fail(out.error[0], out.error[1]);
         }
+        for (const [ks, from, to] of after.move) for (const k of ks) await moveSlot(store, k, from, to);
+        for (const [ks, id] of after.drop) for (const k of ks) await dropSlot(store, k, id);
         return json(200, { events: out.events, private: isPrivate });
       }
 
@@ -747,7 +1008,7 @@ export function createHandler(storeFactory) {
         const code = newCode(); let person;
         await update(store, "roster", rosterFallback, (d) => {
           if (d.people.some((p) => p.name.toLowerCase() === name.toLowerCase())) return false;
-          person = { id: randomBytes(4).toString("hex"), name, sections: cleanSections(b.sections), lead: !!b.lead, secretary: !!b.secretary, code, codeHash: codeHash(sec, code), createdAt: new Date().toISOString() };
+          person = { id: randomBytes(4).toString("hex"), name, sections: cleanSections(b.sections), lead: !!b.lead, secretary: !!b.secretary, qualified: !!b.qualified, code, codeHash: codeHash(sec, code), createdAt: new Date().toISOString() };
           d.people.push(person); return d;
         });
         if (!person) return fail(409, "Someone with that name is already on the list.");
@@ -773,6 +1034,10 @@ export function createHandler(storeFactory) {
             if ("sections" in b) person.sections = cleanSections(b.sections);
             if ("lead" in b) person.lead = !!b.lead;
             if ("secretary" in b) person.secretary = !!b.secretary;
+            // Whatever the group asks of at least one adult on a night. The
+            // wording is the secretary's, in the site's settings; here it is
+            // only a flag, so the rule can change without the store moving.
+            if ("qualified" in b) person.qualified = !!b.qualified;
             return d;
           });
           return json(200, { person: pub(person) });
