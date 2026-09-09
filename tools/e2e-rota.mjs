@@ -424,6 +424,23 @@ try {
   await L2.locator("#loadChips .chip", { hasText: "All" }).click(); await L2.waitForTimeout(400);
   ok("All is the way back", [(await L2.locator("#loadChips .chip.on").innerText()).trim(), (await loadRow("Board Helper")).endsWith("2 1 3")], ["All", true]);
 
+  // ---- the installed app: the iOS status bar sits over the page ----
+  // viewport-fit is cover on every leaders' page, so in a standalone app the
+  // status bar overlays the top of it. The header has to start below the bar,
+  // and its own colour has to fill the bar, or the App button and the title
+  // end up under the clock, blurred and untappable.
+  step = "under the status bar";
+  await L2.setViewportSize({ width: 390, height: 844 });
+  await go(L2, "roster.html"); await L2.waitForTimeout(900);
+  const barTop = async () => (await L2.locator(".appbar").boundingBox()).y;
+  const appBtn = async () => (await L2.locator(".appbar .back").boundingBox()).y;
+  ok("in a browser, with no bar to dodge, the header starts at the very top", [await barTop(), (await appBtn()) < 20], [0, true]);
+  await L2.addStyleTag({ content: ":root{--safe-top:47px;--safe-bottom:34px}" }); await L2.waitForTimeout(200);
+  ok("on a phone the bar's colour still reaches the top, and the App button clears the clock", [await barTop(), (await appBtn()) >= 47], [0, true]);
+  ok("and the footer clears the home indicator", await L2.evaluate(() => parseFloat(getComputedStyle(document.querySelector("footer")).paddingBottom) >= 34 + 48), true);
+  await L2.screenshot({ path: ".e2e/roster-safe-area-390.png" });
+  await L2.setViewportSize({ width: 1280, height: 900 });
+
   // ---- the admin password signs the leaders' pages in as the secretary ----
   step = "sign into admin.html";
   const A = await page(1280, 900); await A.goto(H.replace(/lab\/$/, "admin.html"), { waitUntil: "load" }); await A.waitForTimeout(600);

@@ -405,6 +405,17 @@ link in the footer.
 
 ## Gotchas
 
+* **The installed app has no browser chrome, so the phone's own bars sit on
+  the page.** Every page carries `viewport-fit=cover`, which is what lets the
+  header's colour run to the top edge, and the price is that iOS puts the
+  status bar over the page rather than above it. Anything at the top or bottom
+  has to dodge it: `index.html` and `calendar.html` pad with
+  `env(safe-area-inset-top)` inline, and `lab/rota.css` does it through
+  `--safe-top`, `--safe-bottom`, `--safe-left` and `--safe-right` on `:root`,
+  so a test can set a phone's insets and check the header moved. It did not,
+  for a while, and in the installed app the leaders' header sat under the
+  clock, blurred by the bar and untappable. The bar's own background must
+  still reach the top edge: pad the header, never move it down.
 * **Two print stylesheets share one page.** `index.html` prints kit lists and
   the calendar, and each block hides every view but its own. `route()` sets
   `body[data-print]` to the showing tab and each block is scoped to it;
