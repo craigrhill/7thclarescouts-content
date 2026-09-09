@@ -14,6 +14,9 @@
 //
 // Keys in the store:
 //   secret          HMAC key, generated on first use, never leaves the server
+//   admin-tries     wrong tries at the admin password, when it reopens, how
+//                   many times it has shut, and the deploy that was live at
+//                   the time: a newer one starts the count again
 //   roster          { people: [{ id, name, sections, lead, secretary, code, codeHash }] }
 //                   The code itself is kept so the secretary can see it again;
 //                   the store is private, and GET returns codes to secretaries only.
@@ -93,10 +96,56 @@ function safeEqual(a, b) {
   for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return r === 0;
 }
+// Trimmed at both ends: a password pasted into Netlify with a trailing space
+// or a newline looks identical in their UI and would refuse the right password
+// for ever, with nothing at all to see.
 function adminOk(req) {
-  const given = req.headers.get("x-admin-password") || "";
-  const envPw = process.env.ADMIN_PASSWORD;
+  const given = (req.headers.get("x-admin-password") || "").trim();
+  const envPw = (process.env.ADMIN_PASSWORD || "").trim();
   return envPw ? safeEqual(given, envPw) : safeEqual(createHash("sha256").update(given).digest("hex"), BUILT_IN_HASH);
+}
+// The password is the one door worth guessing at: it opens the admin editor,
+// and through the bridge the leaders' area, which holds children's names. So
+// it is throttled. Fifteen goes before anything happens, because whoever is
+// getting it wrong is almost always a leader and not an attacker; if fifteen
+// were not enough the sixteenth was never going to help, so the shuttings
+// after it are long. Counted in the store so it holds across function
+// instances, and wiped by a correct password.
+const ADMIN_TRIES = 15, ADMIN_LOCKS = [5, 15, 60];
+// A deploy clears it. Only whoever owns the site can deploy, so it is a lever
+// the secretary has and somebody guessing does not. With neither variable set,
+// under the preview and the harness, the count simply persists.
+const deployId = () => process.env.DEPLOY_ID || process.env.COMMIT_REF || "";
+const triesFallback = () => ({ fails: 0, until: 0, locks: 0, deploy: deployId() });
+// One gate in front of both doors the password opens. Answers with the refusal
+// to send back, or null when the password was right.
+async function adminGate(store, req) {
+  const { doc } = await readDoc(store, "admin-tries", triesFallback);
+  const stale = deployId() && doc.deploy !== deployId();
+  const waitMs = stale ? 0 : (doc.until || 0) - Date.now();
+  if (waitMs > 0) {
+    const mins = Math.ceil(waitMs / 60000);
+    return fail(429, `Too many wrong tries. The password is shut for another ${mins} minute${mins === 1 ? "" : "s"}.`);
+  }
+  if (!adminOk(req)) {
+    await update(store, "admin-tries", triesFallback, (d) => {
+      if (deployId() && d.deploy !== deployId()) { d.fails = 0; d.until = 0; d.locks = 0; }
+      d.deploy = deployId();
+      d.fails = (d.fails || 0) + 1;
+      if (d.fails >= ADMIN_TRIES) {
+        d.until = Date.now() + ADMIN_LOCKS[Math.min(d.locks || 0, ADMIN_LOCKS.length - 1)] * 60000;
+        d.locks = (d.locks || 0) + 1;
+        d.fails = 0;
+      }
+      return d;
+    });
+    await new Promise((r) => setTimeout(r, 250));
+    return fail(401, "Wrong password.");
+  }
+  // Right password: the count goes, so a leader who fumbled it twice yesterday
+  // does not start today part way to being shut out.
+  await update(store, "admin-tries", triesFallback, (d) => (d.fails || d.until || d.locks ? triesFallback() : false));
+  return null;
 }
 
 // ---- the public group calendar, in content.json ----
@@ -357,7 +406,7 @@ export function createHandler(storeFactory) {
 
       // Unauthenticated entry points.
       if (req.method === "POST" && a === "bootstrap") {
-        if (!adminOk(req)) return fail(401, "Wrong password.");
+        const shut = await adminGate(store, req); if (shut) return shut;
         const b = await body(req); const name = cleanName(b && b.name);
         if (!name) return fail(400, "A name is needed.");
         const code = newCode(); let person;
@@ -375,7 +424,7 @@ export function createHandler(storeFactory) {
       // it saves a code being typed. admin.html keeps the password on the
       // device and the leaders' pages use it to sign in on their own.
       if (req.method === "POST" && a === "admin-login") {
-        if (!adminOk(req)) return fail(401, "Wrong password.");
+        const shut = await adminGate(store, req); if (shut) return shut;
         const { doc } = await readDoc(store, "roster", rosterFallback);
         const person = doc.people.find((p) => p.secretary);
         if (!person) return fail(409, "No secretary yet. Set one up on the roster page first.");

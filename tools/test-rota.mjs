@@ -42,6 +42,30 @@ r = await call("POST", "?a=admin-login", { admin: "wrong" });          ok("admin
 r = await call("POST", "?a=admin-login", { admin: "admin-for-test" });
 ok("the admin password signs in as the secretary, no code needed", [r.status, r.j.me.id, r.j.me.secretary], [200, leadId, true]);
 r = await call("GET", "?sections=scouts", { token: r.j.token });      ok("and that token works like any other", r.status, 200);
+{ // The password is throttled: it opens the admin editor and, through the
+  // bridge, the leaders' area. Fifteen goes, then five minutes, then fifteen.
+  const guard = () => JSON.parse(store._map.get("admin-tries").value.toString("utf8"));
+  for (let i = 0; i < 14; i++) await call("POST", "?a=admin-login", { admin: "no" });
+  ok("fourteen wrong tries are counted but let through", [guard().fails, guard().until], [14, 0]);
+  r = await call("POST", "?a=admin-login", { admin: "no" });
+  ok("the fifteenth shuts it", [r.status, guard().locks, guard().until > Date.now()], [401, 1, true]);
+  r = await call("POST", "?a=admin-login", { admin: "admin-for-test" });
+  ok("and the right password is refused while it is shut, with how long left", [r.status, /shut for another \d+ minute/.test(r.j.error)], [429, true]);
+  r = await call("POST", "?a=bootstrap", { admin: "admin-for-test", body: { name: "Sneaky" } });
+  ok("bootstrap is behind the same gate, so there is no second door", r.status, 429);
+  { const d = guard(); d.until = Date.now() - 1000; await store.setJSON("admin-tries", d); }
+  r = await call("POST", "?a=admin-login", { admin: "admin-for-test" });
+  ok("once it reopens the right password works", r.status, 200);
+  ok("and the count is wiped, so yesterday's fumble does not count today", [guard().fails, guard().locks, guard().until], [0, 0, 0]);
+  // Each shutting is longer than the last, and a deploy clears the lot.
+  await store.setJSON("admin-tries", { fails: 14, until: 0, locks: 2, deploy: "" });
+  r = await call("POST", "?a=admin-login", { admin: "no" });
+  ok("a third shutting lasts an hour", Math.round((guard().until - Date.now()) / 60000), 60);
+  process.env.DEPLOY_ID = "deploy-2";
+  r = await call("POST", "?a=admin-login", { admin: "admin-for-test" });
+  ok("a deploy since it shut starts it again, which is the way back in", r.status, 200);
+  delete process.env.DEPLOY_ID;
+}
 r = await call("GET", "?sections=scouts,beavers", { token: lead });
 ok("GET returns me, people and requested sections with defaults", [r.status, r.j.people.length, r.j.sections.scouts.required, Object.keys(r.j.sections).sort()], [200, 1, 2, ["beavers", "scouts"]]);
 r = await call("GET", "?sections=scouts", { token: lead.slice(0, -2) + "zz" }); ok("tampered token is 401", r.status, 401);

@@ -825,6 +825,24 @@ var headers = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
 };
 var json = (status, body) => new Response(JSON.stringify(body), { status, headers });
+var ADMIN_TRIES = 15;
+var ADMIN_LOCKS = [5, 15, 60];
+var deployId = () => process.env.DEPLOY_ID || process.env.COMMIT_REF || "";
+var TRIES_KEY = "admin-tries";
+var triesFallback = () => ({ fails: 0, until: 0, locks: 0, deploy: deployId() });
+async function readTries(store) {
+  try {
+    return await store.get(TRIES_KEY, { type: "json" }) || triesFallback();
+  } catch {
+    return triesFallback();
+  }
+}
+async function writeTries(store, d) {
+  try {
+    await store.setJSON(TRIES_KEY, d);
+  } catch {
+  }
+}
 function safeEqual(a, b) {
   if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
   let r = 0;
@@ -991,10 +1009,31 @@ var content_default = async (req) => {
     }
   }
   if (req.method === "POST") {
-    const given = req.headers.get("x-admin-password") || "";
-    const envPw = process.env.ADMIN_PASSWORD;
+    const given = (req.headers.get("x-admin-password") || "").trim();
+    const envPw = (process.env.ADMIN_PASSWORD || "").trim();
     const ok = envPw ? safeEqual(given, envPw) : safeEqual(createHash("sha256").update(given).digest("hex"), BUILT_IN_HASH);
-    if (!ok) return json(401, { error: "Wrong password." });
+    const tryStore = stores(STORE);
+    const tries = await readTries(tryStore);
+    const stale = deployId() && tries.deploy !== deployId();
+    const waitMs = stale ? 0 : (tries.until || 0) - Date.now();
+    if (waitMs > 0) {
+      const mins = Math.ceil(waitMs / 6e4);
+      return json(429, { error: `Too many wrong tries. The password is shut for another ${mins} minute${mins === 1 ? "" : "s"}.` });
+    }
+    if (!ok) {
+      const d = stale ? triesFallback() : tries;
+      d.deploy = deployId();
+      d.fails = (d.fails || 0) + 1;
+      if (d.fails >= ADMIN_TRIES) {
+        d.until = Date.now() + ADMIN_LOCKS[Math.min(d.locks || 0, ADMIN_LOCKS.length - 1)] * 6e4;
+        d.locks = (d.locks || 0) + 1;
+        d.fails = 0;
+      }
+      await writeTries(tryStore, d);
+      await new Promise((r) => setTimeout(r, 250));
+      return json(401, { error: "Wrong password." });
+    }
+    if (tries.fails || tries.until || tries.locks) await writeTries(tryStore, triesFallback());
     const url = new URL(req.url);
     if (url.searchParams.get("check")) return json(200, { ok: true, source: g ? "github" : "blobs" });
     if (url.searchParams.get("photo")) {

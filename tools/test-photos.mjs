@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// The photo endpoints on the content function, driven offline with a store of
-// its own: upload, serve, list and tidy up. Covers the password, the types and
+// The password-gated side of the content function, driven offline with a store
+// of its own: the photo endpoints, and the guard in front of the password. Covers the password, the types and
 // the size cap, that the same photo twice is stored once, that a served photo
 // is cached forever because its name is its hash, and that tidying up keeps
 // what the content document still points at and spares anything just uploaded.
@@ -15,9 +15,12 @@ let pass = 0, fail = 0;
 const ok = (name, got, want) => { const g = JSON.stringify(got) === JSON.stringify(want); g ? pass++ : fail++; console.log(`${g ? "PASS" : "FAIL"}  ${name}${g ? "" : `\n        got  ${JSON.stringify(got)}\n        want ${JSON.stringify(want)}`}`); };
 
 // The same stand-in store the rota harness and the local preview use, so the
-// one double is proved to hold bytes as well as text.
-const store = memoryStore(), mem = store._map;
-useStore(() => store);
+// one double is proved to hold bytes as well as text. One per name, as the
+// real thing is: the photos and the site's own content do not share a store.
+const stores = {};
+const store = (name) => (stores[name] ||= memoryStore());
+const mem = store("photos")._map;
+useStore(store);
 
 const call = async (q, init) => { const r = await handler(new Request(base + q, init)); const t = r.headers.get("content-type") || ""; return { status: r.status, headers: r.headers, body: t.includes("json") ? await r.json() : Buffer.from(await r.arrayBuffer()) }; };
 const put = (bytes, type, pw = PW) => call("?photo=1", { method: "POST", headers: { "x-admin-password": pw, "Content-Type": type }, body: bytes });
@@ -68,6 +71,20 @@ ok("keeps what the site still uses", mem.has(id), true);
 ok("and spares a photo uploaded in the last hour, which may not be saved yet", mem.has(id3), true);
 r = await call("?photos=prune", { method: "POST", headers: { "x-admin-password": PW }, body: "not json" });
 ok("prune without a list of what to keep is refused, not a mass delete", [r.status, mem.size], [400, 2]);
+
+{ // Fifteen wrong tries and the password shuts, the same guard the rota
+  // function has, because this one publishes the whole site.
+  const tries = () => JSON.parse(store("site-content")._map.get("admin-tries").value.toString("utf8"));
+  for (let i = 0; i < 15; i++) await call("?check=1", { method: "POST", headers: { "x-admin-password": "no" } });
+  ok("fifteen wrong tries shut it", [tries().locks, tries().until > Date.now()], [1, true]);
+  r = await call("?check=1", { method: "POST", headers: { "x-admin-password": PW } });
+  ok("and the right password is refused while it is shut", [r.status, /shut for another/.test(r.body.error)], [429, true]);
+  r = await put(jpeg, "image/jpeg");
+  ok("an upload is behind the same gate", r.status, 429);
+  { const d = tries(); d.until = 0; await store("site-content").setJSON("admin-tries", d); }
+  r = await call("?check=1", { method: "POST", headers: { "x-admin-password": PW } });
+  ok("once it reopens the right password works, and wipes the count", [r.status, tries().fails, tries().locks], [200, 0, 0]);
+}
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

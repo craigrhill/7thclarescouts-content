@@ -831,9 +831,43 @@ function safeEqual(a, b) {
   return r === 0;
 }
 function adminOk(req) {
-  const given = req.headers.get("x-admin-password") || "";
-  const envPw = process.env.ADMIN_PASSWORD;
+  const given = (req.headers.get("x-admin-password") || "").trim();
+  const envPw = (process.env.ADMIN_PASSWORD || "").trim();
   return envPw ? safeEqual(given, envPw) : safeEqual(createHash("sha256").update(given).digest("hex"), BUILT_IN_HASH);
+}
+var ADMIN_TRIES = 15;
+var ADMIN_LOCKS = [5, 15, 60];
+var deployId = () => process.env.DEPLOY_ID || process.env.COMMIT_REF || "";
+var triesFallback = () => ({ fails: 0, until: 0, locks: 0, deploy: deployId() });
+async function adminGate(store, req) {
+  const { doc } = await readDoc(store, "admin-tries", triesFallback);
+  const stale = deployId() && doc.deploy !== deployId();
+  const waitMs = stale ? 0 : (doc.until || 0) - Date.now();
+  if (waitMs > 0) {
+    const mins = Math.ceil(waitMs / 6e4);
+    return fail(429, `Too many wrong tries. The password is shut for another ${mins} minute${mins === 1 ? "" : "s"}.`);
+  }
+  if (!adminOk(req)) {
+    await update(store, "admin-tries", triesFallback, (d) => {
+      if (deployId() && d.deploy !== deployId()) {
+        d.fails = 0;
+        d.until = 0;
+        d.locks = 0;
+      }
+      d.deploy = deployId();
+      d.fails = (d.fails || 0) + 1;
+      if (d.fails >= ADMIN_TRIES) {
+        d.until = Date.now() + ADMIN_LOCKS[Math.min(d.locks || 0, ADMIN_LOCKS.length - 1)] * 6e4;
+        d.locks = (d.locks || 0) + 1;
+        d.fails = 0;
+      }
+      return d;
+    });
+    await new Promise((r) => setTimeout(r, 250));
+    return fail(401, "Wrong password.");
+  }
+  await update(store, "admin-tries", triesFallback, (d) => d.fails || d.until || d.locks ? triesFallback() : false);
+  return null;
 }
 var gh = () => {
   const repo = process.env.GITHUB_REPO, token = process.env.GITHUB_TOKEN;
@@ -1081,7 +1115,8 @@ function createHandler(storeFactory) {
       const store = storeFactory(STORE);
       const sec = await secret(store);
       if (req.method === "POST" && a === "bootstrap") {
-        if (!adminOk(req)) return fail(401, "Wrong password.");
+        const shut = await adminGate(store, req);
+        if (shut) return shut;
         const b2 = await body(req);
         const name = cleanName(b2 && b2.name);
         if (!name) return fail(400, "A name is needed.");
@@ -1103,7 +1138,8 @@ function createHandler(storeFactory) {
         return json(200, { person: pub(person), code });
       }
       if (req.method === "POST" && a === "admin-login") {
-        if (!adminOk(req)) return fail(401, "Wrong password.");
+        const shut = await adminGate(store, req);
+        if (shut) return shut;
         const { doc } = await readDoc(store, "roster", rosterFallback);
         const person = doc.people.find((p) => p.secretary);
         if (!person) return fail(409, "No secretary yet. Set one up on the roster page first.");
