@@ -271,7 +271,9 @@ every tick that is already there.
 **School breaks are kept once, not remembered twelve times.** `settings.breaks`
 in `content.json` is `[{name, start, end, sections?}]`: the midterms, Christmas
 and Easter, off the school calendar, edited in admin under Sections. A break
-with no sections named is the whole group's. The meetings editor seeds a night
+with no sections named is the whole group's, and the ones in there now name
+Scouts and Ventures: those two are at Seamount College, and Beavers and Cubs
+are at the primary school, whose calendar is its own and is not in yet. The meetings editor seeds a night
 inside one already marked off, titled "No meeting, October midterm", and for a
 list that was saved before a break was added it offers one button to mark them
 all. The admin editor spells out which nights each break swallows as it is

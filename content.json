@@ -98,22 +98,38 @@
       {
         "name": "October midterm",
         "start": "2026-10-26",
-        "end": "2026-10-30"
+        "end": "2026-10-30",
+        "sections": [
+          "scouts",
+          "ventures"
+        ]
       },
       {
         "name": "Christmas",
         "start": "2026-12-23",
-        "end": "2027-01-05"
+        "end": "2027-01-05",
+        "sections": [
+          "scouts",
+          "ventures"
+        ]
       },
       {
         "name": "February midterm",
         "start": "2027-02-15",
-        "end": "2027-02-19"
+        "end": "2027-02-19",
+        "sections": [
+          "scouts",
+          "ventures"
+        ]
       },
       {
         "name": "Easter",
         "start": "2027-03-22",
-        "end": "2027-04-02"
+        "end": "2027-04-02",
+        "sections": [
+          "scouts",
+          "ventures"
+        ]
       }
     ]
   },
@@ -1549,7 +1565,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-09T03:14:40.898Z",
+  "updatedAt": "2026-09-09T04:29:57.812Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
