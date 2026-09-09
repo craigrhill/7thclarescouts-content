@@ -315,7 +315,14 @@ try {
   ok("the secretary sees how much each person has taken on", await L2.locator("#loadTable tr.person").count() >= 4, true);
   ok("and who is down for nothing is marked", await L2.locator("#loadTable tr.person.zero").count() > 0, true);
   ok("the message that goes with a link is theirs to word", (await L2.locator("#msgPreview").innerText()).includes("Hi Mary"), true);
+  // The nights it counts are the ones the rota draws, weekday ones included,
+  // so it never reports no meetings on a section that plainly has some.
+  ok("and it counts the nights the rota shows, not only saved lists", /^[1-9]\d* meetings/.test(await L2.locator("#loadNote").innerText()), true);
   await L2.screenshot({ path: ".e2e/roster-1280.png", fullPage: true });
+  const LP = await page(390, 844); await go(LP, "roster.html"); await LP.fill("#code", leadCode); await signInBtn(LP).click(); await LP.waitForTimeout(1100);
+  ok("a table of numbers keeps its headings on a phone", [await LP.locator("#loadTable thead").isVisible(), await LP.locator("#loadTable thead th").allInnerTexts()], [true, ["SCOUTER", "MEETINGS", "EVENTS", "TOTAL"]]);
+  ok("and the people down for nothing are at the top, said in words as well as colour", (await LP.locator("#loadTable tr.person").first().innerText()).includes("none yet"), true);
+  await LP.screenshot({ path: ".e2e/roster-load-390.png", fullPage: true });
 
   step = "a rule nobody has named";
   // settings.rota carries no qualifiedLabel, so the whole idea is off: no tick

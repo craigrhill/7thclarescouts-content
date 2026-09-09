@@ -187,5 +187,22 @@ table.roster tr.person.past td.nm{font-weight:500}
 .link{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;background:var(--stone-100);border-radius:8px;padding:.25em .5em;word-break:break-all;display:inline-block}
 /* The message that goes with a link, as it will read. */
 .preview{white-space:pre-wrap;background:var(--stone-50);border:1px solid var(--stone-100);border-radius:12px;padding:.7rem .8rem;font:inherit;font-size:.9rem;margin:0}
-/* Somebody down for nothing at all: the one to ask next. */
-tr.person.zero td{background:#FBE9EC}
+/* Who is down for what: a table of numbers, so it keeps its headings at every
+   width. Three bare figures under a name mean nothing without them. */
+table.roster.load td.n,table.roster.load th.n{text-align:right;width:4.2rem;white-space:nowrap}
+table.roster.load td.n{font-variant-numeric:tabular-nums}
+table.roster.load td.nm{font-weight:600}
+@media (max-width:640px){
+  table.roster.load thead{display:table-header-group}
+  table.roster.load tr{display:table-row;padding:0;border-bottom:0}
+  table.roster.load td{display:table-cell;border-bottom:1px solid var(--stone-100);padding:.55rem .3rem}
+  table.roster.load td.nm{display:table-cell;padding-left:0;padding-bottom:.55rem}
+  table.roster.load th{padding:.3rem .3rem .5rem}
+  table.roster.load th:first-child,table.roster.load td:first-child{padding-left:0}
+  table.roster.load td.n,table.roster.load th.n{width:2.9rem}
+  table.roster.load th.n{font-size:.66rem;letter-spacing:.04em}
+  table.roster.load td.nm .small{display:block}
+}
+/* Somebody down for nothing at all: the one to ask next. Shaded, and said in
+   words beside the name as well, so it does not rest on the colour alone. */
+table.roster.load tr.person.zero td{background:#FBE9EC}

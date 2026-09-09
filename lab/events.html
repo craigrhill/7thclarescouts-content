@@ -95,7 +95,6 @@ let C = null, D = null, editingEvent = null, showPast = false, syncNote = "";
 // meaningful: two leads editing together conflict and retry rather than
 // interleaving halves.
 let MEET = [], meetFor = null, meetOpen = new Set(), meetDirty = false;
-const DAYS = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
 const isoDay = d => { const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 10); };
 const entriesFor = k => ((D.calendar && D.calendar.entries) || []).filter(e => e.section === k).sort((a, b) => a.date.localeCompare(b.date));
 // Until a section has saved a list, offer the term it would have had anyway:

@@ -78,7 +78,8 @@
     <div class="card" id="loadCard" hidden>
       <h2>Who is down for what</h2>
       <p class="small muted" id="loadNote"></p>
-      <table class="roster" id="loadTable"></table>
+      <p class="small muted">Each number is how many of those nights the person is ticked for on the rota: the meetings, the events, and the two added up. Anyone down for nothing is shaded and sits at the top, because they are the ones to ask next.</p>
+      <table class="roster load" id="loadTable"></table>
     </div>
 
   </section>
@@ -150,7 +151,9 @@ function loadOf(){
   const today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
   const t = today.toISOString().slice(0, 10);
   const counts = new Map(); let meetings = 0, events = 0;
-  const entries = ((D.calendar && D.calendar.entries) || []).filter(e => !e.off && e.date >= t);
+  // The same nights the rota draws, section by section, so the two agree even
+  // before a lead has saved a list of their own.
+  const entries = Object.keys(D.sections || {}).flatMap(k => meetingNights(C, D, k)).filter(e => !e.off);
   const evs = [...(C.events || []), ...((D.events) || [])].filter(e => (e.endDate || e.date) >= t);
   const bump = (k, id, kind) => { const c = counts.get(id) || { meetings: 0, events: 0 }; c[kind]++; counts.set(id, c); };
   for (const e of entries) {
@@ -171,12 +174,15 @@ function loadOf(){
 }
 function renderLoad(){
   const { counts, meetings, events } = loadOf();
-  const rows = (D.people || []).map(p => { const c = counts.get(p.id) || { meetings: 0, events: 0 }; return { p, ...c, total: c.meetings + c.events }; });
+  const rows = (D.people || []).map(p => { const c = counts.get(p.id) || { meetings: 0, events: 0 }; return { p, ...c, total: c.meetings + c.events }; })
+    .sort((a, b) => (a.total - b.total) || byName2(a.p, b.p));
   const none = rows.filter(r => r.total === 0).length;
   $("loadNote").textContent = `${meetings} meeting${meetings === 1 ? "" : "s"} and ${events} event${events === 1 ? "" : "s"} still to come.`
     + (none ? ` ${none} ${none === 1 ? "person is" : "people are"} down for nothing yet.` : " Everyone is down for something.");
-  $("loadTable").innerHTML = `<thead><tr><th>Scouter</th><th>Meetings</th><th>Events</th><th>Total</th></tr></thead><tbody>`
-    + rows.map(r => `<tr class="person${r.total ? "" : " zero"}"><td class="nm">${esc(r.p.name)}${qualTag(r.p)}</td><td>${r.meetings}</td><td>${r.events}</td><td><b>${r.total}</b>${r.total ? "" : ` <span class="small muted">none yet</span>`}</td></tr>`).join("")
+  // The headings stay on a phone: three short numbers mean nothing without
+  // them, so this table keeps its shape where the roster's turns into cards.
+  $("loadTable").innerHTML = `<thead><tr><th>Scouter</th><th class="n">Meetings</th><th class="n">Events</th><th class="n">Total</th></tr></thead><tbody>`
+    + rows.map(r => `<tr class="person${r.total ? "" : " zero"}"><td class="nm">${esc(r.p.name)}${qualTag(r.p)}${r.total ? "" : ` <span class="small muted">none yet</span>`}</td><td class="n">${r.meetings}</td><td class="n">${r.events}</td><td class="n"><b>${r.total}</b></td></tr>`).join("")
     + `</tbody>`;
 }
 

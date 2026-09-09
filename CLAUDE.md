@@ -325,8 +325,16 @@ herself with a live preview, kept under `message` and filled with `{name}`,
 would carry the whole URL, code and all, in the Referer header.
 
 **Who is down for what** on the roster counts each person over the nights
-still to come that are going ahead, meetings and events apart, and marks
-anyone at nothing. **The link for chasing** is `lab/needed.html?section=<key>`,
+still to come that are going ahead, meetings and events apart, with the two
+added up, and puts anyone at nothing at the top: they are who the secretary
+rings next. It is a table of numbers, so it is the one table on these pages
+that keeps its headings on a phone rather than folding into cards
+(`table.roster.load`), because three bare figures under a name say nothing.
+The nights it counts come from `meetingNights()` in `lab/rota-lib.js`, the
+same helper `upcoming()` on the rota draws: the list a lead has saved, or the
+section's own weekday until there is one. Counting only saved lists had it
+reporting no meetings at all on a section whose lead had not been near the
+editor. **The link for chasing** is `lab/needed.html?section=<key>`,
 reading `?a=cover&section=<key>`, which takes no token and returns dates and
 counts: no names, no ids, and no leaders-only events. It is on the rota page
 for leads under "A link for chasing".

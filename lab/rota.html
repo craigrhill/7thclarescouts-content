@@ -82,7 +82,6 @@
 <script src="rota-lib.js"></script>
 <script>
 const SK = "rota-section", TABK = "rota-tab";
-const DAYS = { sunday:0, monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6 };
 let C = null, D = null;
 const TABS = ["gaps", "all", "mine"];
 // Where this person lands: a lead or the secretary on the whole list, because
@@ -119,21 +118,10 @@ function upcoming(k){
   const section = C.settings.sections.find(x => x.key === k) || {};
   const today = new Date(); today.setHours(12, 0, 0, 0);
   const out = [];
-  // The nights a lead has set, if there are any. Until then, the ones worked
-  // out from the section's meeting night, which is what this always did.
-  const entries = ((D.calendar && D.calendar.entries) || []).filter(e => e.section === k);
-  if (entries.length) {
-    entries.filter(e => e.date >= iso(today)).forEach(e => out.push({
-      id: "m:" + e.id, date: e.date, title: e.title || ((section.name || "") + " meeting"),
-      sub: [eventWhen(e) || section.time, e.location || section.venue].filter(Boolean).join(", "),
-      details: e.details || "", need: e.need, off: !!e.off, kind: "meeting" }));
-  } else {
-    const wd = DAYS[(section.day || "").toLowerCase()];
-    if (wd !== undefined) {
-      const d = new Date(today); while (d.getDay() !== wd) d.setDate(d.getDate() + 1);
-      for (let i = 0; i < 8; i++) { out.push({ id: "m:" + iso(d), date: iso(d), title: (section.name || "") + " meeting", sub: [section.time, section.venue].filter(Boolean).join(", "), details: "", kind: "meeting" }); d.setDate(d.getDate() + 7); }
-    }
-  }
+  meetingNights(C, D, k).forEach(e => out.push({
+    id: "m:" + e.id, date: e.date, title: e.title || ((section.name || "") + " meeting"),
+    sub: [eventWhen(e) || section.time, e.location || section.venue].filter(Boolean).join(", "),
+    details: e.details || "", need: e.need, off: !!e.off, kind: "meeting" }));
   // Public events from the group calendar, plus any leaders-only ones.
   [...(C.events || []), ...((D && D.events) || [])].filter(e => e.date >= iso(today) && (e.section === k || !e.section || e.section === "all"))
     .forEach(e => out.push({ id: "e:" + (e.id || (e.date + ":" + e.title)), date: e.date, title: e.title,

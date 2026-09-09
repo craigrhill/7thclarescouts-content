@@ -67,6 +67,24 @@ async function loadContent(){
   document.querySelectorAll("[data-qual-only]").forEach(el => { el.hidden = !QUAL.on; });
   return c;
 }
+// The nights a section has: the list its lead has saved on the Events page,
+// or, until there is one, the ones worked out from the section's own meeting
+// night. The rota draws these and the roster counts them, so the two cannot
+// disagree about how many nights there are to fill.
+const DAYS = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+const isoOf = d => { const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 10); };
+function meetingNights(C, D, k){
+  const section = ((C.settings || {}).sections || []).find(x => x.key === k) || {};
+  const saved = (((D || {}).calendar || {}).entries || []).filter(e => e.section === k);
+  const t = isoOf(new Date());
+  if (saved.length) return saved.filter(e => e.date >= t).sort((a, b) => a.date.localeCompare(b.date));
+  const wd = DAYS[String(section.day || "").toLowerCase()];
+  if (wd === undefined) return [];
+  const out = [], d = new Date(); d.setHours(12, 0, 0, 0);
+  while (d.getDay() !== wd) d.setDate(d.getDate() + 1);
+  for (let i = 0; i < 8; i++) { out.push({ id: isoOf(d), section: k, date: isoOf(d) }); d.setDate(d.getDate() + 7); }
+  return out;
+}
 // School breaks, kept once in the site's settings: midterms, Christmas,
 // Easter. A night inside one is not a night: the tool marks it off with the
 // break's name rather than anyone remembering to. A break with no sections
