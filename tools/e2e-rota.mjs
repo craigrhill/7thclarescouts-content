@@ -83,7 +83,7 @@ try {
   const L = await page(1280, 900); await go(L, "rota.html"); await L.fill("#code", leadCode); await signInBtn(L).click(); await L.waitForTimeout(900);
   ok("lead signs in", [await L.locator("#app").isVisible(), await L.locator("#meRole").innerText()], [true, ", section lead"]);
   ok("lead sees only their own section's chip", (await L.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()), ["Scouts"]);
-  ok("lead has no Roster pill, and Rota is the highlighted one", [await L.locator("#leaderNav").getByRole("link", { name: "Roster" }).isVisible(), (await L.locator("#leaderNav a.on").innerText()).trim()], [false, "Rota"]);
+  ok("a lead is offered the Roster too, and Rota is the highlighted one", [await L.locator("#leaderNav").getByRole("link", { name: "Roster" }).isVisible(), (await L.locator("#leaderNav a.on").innerText()).trim()], [true, "Rota"]);
   await pickSec(L, "Scouts");
   ok("lead sees the Scouts roster read-only", await names(L), ["Lead Test", "Member Test"]);
   ok("with section pills", await L.locator("#people .spill").count(), 2);
@@ -221,8 +221,12 @@ try {
   await S.locator("#people tr.person", { hasText: "Lead Test" }).locator("button:has-text('Edit')").click(); await S.waitForTimeout(150);
   ok("editor offers to hand the secretary role over", await S.locator("#people tr.editor button:has-text('Make secretary instead of me')").count(), 1);
   await S.locator("#people tr.editor button:has-text('Make secretary instead of me')").click(); await S.waitForTimeout(1200);
-  ok("after handing over, the page is read-only for the old secretary", [await S.locator("#addCard").isVisible(), (await S.locator("#intro").innerText()).startsWith("Only the secretary")], [false, true]);
-  ok("and the roster shows the new secretary", (await S.locator("#people tr.person", { hasText: "Lead Test" }).innerText()).toLowerCase().includes("secretary"), true);
+  // Sec Test is a lead as well, so what they keep after handing over is a
+  // lead's view: the list and the links, and nothing that changes the roster.
+  ok("after handing over, nothing on the page changes the roster any more", [await S.locator("#addCard").isVisible(), await S.locator("#people button:has-text('Edit')").count(), await S.locator("#msgCard").isVisible()], [false, 0, false]);
+  // They are a lead with no sections now, so the list narrows to themselves:
+  // the rest of the group is not a lead's to see.
+  ok("and the role is gone, along with the sight of everybody else's rows", [(await S.locator("#meRole").innerText()).includes("secretary"), await names(S)], [false, ["Sec Test"]]);
 
   // ---- the badge board: Lead Test is now the secretary; Beaver Helper is a helper on beavers ----
   await go(L2, "badges.html"); await L2.waitForTimeout(600);
@@ -423,6 +427,37 @@ try {
   await L2.screenshot({ path: ".e2e/roster-load-section-1280.png", fullPage: true });
   await L2.locator("#loadChips .chip", { hasText: "All" }).click(); await L2.waitForTimeout(400);
   ok("All is the way back", [(await L2.locator("#loadChips .chip.on").innerText()).trim(), (await loadRow("Board Helper")).endsWith("2 1 3")], ["All", true]);
+
+  // ---- a lead on the roster: their own section, its links, no changing it ----
+  // Ev Helper is on Scouts and nothing else. Make them its lead, then look at
+  // the roster through their eyes.
+  step = "a lead reads the roster";
+  await go(L2, "roster.html"); await L2.waitForTimeout(900);
+  ok("the role landed on Lead Test, who now sees the whole roster and may change it", [(await L2.locator("#meRole").innerText()).includes("secretary"), await L2.locator("#addCard").isVisible(), (await names(L2)).length >= 5], [true, true, true]);
+  await L2.locator("#people tr.person", { hasText: "Ev Helper" }).locator("button:has-text('Edit')").click(); await L2.waitForTimeout(200);
+  await L2.locator("#people tr.editor label", { hasText: "Section lead" }).locator("input").check(); await L2.waitForTimeout(1100);
+  const evLeadCode = await codeFor(L2, "Ev Helper");
+  const LD = await page(1280, 900); await go(LD, "roster.html"); await LD.fill("#code", evLeadCode); await signInBtn(LD).click(); await LD.waitForTimeout(1200);
+  ok("a lead can open the roster at all, and the leaders' nav offers it", [await LD.locator("#app").isVisible(), (await LD.locator(".lnav").innerText()).includes("Roster")], [true, true]);
+  const seen = (await LD.locator("#people tr.person td.nm").allInnerTexts()).map((t) => t.trim().replace(/ \(you\)$/, "")).sort();
+  // Everyone carrying Scouts, and nobody else. Board Helper is on it because
+  // they took Scouts on earlier; Sec Test carries no section at all and so is
+  // not a Scouts lead's to see.
+  ok("and sees the people on their own section, nobody else's", seen, ["Board Helper", "Ev Helper", "Lead Test", "Spare Helper"]);
+  ok("with a link to hand out and the message that goes with it", [await LD.locator("#people tr.person", { hasText: "Ev Helper" }).locator("button:has-text('Copy link')").count(), await LD.locator("#people tr.person", { hasText: "Ev Helper" }).locator("button:has-text('Copy message')").count()], [1, 1]);
+  ok("but nothing to change it with: no add form, no editing, no wording", [await LD.locator("#addCard").isVisible(), await LD.locator("#people button:has-text('Edit')").count(), await LD.locator("#msgCard").isVisible()], [false, 0, false]);
+  ok("the secretary's own link is not theirs to have, and the row says so", [await LD.locator("#people tr.person", { hasText: "Lead Test" }).locator("button:has-text('Copy link')").count(), (await LD.locator("#people tr.person", { hasText: "Lead Test" }).innerText()).includes("the secretary's own link")], [0, true]);
+  ok("and the header does not call a lead the secretary", (await LD.locator(".appbar .pill").innerText()).trim(), "LEADERS ONLY");
+  ok("and the tally is there, for their section, with no pills to choose between", [await LD.locator("#loadCard").isVisible(), await LD.locator("#loadChips").isVisible()], [true, false]);
+  ok("counting that section's nights", /^\d+ meetings? and \d+ events? still to come/.test(await LD.locator("#loadNote").innerText()), true);
+  await LD.screenshot({ path: ".e2e/roster-lead-1280.png", fullPage: true });
+  await LD.setViewportSize({ width: 390, height: 844 }); await LD.waitForTimeout(300);
+  await LD.screenshot({ path: ".e2e/roster-lead-390.png", fullPage: true });
+  // A helper is where they were: the list, read only, and no links but their own.
+  const HR = await page(390, 844); await go(HR, "roster.html"); await HR.fill("#code", helperCode); await signInBtn(HR).click(); await HR.waitForTimeout(1200);
+  ok("a helper still gets the list read-only, with no tally and no links to hand out", [await HR.locator("#loadCard").isVisible(), await HR.locator("#addCard").isVisible(), await HR.locator("#people button:has-text('Copy link')").count()], [false, false, 0]);
+  ok("and the leaders' nav does not offer them the roster", (await HR.locator(".lnav").innerText()).includes("Roster"), false);
+  await HR.close();
 
   // ---- a section with nights saved but no events ----
   // Saving the term's nights and then reading "nothing coming up" underneath

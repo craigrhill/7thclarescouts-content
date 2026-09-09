@@ -64,6 +64,13 @@
 //   POST   ?a=badge-rename {section,id,name}                   { board }   lead of it
 //   POST   ?a=badge-remove {section,id}                        { board }   lead of it
 //   POST   ?a=badge-stage  {section,id,skill,stage 0..9}       { board }   lead of it
+//          hasSecretary says whether the roster has one at all: while it has
+//          none, a lead holds her powers, and a lead cannot see far enough
+//          across the roster to tell.
+//          The people are those sharing a section with the caller, all of them
+//          for the secretary. A code comes back for the caller themselves, for
+//          everyone if the caller is the secretary, and for a lead's own
+//          sections, the secretary excepted.
 //   GET    ?a=attendance&sections=a,b            { me, sections: {k: {youth, adults, meetings}}, canEdit, canAdd }
 //   POST   ?a=attend        {section,date,present:[ids],adults?:[ids],lead?,note?}  { meetings }   anyone on that section
 //   POST   ?a=attend-remove {section,date}                      { meetings }   anyone on that section
@@ -641,12 +648,25 @@ export function createHandler(storeFactory) {
         const keys = wanted.filter((k) => canSeeSection(me, canManage, k));
         const sections = {};
         for (const k of keys) { const { doc } = await readDoc(store, "section/" + k, sectionFallback); sections[k] = { required: doc.required, slots: doc.slots, updatedAt: doc.updatedAt || null }; }
-        // Leads and the secretary see everyone. Others see the people who share a section with them, which is all coverage needs.
+        // The secretary sees everyone. Everybody else, leads included, sees the
+        // people who share a section with them: a lead runs their own sections
+        // and nobody else's, so that is the whole of what they need, and the
+        // rest of the group's names are not theirs to have.
         const mine = new Set(me.sections || []);
-        const visible = (me.lead || canManage) ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
+        const visible = canManage ? roster.doc.people
+          : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
+        // Codes are links that sign a phone in as that person. The secretary
+        // holds them all. A lead holds the ones for their own sections, so they
+        // can hand a helper their link without going through her, but never the
+        // secretary's, which would pass on the secretary's own powers. Everyone
+        // gets their own.
+        const codeFor = (p) => canManage || p.id === me.id
+          || (!!me.lead && !p.secretary && (p.sections || []).some((k) => mine.has(k)));
         const { doc: ev } = await readDoc(store, "events", eventsFallback);
         const { doc: cal } = await readDoc(store, "calendar", calendarFallback);
-        const msg = canManage ? (await readDoc(store, "message", messageFallback)).doc.text || "" : undefined;
+        // A lead reads the wording so "Copy message" says the same thing hers
+        // does; only she may change it.
+        const msg = (canManage || me.lead) ? (await readDoc(store, "message", messageFallback)).doc.text || "" : undefined;
         const { doc: cd } = await readDoc(store, "county", countyFallback);
         const ourSections = new Set(wanted);
         const allKeys = [...ourSections];
@@ -661,8 +681,15 @@ export function createHandler(storeFactory) {
             return { id, changed: !!it.changed, gone: !!it.gone, event: it.event, targets, rows };
           })
           .filter((x) => x.rows.length);
-        return json(200, { me: pub(me, canManage), people: visible.map((p) => pub(p, canManage)), sections,
-          events: ev.events || [],
+        return json(200, { me: pub(me, canManage), people: visible.map((p) => pub(p, codeFor(p))), sections,
+          // While no secretary exists, leads hold her powers so nobody is
+          // locked out. The pages used to work that out from the people list,
+          // which a lead now only sees a section of, so the function says.
+          hasSecretary: roster.doc.people.some((p) => p.secretary),
+          // Leaders-only events for the sections this person may see, and the
+          // whole group's. Everything else on this response is cut to their
+          // sections; this was not.
+          events: (ev.events || []).filter((e) => !e.section || keys.includes(e.section)),
           // The nights themselves, for the sections this person may see.
           calendar: { entries: (cal.entries || []).filter((e) => keys.includes(e.section)), updatedAt: cal.updatedAt || null },
           county, countySyncedAt: cd.syncedAt || null, ...(msg === undefined ? {} : { message: msg }) });

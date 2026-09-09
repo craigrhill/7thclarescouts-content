@@ -202,7 +202,11 @@ const setRequired = (field, v) => guarded(async () => {
 function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
 function allKeys(){ return C.settings.sections.map(x => x.key); }
 function sectionName(k){ return k === "all" ? "Whole group" : k === "county" ? "County" + (countyNews() ? " (" + countyNews() + ")" : "") : ((C.settings.sections.find(x => x.key === k) || {}).name || k); }
-const canManage = () => !!D.me.secretary || (!(D.people || []).some(p => p.secretary) && !!D.me.lead);
+// While the roster has no secretary at all, a lead holds her powers so nobody
+// is locked out. The function says whether there is one, because a lead is
+// only sent their own sections' people and could not tell from those alone.
+const canManage = () => !!D.me.secretary
+  || (!(("hasSecretary" in D) ? D.hasSecretary : (D.people || []).some(p => p.secretary)) && !!D.me.lead);
 // The chips: the sections on my entry (all of them for the secretary), then
 // the whole-group events everyone can see. Who may change what is decided by
 // the function; the page only mirrors it.

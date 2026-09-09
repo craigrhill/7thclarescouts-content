@@ -200,9 +200,21 @@ ok("on their own section a lead ticks anyone", [r.status, r.j.section.slots[slot
 r = await call("GET", "?sections=scouts", { token: member });
 ok("member sees only people sharing a section (the secretary has none, the helper is Beavers)", r.j.people.map(p => p.name), ["Member One"]);
 ok("member does not see the Beaver helper", r.j.people.some(p => p.id === beaverId), false);
-r = await call("GET", "?sections=scouts", { token: cubsLead }); ok("a lead sees everyone", r.j.people.some(p => p.id === beaverId), true);
-ok("but a lead is not given anyone's code", r.j.people.some(p => "code" in p) || "code" in r.j.me, false);
-r = await call("GET", "?sections=scouts", { token: member }); ok("nor is a member", r.j.people.some(p => "code" in p), false);
+// A lead keeps their own section going, links and all, without seeing the rest
+// of the group. The secretary's own code is the one thing held back from them:
+// it would pass on her powers, not just her place on a rota.
+r = await call("POST", "?a=person-update", { token: lead, body: { id: leadId, sections: ["cubs"] } });
+ok("the secretary takes on a section of her own", r.status, 200);
+r = await call("GET", "?sections=cubs", { token: cubsLead });
+ok("a lead sees the people on their own sections and nobody else", [r.j.people.every(p => p.id === cubsLeadId || (p.sections || []).includes("cubs")), r.j.people.some(p => p.id === beaverId)], [true, false]);
+ok("and holds their links, so a helper can be sent one without going through the secretary", r.j.people.filter(p => "code" in p).map(p => p.id), [cubsLeadId]);
+ok("the secretary is on the list but her link is not, or it would pass on her powers", [r.j.people.some(p => p.id === leadId), r.j.people.some(p => p.id === leadId && "code" in p)], [true, false]);
+ok("a lead reads the wording too, so Copy message says what hers says", typeof r.j.message, "string");
+r = await call("POST", "?a=message", { token: cubsLead, body: { text: "mine now" } });
+ok("but only the secretary may change it", r.status, 403);
+r = await call("GET", "?sections=scouts", { token: member });
+ok("a helper gets their own link back and nobody else's, and no wording", [r.j.people.filter(p => "code" in p).map(p => p.id), "message" in r.j], [[memberId], false]);
+r = await call("POST", "?a=person-update", { token: lead, body: { id: leadId, sections: [] } });
 r = await call("GET", "?sections=scouts", { token: lead });
 ok("the secretary sees every code, and they are the ones issued", [r.j.people.find(p => p.id === memberId).code, r.j.people.find(p => p.id === cubsLeadId).code, r.j.me.code], [memberCode, cubsLeadCode, leadCode]);
 r = await call("POST", "?a=slot", { token: lead, body: { section: "scouts", id: slot, add: [leadId] } });
@@ -295,8 +307,14 @@ ok("a leaders-only event is stored privately", [r.status, r.j.private, r.j.event
   ok("and never reaches the public calendar", doc.events.some(e => e.title === "Leaders planning night"), false); }
 r = await call("GET", "?sections=scouts", { token: m2 });
 ok("private events come back on GET", r.j.events.map(e => e.title), ["Leaders planning night"]);
-r = await call("GET", "?sections=scouts", { token: cubsLead });
-ok("a lead sees them too, so the rota can show them", r.j.events.length, 1);
+// Everything else on the response is cut to the caller's own sections, and so
+// is this: a leaders-only night belongs to the section that called it.
+r = await call("GET", "?sections=scouts,cubs", { token: cubsLead });
+ok("another section's leaders-only night is not a lead's to see", r.j.events.map(e => e.title), []);
+r = await call("POST", "?a=event", { token: m2, body: { private: true, date: "2030-04-09", title: "Cubs leaders' chat", section: "cubs" } });
+r = await call("GET", "?sections=cubs", { token: cubsLead });
+ok("their own section's is, so the rota can show it", r.j.events.map(e => e.title), ["Cubs leaders' chat"]);
+r = await call("POST", "?a=event-remove", { token: m2, body: { private: true, key: "2030-04-09|Cubs leaders' chat" } });
 r = await call("POST", "?a=event", { token: cubsLead, body: { date: "2030-06-01", title: "Not allowed" } });
 ok("a section lead cannot add a whole-group event", [r.status, r.j.error], [403, "Only the secretary can change whole-group events."]);
 r = await call("POST", "?a=event", { token: cubsLead, body: { date: "2030-06-01", title: "Not theirs", section: "scouts" } });

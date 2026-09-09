@@ -15,7 +15,7 @@
 <header class="appbar"><div class="wrap">
   <a class="back" href="/" aria-label="Back to the 7th Clare Scouts app"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span>App</span></a>
   <div class="brand">7th Clare Scouts<small>Roster</small></div>
-  <span class="pill">Secretary</span>
+  <span class="pill" id="pagePill">Leaders only</span>
 </div></header>
 <main class="wrap">
   <div id="err" class="banner err" hidden></div>
@@ -95,28 +95,44 @@ let C = null, D = null, editing = null;
 function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
 const sectionName = k => (C.settings.sections.find(x => x.key === k) || {}).name || k;
 const personById = id => (D.people || []).find(p => p.id === id);
-const canManage = () => !!D.me.secretary || (!(D.people || []).some(p => p.secretary) && !!D.me.lead);
+// While the roster has no secretary at all, a lead holds her powers so nobody
+// is locked out. The function says whether there is one, because a lead is
+// only sent their own sections' people and could not tell from those alone.
+const canManage = () => !!D.me.secretary
+  || (!(("hasSecretary" in D) ? D.hasSecretary : (D.people || []).some(p => p.secretary)) && !!D.me.lead);
 function chips(checked, onchange){ return C.settings.sections.map(x => `<label><input type="checkbox" ${checked.includes(x.key) ? "checked" : ""} data-key="${esc(x.key)}" ${onchange ? `onchange="${onchange(esc(x.key))}"` : ""}>${esc(x.name)}</label>`).join(""); }
 const roleBadges = p => (p.secretary ? `<span class="rbadge">secretary</span>` : "") + (p.lead ? `<span class="rbadge">lead</span>` : "") || `<span class="small muted">helper</span>`;
 
 function render(){
   const me = D.me, manage = canManage();
+  // A lead keeps their own section going: the people on it, their links to
+  // hand out, and the tally of who has taken what on. They change none of it.
+  // Adding somebody, moving them between sections and the wording of the
+  // message are all the secretary's, for the whole group. The function decides
+  // this too: it sends a lead their own sections' people and no others, their
+  // codes but never the secretary's, and refuses every write.
+  const links = manage || !!me.lead;
   $("leaderNav").innerHTML = leaderNav(me); $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
   $("intro").textContent = manage
     ? "Type a name, tap the sections they can cover, press Add. Their own link appears in the row: Copy message and send it to them, and they never type anything. Edit a row to change anything later."
+    : links
+    ? "The Scouters on your sections. Copy someone's link and send it to them, and they never type a code. Adding people, and changing who covers what, is the secretary's."
     : "Only the secretary can change the roster. This is the list as it stands.";
-  $("addCard").hidden = !manage; $("codeHead").hidden = !manage;
-  $("msgCard").hidden = !manage; $("loadCard").hidden = !manage;
-  if (manage) { renderMessage(); renderLoad(); }
+  $("pagePill").textContent = manage ? "Secretary" : "Leaders only";
+  $("addCard").hidden = !manage; $("codeHead").hidden = !links;
+  $("msgCard").hidden = !manage; $("loadCard").hidden = !links;
+  if (manage) renderMessage();
+  if (links) renderLoad();
   const people = D.people || [];
   $("people").innerHTML = people.length ? people.map(p => {
     const row = `<tr class="person" data-id="${esc(p.id)}">
       <td class="nm">${esc(p.name)}${p.id === me.id ? ` <span class="small muted">(you)</span>` : ""}${qualTag(p)}</td>
       <td>${pills(C, p.sections)}</td>
       <td>${roleBadges(p)}</td>
-      ${manage ? `<td class="code-cell">${p.code
+      ${links ? `<td class="code-cell">${p.code
         ? `<span class="link small">${esc(codeLink(p.code))}</span><span class="row" style="gap:.3rem;margin-top:.25rem"><button class="btn quiet" onclick="copyLink('${esc(p.id)}', this)">Copy link</button><button class="btn quiet" onclick="copyMessage('${esc(p.id)}', this)">Copy message</button></span>`
-        : `<span class="small muted">none yet</span>`}</td>` : ""}
+        : manage ? `<span class="small muted">none yet</span>`
+        : `<span class="small muted">${p.secretary ? "the secretary's own link" : "no link yet"}</span>`}</td>` : ""}
       <td class="act">${manage ? `<button class="btn quiet" onclick="edit('${esc(p.id)}')">${editing === p.id ? "Close" : "Edit"}</button>` : ""}</td>
     </tr>`;
     if (!manage || editing !== p.id) return row;
@@ -126,7 +142,8 @@ function render(){
       <div class="row"><label><input type="checkbox" ${p.lead ? "checked" : ""} onchange="setFlag('${esc(p.id)}','lead',this.checked)"> Section lead</label>${QUAL.on ? `<label><input type="checkbox" ${p.qualified ? "checked" : ""} onchange="setFlag('${esc(p.id)}','qualified',this.checked)"> ${esc(QUAL.label)}</label>` : ""}</div>
       <div class="row"><button class="btn" onclick="recode('${esc(p.id)}')">New link</button><button class="btn quiet" onclick="removePerson('${esc(p.id)}')">Remove from roster</button>${p.id !== me.id && !p.secretary ? `<button class="btn quiet" onclick="handOver('${esc(p.id)}')">Make secretary instead of me</button>` : ""}</div>
     </div></td></tr>`;
-  }).join("") : `<tr><td colspan="5" class="empty">Nobody yet. Add the first Scouter below.</td></tr>`;
+  }).join("") : `<tr><td colspan="5" class="empty">${manage ? "Nobody yet. Add the first Scouter below."
+    : "Nobody on the roster covers your sections yet. Ask the secretary to add them."}</td></tr>`;
   if (manage && !$("newSecs").children.length) $("newSecs").innerHTML = chips([], null);
 }
 
@@ -199,7 +216,9 @@ function renderLoad(){
   const keys = Object.keys(D.sections || {});
   if (loadSec && !keys.includes(loadSec)) loadSec = "";
   const k = loadSec, secName = k ? sectionName(k) : "";
-  $("loadChips").innerHTML = [["", "All"], ...C.settings.sections.filter(x => keys.includes(x.key)).map(x => [x.key, x.name])]
+  // A lead with one section has nothing to choose between, so no pills.
+  $("loadChips").hidden = keys.length < 2;
+  $("loadChips").innerHTML = keys.length < 2 ? "" : [["", "All"], ...C.settings.sections.filter(x => keys.includes(x.key)).map(x => [x.key, x.name])]
     .map(([key, name]) => `<button class="chip ${key === k ? "on" : ""}" onclick="pickLoad('${esc(key)}')">${esc(name)}</button>`).join("");
   const zero = { meetings: 0, events: 0 };
   const of = p => { const c = counts.get(p.id); return (k ? (c && c.secs[k]) : c) || zero; };

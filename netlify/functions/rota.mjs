@@ -1351,10 +1351,11 @@ function createHandler(storeFactory) {
           sections[k] = { required: doc.required, slots: doc.slots, updatedAt: doc.updatedAt || null };
         }
         const mine = new Set(me.sections || []);
-        const visible = me.lead || canManage ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
+        const visible = canManage ? roster.doc.people : roster.doc.people.filter((p) => p.id === me.id || (p.sections || []).some((k) => mine.has(k)));
+        const codeFor = (p) => canManage || p.id === me.id || !!me.lead && !p.secretary && (p.sections || []).some((k) => mine.has(k));
         const { doc: ev } = await readDoc(store, "events", eventsFallback);
         const { doc: cal } = await readDoc(store, "calendar", calendarFallback);
-        const msg = canManage ? (await readDoc(store, "message", messageFallback)).doc.text || "" : void 0;
+        const msg = canManage || me.lead ? (await readDoc(store, "message", messageFallback)).doc.text || "" : void 0;
         const { doc: cd } = await readDoc(store, "county", countyFallback);
         const ourSections = new Set(wanted);
         const allKeys = [...ourSections];
@@ -1365,9 +1366,16 @@ function createHandler(storeFactory) {
         }).filter((x) => x.rows.length);
         return json(200, {
           me: pub(me, canManage),
-          people: visible.map((p) => pub(p, canManage)),
+          people: visible.map((p) => pub(p, codeFor(p))),
           sections,
-          events: ev.events || [],
+          // While no secretary exists, leads hold her powers so nobody is
+          // locked out. The pages used to work that out from the people list,
+          // which a lead now only sees a section of, so the function says.
+          hasSecretary: roster.doc.people.some((p) => p.secretary),
+          // Leaders-only events for the sections this person may see, and the
+          // whole group's. Everything else on this response is cut to their
+          // sections; this was not.
+          events: (ev.events || []).filter((e) => !e.section || keys.includes(e.section)),
           // The nights themselves, for the sections this person may see.
           calendar: { entries: (cal.entries || []).filter((e) => keys.includes(e.section)), updatedAt: cal.updatedAt || null },
           county,
