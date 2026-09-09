@@ -168,12 +168,6 @@
       "startTime": "19:00"
     },
     {
-      "date": "2026-09-11",
-      "title": "Test",
-      "id": "ac03f8ce",
-      "section": "scouts"
-    },
-    {
       "date": "2026-09-17",
       "title": "First Meeting",
       "section": "scouts",
@@ -1571,7 +1565,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-09T04:44:12.250Z",
+  "updatedAt": "2026-09-09T04:44:36.308Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
