@@ -424,6 +424,23 @@ try {
   await L2.locator("#loadChips .chip", { hasText: "All" }).click(); await L2.waitForTimeout(400);
   ok("All is the way back", [(await L2.locator("#loadChips .chip.on").innerText()).trim(), (await loadRow("Board Helper")).endsWith("2 1 3")], ["All", true]);
 
+  // ---- a section with nights saved but no events ----
+  // Saving the term's nights and then reading "nothing coming up" underneath
+  // looks like the save failed. The nights are not events; the line says so.
+  step = "nights are not events";
+  await go(L2, "events.html"); await L2.waitForTimeout(900); await pickSec(L2, "Ventures"); await L2.waitForTimeout(400);
+  const empty = async () => (await L2.locator("#events .empty").innerText()).replace(/\s+/g, " ");
+  await L2.setViewportSize({ width: 390, height: 844 }); await L2.waitForTimeout(300);
+  await L2.locator("#events").scrollIntoViewIfNeeded();
+  await L2.screenshot({ path: ".e2e/events-empty-390.png" });
+  await L2.setViewportSize({ width: 1280, height: 900 }); await L2.waitForTimeout(300);
+  await L2.locator("#events").scrollIntoViewIfNeeded();
+  await L2.screenshot({ path: ".e2e/events-empty-1280.png" });
+  ok("a section with no events says which list is empty and what belongs on it", [(await empty()).startsWith("No Ventures events coming up."), (await empty()).includes("meeting nights above")], [true, true]);
+  // The whole group has an event on it by now, so ask the wording itself: it
+  // has no meeting nights of its own, so it points at the section chips.
+  ok("the whole group has no nights of its own, so it points at the section chips instead", await L2.evaluate(() => emptyLine("all", false)), "No whole-group events coming up. A section's own events are on its chip.");
+
   // ---- the installed app: the iOS status bar sits over the page ----
   // viewport-fit is cover on every leaders' page, so in a standalone app the
   // status bar overlays the top of it. The header has to start below the bar,

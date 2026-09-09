@@ -270,8 +270,18 @@ function render(){
       <div class="row"><textarea id="edDetails" placeholder="Details for parents" style="min-height:4rem">${esc(e.details || "")}</textarea></div>
       <div class="row"><button class="btn primary" onclick="saveEvent('${esc(key)}',${e.priv})">Save</button><button class="btn quiet" onclick="removeEvent('${esc(key)}',${e.priv})">Remove</button><span class="small muted">${e.priv ? "Leaders only." : "On the public calendar."}</span></div>
     </div></td></tr>`;
-  }).join("") : `<tr><td colspan="4" class="empty">Nothing coming up${k === "all" ? " for the whole group" : " for " + esc(sectionName(k))}.</td></tr>`;
+  }).join("") : `<tr><td colspan="4" class="empty">${emptyLine(k, showMeet)}</td></tr>`;
 }
+// This list is events, and the card above it is the term's meeting nights.
+// Saving a list of nights and then reading "nothing coming up" here looks like
+// the save failed, so where there is a nights card on screen, say which list
+// this is and what belongs on it.
+const emptyLine = (k, showMeet) => k === "all"
+  ? "No whole-group events coming up. A section's own events are on its chip."
+  : `No ${esc(sectionName(k))} events coming up.` + (showMeet
+    ? ` The meeting nights above are a list of their own and do not show here: an event is a hike, a camp, a badge day, anything that is not the weekly meeting.`
+    : "");
+
 // ---- from the county ----
 // A lead decides for their own sections, the secretary for anything; the
 // function enforces that, so this only draws what it sent back.
