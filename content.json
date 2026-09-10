@@ -334,6 +334,16 @@
     },
     {
       "date": "2027-05-14",
+      "title": "County Shield",
+      "endDate": "2027-05-16",
+      "section": "scouts",
+      "location": "Ruan",
+      "details": "Hosted by County",
+      "countyId": "ev_grimru2e",
+      "id": "cev_grimru2e-scouts"
+    },
+    {
+      "date": "2027-05-14",
       "endDate": "2027-05-16",
       "title": "County Shield (County)",
       "section": "scouts",
@@ -1691,7 +1701,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:01:25.229Z",
+  "updatedAt": "2026-09-10T06:01:30.000Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
