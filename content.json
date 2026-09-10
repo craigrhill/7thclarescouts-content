@@ -227,6 +227,16 @@
     },
     {
       "date": "2026-10-02",
+      "title": "Chill Camp",
+      "endDate": "2026-10-03",
+      "section": "scouts",
+      "location": "Ruan",
+      "details": "Hosted by Ennis",
+      "countyId": "ev_efq17zgf",
+      "id": "cev_efq17zgf-scouts"
+    },
+    {
+      "date": "2026-10-02",
       "endDate": "2026-10-03",
       "title": "Chill Camp (County)",
       "section": "scouts",
@@ -1623,7 +1633,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:00:20.556Z",
+  "updatedAt": "2026-09-10T06:00:30.658Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
