@@ -352,6 +352,16 @@
       "id": "cev_mj9fy738-cubs"
     },
     {
+      "date": "2027-04-25",
+      "title": "Beaver Challenge",
+      "section": "beavers",
+      "location": "Killaloe",
+      "startTime": "15:00",
+      "details": "Hosted by Killaloe",
+      "countyId": "ev_r5rs1xhv",
+      "id": "cev_r5rs1xhv-beavers"
+    },
+    {
       "date": "2027-05-14",
       "title": "County Shield",
       "endDate": "2027-05-16",
@@ -1739,7 +1749,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:02:18.334Z",
+  "updatedAt": "2026-09-10T06:02:28.644Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
