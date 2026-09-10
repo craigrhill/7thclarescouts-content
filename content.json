@@ -160,6 +160,16 @@
   ],
   "events": [
     {
+      "date": "2026-09-03",
+      "title": "Scout Section ONLY - Planning Meeting",
+      "section": "scouts",
+      "location": "Ennis Scout Hall",
+      "startTime": "19:00",
+      "details": "Due to a conflict on the 9th, Scout Section is holding our planning on the 3rd Sept.",
+      "countyId": "ev_84aoht91",
+      "id": "cev_84aoht91-scouts"
+    },
+    {
       "date": "2026-09-09",
       "title": "County Planning Meeting",
       "section": "beavers",
@@ -1605,7 +1615,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T05:59:37.104Z",
+  "updatedAt": "2026-09-10T06:00:14.214Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
