@@ -280,6 +280,16 @@
       "details": "County cooking competition."
     },
     {
+      "date": "2027-01-30",
+      "title": "Provincial sixer Training",
+      "endDate": "2027-01-31",
+      "section": "cubs",
+      "location": "Flannans college Ennis",
+      "details": "Hosted by Western province Team",
+      "countyId": "ev_rmdcujm5",
+      "id": "cev_rmdcujm5-cubs"
+    },
+    {
       "date": "2027-03-07",
       "title": "County Hike (County)",
       "section": "scouts",
@@ -1653,7 +1663,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:00:59.449Z",
+  "updatedAt": "2026-09-10T06:01:10.227Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
