@@ -705,5 +705,65 @@ ok("a private event can be removed", r.j.events.length, 0);
   process.env.OWNER_NAME = "Craig, Craig Hill";
 }
 
+{ // ---- a decision reads the group calendar once, not twice ----
+  // Writing an approved county event onto the calendar used to fetch the whole
+  // document and then fetch it again to write it. Over GitHub that is about a
+  // second of a leader's wait for nothing, on the one button they press most.
+  const cs = memoryStore(), rs = memoryStore();
+  let reads = 0, writes = 0;
+  const counted = { ...cs, get: (...a) => { reads++; return cs.get(...a); }, setJSON: (...a) => { writes++; return cs.setJSON(...a); } };
+  const h3 = createHandler((n) => (n === "rota" ? rs : counted));
+  await cs.setJSON("content", { settings: { sections: [{ key: "scouts", name: "Scouts" }, { key: "cubs", name: "Cubs" }] }, events: [] });
+  const c3 = async (q, o = {}) => { const h = { "Content-Type": "application/json" }; if (o.token) h["x-rota-token"] = o.token; if (o.admin) h["x-admin-password"] = o.admin;
+    const r = await h3(new Request(base + q, { method: o.method || "POST", headers: h, body: o.body ? JSON.stringify(o.body) : undefined }));
+    return { status: r.status, j: await r.json().catch(() => null) }; };
+  const bs = await c3("?a=bootstrap", { admin: "admin-for-test", body: { name: "Boss" } });
+  const bt = (await c3("?a=login", { body: { code: bs.j.code } })).j.token;
+  const hikeFor = (secs) => ({ items: { x1: { status: "pending", stamp: "s", event: { id: "x1", name: "County Hike", start: "2030-04-04", sections: secs } } } });
+  await rs.setJSON("county", hikeFor(["scouts", "cubs"]));
+  reads = 0; writes = 0;
+  const dec = await c3("?a=county-decide", { token: bt, body: { id: "x1", section: "scouts", decision: "approve" } });
+  ok("approving a county event works", [dec.status, dec.j.status], [200, "approved"]);
+  ok("and reads the group calendar once, writing it once", [reads, writes], [1, 1]);
+  ok("the event landed on the calendar", (await cs.get("content", { type: "json" })).events.map((e) => e.title), ["County Hike"]);
+
+  // The saving is only safe because a write still carries the sha of the read
+  // it was based on: somebody saving in between must make GitHub refuse it and
+  // the change be rebuilt on their copy, not quietly flatten it. Stand in for
+  // the contents API, and change the file underneath the first write.
+  const gitFile = { doc: { settings: { sections: [{ key: "scouts", name: "Scouts" }, { key: "cubs", name: "Cubs" }] }, events: [], notices: [] }, sha: "sha1" };
+  let slipIn = true, refusals = 0, ghReads = 0;
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opt = {}) => {
+    const u = String(url);
+    if (!u.startsWith("https://api.github.com/")) return realFetch(url, opt);
+    if ((opt.method || "GET") === "GET") {
+      ghReads++;
+      return new Response(JSON.stringify({ sha: gitFile.sha, content: Buffer.from(JSON.stringify(gitFile.doc)).toString("base64") }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    const body = JSON.parse(opt.body);
+    if (slipIn) {   // somebody else saves first, so ours is now based on an old sha
+      slipIn = false;
+      gitFile.doc = { ...gitFile.doc, notices: [{ title: "saved by somebody else" }] };
+      gitFile.sha = "sha2";
+    }
+    if (body.sha !== gitFile.sha) { refusals++; return new Response("{}", { status: 409 }); }
+    gitFile.doc = JSON.parse(Buffer.from(body.content, "base64").toString("utf8"));
+    gitFile.sha = "sha" + (Number(gitFile.sha.slice(3)) + 1);
+    return new Response("{}", { status: 200 });
+  };
+  process.env.GITHUB_REPO = "x/y"; process.env.GITHUB_TOKEN = "t";
+  try {
+    await rs.setJSON("county", hikeFor(["scouts", "cubs"]));
+    const r2 = await c3("?a=county-decide", { token: bt, body: { id: "x1", section: "cubs", decision: "approve" } });
+    ok("a decision based on a document that moved underneath is refused and rebuilt", [r2.status, refusals], [200, 1]);
+    ok("so the calendar carries our event and keeps the other save", [gitFile.doc.events.map((e) => e.section), gitFile.doc.notices.map((n) => n.title)], [["cubs"], ["saved by somebody else"]]);
+    ok("and it took two reads, not three: the seed, then a fresh one for the retry", ghReads, 2);
+  } finally {
+    globalThis.fetch = realFetch;
+    delete process.env.GITHUB_REPO; delete process.env.GITHUB_TOKEN;
+  }
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -91,6 +91,9 @@ warning fires correctly for leaders.
     tools/test-sw.mjs               the service worker's caching rules
     tools/test-merge.mjs            drift guard: mergeContent in both files
     tools/e2e-rota.mjs              browser suite for the leaders' area
+    tools/county-fixture.json       the county's feed, stood in for through
+                                    COUNTY_FEED so the county inbox reads the
+                                    same every run
     tools/e2e-photos.mjs            browser suite for uploading pictures,
                                     from the admin file picker to the gallery
     tools/apply-update.mjs          ports admin's mergeContent, --dry-run
@@ -184,6 +187,21 @@ Roles are flags on a person, and the function enforces them, not the pages:
   edited from a section list; it is marked "county" there and run from the
   County chip. This was on the public `/calendar` page behind a County
   button until it moved here, so the whole event workflow sits in one place.
+  Two things about a row: a button says what pressing it does, **"Add to our
+  calendar"**, because "We are going" was both the button and the pill it
+  turns into and a row still waiting on a decision read as one already made;
+  and while the decision is in flight the row's buttons say "Saving…" and go
+  dead, because writing to `content.json` is a commit and takes a second or
+  two. That wait is one read and one commit now, not two reads: the handler
+  passes the document it already read to `withContent()` as its `seed`, and
+  only a retry reads again, since reading fresh is the point of retrying.
+  **Duplicates on the calendar are not the county machinery's doing.** It
+  matches on `countyId`, so an event without one is invisible to it: it can
+  neither recognise it as the same night nor tidy it away. `defaults.js`
+  used to carry seven sample events, six of them county ones, which a first
+  save copied into `content.json` and which then sat there for months beside
+  the same events arriving properly from the county. The sample events are
+  gone, and nothing seeds `events` any more.
 * **events** live on `events.html`: a lead adds and changes events for the
   sections on their own roster entry, the secretary for any section and for
   the whole group; helpers see their sections' events read-only. The
@@ -522,6 +540,17 @@ link in the footer.
   the calendar, and each block hides every view but its own. `route()` sets
   `body[data-print]` to the showing tab and each block is scoped to it;
   without that, both blocks apply and printing gives a blank page.
+* **Nothing the worker answers may be nothing.** `respondWith` resolved to
+  `undefined` does not fail a request, it leaves it pending for ever, and a
+  pending stylesheet blocks every script after it, so the app never boots.
+  Two of the fallbacks in `sw.js` could do that: a font and the public badge
+  board both fell back to a cached copy that might not exist. They answer
+  `Response.error()` instead, which fails the request properly and lets the
+  page carry on in its fallback fonts. `tools/test-sw.mjs` pins it. The same
+  trap catches the browser suites, where Google Fonts is unreachable: their
+  font route goes on the **context**, not the page, because once the worker
+  takes control it fetches the stylesheet itself and a page route does not
+  reach a worker's own requests.
 * **The shell cache is cache-first.** `sw.js` does `return cached || net`, so a
   broken `index.html` that gets cached is served once more before a fix lands.
   Bumping `VERSION` purges old caches on activate.

@@ -229,10 +229,14 @@ async function readContent(storeFactory) {
 // Writes part of the public document: the events, the meeting nights, or both.
 // fn returns { error } to refuse, { noop } to leave the file alone, or the keys
 // to put back.
-async function withContent(storeFactory, fn) {
+// A caller that has already read the document, to decide what to write, hands
+// it over as `seed` rather than making the same GitHub round trip twice: on the
+// county pages that read was a second or so of a leader's wait for nothing. A
+// retry always reads fresh, because reading fresh is the point of retrying.
+async function withContent(storeFactory, fn, seed) {
   const g = gh();
   for (let attempt = 0; ; attempt++) {
-    const { doc, sha } = await readContent(storeFactory);
+    const { doc, sha } = (attempt === 0 && seed) ? seed : await readContent(storeFactory);
     const out = fn(doc);
     if (out.error || out.noop) return out;
     if (out.events) doc.events = out.events;
@@ -758,10 +762,10 @@ export function createHandler(storeFactory) {
       }
       if (req.method !== "POST") return fail(405, "Method not allowed.");
       if (a === "county-sync") {
-        let content;
-        try { content = (await readContent(storeFactory)).doc; }
+        let seed;
+        try { seed = await readContent(storeFactory); }
         catch (e) { return fail(503, String(e.message || e)); }
-        const ourSections = (content.settings.sections || []).map((x) => x.key);
+        const ourSections = (seed.doc.settings.sections || []).map((x) => x.key);
         let feed;
         try { feed = await fetchCounty(); } catch (e) { return fail(502, String(e.message || e)); }
 
@@ -805,7 +809,7 @@ export function createHandler(storeFactory) {
           for (const id of stale) keep.push(...want.get(id));
           keep.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
           return { events: keep };
-        });
+        }, seed);
         // County events used to hang their ticks off the date and the name, so
         // the county moving one lost everyone on it. They have an id of their
         // own now, made from the county's, which no sync changes. Carry the old
@@ -1012,9 +1016,10 @@ export function createHandler(storeFactory) {
       if (a === "county-decide") {
         const decision = String(b.decision || "");
         if (!["approve", "decline", "reset"].includes(decision)) return fail(400, "Unknown decision.");
-        let content;
-        try { content = (await readContent(storeFactory)).doc; }
+        let seed;
+        try { seed = await readContent(storeFactory); }
         catch (e) { return fail(503, String(e.message || e)); }
+        const content = seed.doc;
         const ourSections = (content.settings.sections || []).map((x) => x.key);
         const { doc: cdoc } = await readDoc(store, "county", countyFallback);
         const item = cdoc.items[b.id];
@@ -1044,7 +1049,7 @@ export function createHandler(storeFactory) {
           for (const sk of approved) list.push(fromCounty(item.event, sk));
           list.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
           return { events: list };
-        });
+        }, seed);
         return json(200, { id: b.id, section: k, status });
       }
 

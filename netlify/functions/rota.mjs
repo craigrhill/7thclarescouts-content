@@ -901,10 +901,10 @@ async function readContent(storeFactory) {
   if (!doc) throw new Error("The group calendar is not set up yet.");
   return { doc, sha: null };
 }
-async function withContent(storeFactory, fn) {
+async function withContent(storeFactory, fn, seed) {
   const g = gh();
   for (let attempt = 0; ; attempt++) {
-    const { doc, sha } = await readContent(storeFactory);
+    const { doc, sha } = attempt === 0 && seed ? seed : await readContent(storeFactory);
     const out = fn(doc);
     if (out.error || out.noop) return out;
     if (out.events) doc.events = out.events;
@@ -1412,13 +1412,13 @@ function createHandler(storeFactory) {
       }
       if (req.method !== "POST") return fail(405, "Method not allowed.");
       if (a === "county-sync") {
-        let content;
+        let seed;
         try {
-          content = (await readContent(storeFactory)).doc;
+          seed = await readContent(storeFactory);
         } catch (e) {
           return fail(503, String(e.message || e));
         }
-        const ourSections = (content.settings.sections || []).map((x) => x.key);
+        const ourSections = (seed.doc.settings.sections || []).map((x) => x.key);
         let feed;
         try {
           feed = await fetchCounty();
@@ -1471,7 +1471,7 @@ function createHandler(storeFactory) {
           for (const id of stale) keep.push(...want.get(id));
           keep.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
           return { events: keep };
-        });
+        }, seed);
         if (!doc.movedSlots) {
           for (const list of want.values()) for (const e of list) await moveSlot(store, e.section || ourSections[0], oldSlotIdOf(e), slotIdOf(e));
           await update(store, "county", countyFallback, (d) => {
@@ -1685,12 +1685,13 @@ function createHandler(storeFactory) {
       if (a === "county-decide") {
         const decision = String(b.decision || "");
         if (!["approve", "decline", "reset"].includes(decision)) return fail(400, "Unknown decision.");
-        let content;
+        let seed;
         try {
-          content = (await readContent(storeFactory)).doc;
+          seed = await readContent(storeFactory);
         } catch (e) {
           return fail(503, String(e.message || e));
         }
+        const content = seed.doc;
         const ourSections = (content.settings.sections || []).map((x) => x.key);
         const { doc: cdoc } = await readDoc(store, "county", countyFallback);
         const item = cdoc.items[b.id];
@@ -1718,7 +1719,7 @@ function createHandler(storeFactory) {
           for (const sk of approved) list.push(fromCounty(item.event, sk));
           list.sort((x, y) => x.date.localeCompare(y.date) || x.title.localeCompare(y.title));
           return { events: list };
-        });
+        }, seed);
         return json(200, { id: b.id, section: k, status });
       }
       if (a === "event" || a === "event-update" || a === "event-remove") {

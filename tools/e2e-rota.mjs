@@ -16,7 +16,10 @@ const PORT = Number(process.env.E2E_PORT) || 8910, H = `http://127.0.0.1:${PORT}
 const CHROME = process.env.CHROME_PATH || ["/opt/pw-browsers/chromium-1194/chrome-linux/chrome"].find(existsSync) || (() => { try { return chromium.executablePath(); } catch { return undefined; } })();
 mkdirSync(".e2e", { recursive: true });
 
-const server = spawn(process.execPath, ["tools/serve.mjs", String(PORT)], { stdio: "ignore", env: { ...process.env, ADMIN_PASSWORD: "local" } });
+const server = spawn(process.execPath, ["tools/serve.mjs", String(PORT)], { stdio: "ignore",
+  // A fixture stands in for the county's feed, so the suite reads the same on
+  // a Tuesday as on a Sunday and does not need their server to be up.
+  env: { ...process.env, ADMIN_PASSWORD: "local", COUNTY_FEED: `http://127.0.0.1:${PORT}/tools/county-fixture.json` } });
 const stop = () => { try { server.kill(); } catch {} };
 process.on("exit", stop);
 for (let i = 0; i < 40; i++) { try { if ((await fetch(H + "rota.css")).ok) break; } catch {} await new Promise((r) => setTimeout(r, 250)); }
@@ -24,7 +27,16 @@ for (let i = 0; i < 40; i++) { try { if ((await fetch(H + "rota.css")).ok) break
 let pass = 0, fail = 0, step = "";
 const ok = (name, got, want) => { const g = JSON.stringify(got) === JSON.stringify(want); g ? pass++ : fail++; console.log(`${g ? "PASS" : "FAIL"}  ${name}${g ? "" : `  got ${JSON.stringify(got)} want ${JSON.stringify(want)}`}`); };
 const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });
-const page = async (w, h) => { const p = await (await b.newContext({ viewport: { width: w, height: h } })).newPage(); p.on("dialog", (d) => d.accept()); return p; };
+// Google Fonts is blocked here and the request is left hanging rather than
+// refused, and a pending stylesheet blocks every script after it, so the app
+// never boots. The route goes on the context, not the page: once the service
+// worker takes control it fetches the stylesheet itself, and a page route does
+// not reach a service worker's own requests.
+const page = async (w, h) => {
+  const c = await b.newContext({ viewport: { width: w, height: h } });
+  await c.route((u) => /fonts\.g/.test(u.hostname), (r) => r.abort());
+  const p = await c.newPage(); p.on("dialog", (d) => d.accept()); return p;
+};
 const go = async (p, f) => { await p.goto(H + f, { waitUntil: "load" }); await p.waitForTimeout(600); };
 const signInBtn = (p) => p.getByRole("button", { name: "Sign in", exact: true });
 // The roster shows each person's own link rather than a bare code, so read the
@@ -287,6 +299,10 @@ try {
   await L2.locator("#meetList .entry.open input[type=number]").fill("1");
   await L2.locator("#meetList .entry").first().getByRole("button", { name: "Edit" }).click(); await L2.waitForTimeout(200);
   await L2.locator("#meetList .entry.open input[type=text]").first().fill("Night hike");
+  // Other sections may already have published nights, so keep a copy: a save
+  // replaces this section's entries and must leave theirs alone.
+  const readMeetings = () => L2.evaluate(async () => (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).meetings || []);
+  const othersBefore = JSON.stringify((await readMeetings()).filter((m) => m.section !== "scouts"));
   await L2.getByRole("button", { name: "Save the nights" }).click(); await L2.waitForTimeout(1200);
   ok("saving takes the list over", (await L2.locator("#meetMsg").innerText()).includes("12 nights saved"), true);
   await go(L2, "rota.html"); await L2.waitForTimeout(800); await pickSec(L2, "Scouts");
@@ -299,8 +315,11 @@ try {
 
   // ---- and out to the parents, because some weeks are off ----
   step = "the nights reach parents";
-  const nights = await L2.evaluate(async () => (await (await fetch("/.netlify/functions/content", { cache: "no-store" })).json()).meetings || []);
-  ok("saving the nights publishes them to the group calendar", [nights.length, nights.every(m => m.section === "scouts")], [12, true]);
+  const published = await readMeetings();
+  const nights = published.filter((m) => m.section === "scouts");
+  ok("saving the nights publishes them to the group calendar", nights.length, 12);
+  ok("and replaces that section's entries only, leaving the other sections' nights alone",
+    JSON.stringify(published.filter((m) => m.section !== "scouts")), othersBefore);
   ok("with the date, the name and the hours, and nothing about adults or the lead's own notes",
     [nights.some(m => m.title === "Night hike"), nights.some(m => m.off), nights.some(m => "need" in m || "details" in m)], [true, true, false]);
   ok("and the subscription feed carries them, so a phone that subscribed sees which Tuesdays are on",
@@ -379,7 +398,6 @@ try {
   // reading the unfiltered list would open on an empty November.
   step = "the month it opens on";
   const JC = await page(1280, 900);
-  await JC.route((u) => /fonts\.g/.test(u.hostname), (r) => r.abort());
   await JC.route("**/.netlify/functions/content**", async (r) => {
     const d = await (await r.fetch()).json();
     d.events = [{ date: "2027-01-20", title: "Winter walk", section: "scouts" }];
@@ -531,6 +549,49 @@ try {
   await L2.screenshot({ path: ".e2e/roster-load-section-1280.png", fullPage: true });
   await L2.locator("#loadChips .chip", { hasText: "All" }).click(); await L2.waitForTimeout(400);
   ok("All is the way back", [(await L2.locator("#loadChips .chip.on").innerText()).trim(), (await loadRow("Board Helper")).endsWith("2 1 3")], ["All", true]);
+
+  // ---- the county inbox: a button that says what it does ----
+  // "We are going" was both the button and the pill it turns into, so a row
+  // still waiting on a decision read as one already made. And writing to the
+  // group calendar is a commit, so the row has to say it is working.
+  step = "the county inbox";
+  await go(L2, "events.html"); await L2.waitForTimeout(800);
+  await L2.locator("#chips .chip", { hasText: "County" }).first().click(); await L2.waitForTimeout(400);
+  await L2.getByRole("button", { name: "Check the county" }).click(); await L2.waitForTimeout(2500);
+  const inbox = L2.locator("#countyList");
+  // The fixture offers the planning meeting to Beavers, Cubs and Ventures (its
+  // fourth section, Rovers, is not ours) and the hike to Scouts: four rows.
+  ok("the county's events arrive, one row per section it was offered to",
+    [await inbox.locator(".cevent").count(), await inbox.locator(".crow").count()], [2, 4]);
+  {
+    const row = inbox.locator(".cevent", { hasText: "County Planning Meeting" }).first();
+    const pending = row.locator(".crow", { hasText: "TO DECIDE" }).first();
+    {
+      ok("a row still to decide offers what to do, not what is already true",
+        [(await pending.innerText()).includes("Add to our calendar"), (await pending.innerText()).includes("We are going")], [true, false]);
+      // Hold the reply so the busy state is observable, the way it is over a
+      // real commit rather than an in-memory store.
+      let hold = 900;
+      await L2.route("**/functions/rota?a=county-decide", async (r) => { if (hold) await new Promise((x) => setTimeout(x, hold)); await r.continue(); });
+      const btn = pending.locator("button", { hasText: "Add to our calendar" });
+      await btn.click(); await L2.waitForTimeout(250);
+      ok("pressing it says so and goes dead, so the tap is never repeated",
+        [await inbox.locator("button", { hasText: "Saving…" }).count() > 0, await inbox.locator("button[disabled]").count() > 0], [true, true]);
+      // Let the reply through rather than unrouting: pulling the route while
+      // its handler is still sleeping leaves that request with nobody to
+      // answer it.
+      hold = 0;
+      await inbox.locator(".crow .status.ok").first().waitFor({ timeout: 20000 });
+      ok("and afterwards the row says we are going, with an Undo",
+        [(await inbox.locator(".crow", { hasText: "WE ARE GOING" }).first().innerText()).includes("Undo"), await inbox.locator("button[disabled]").count()], [true, 0]);
+      await L2.screenshot({ path: ".e2e/county-inbox-1280.png", fullPage: true });
+      await L2.setViewportSize({ width: 390, height: 844 }); await L2.waitForTimeout(400);
+      ok("the row reads on a phone, with the buttons under the decision rather than off the side",
+        await L2.evaluate(() => { const r = document.querySelector("#countyList .crow"); return r ? r.scrollWidth <= r.clientWidth + 1 : null; }), true);
+      await L2.screenshot({ path: ".e2e/county-inbox-390.png", fullPage: true });
+      await L2.setViewportSize({ width: 1280, height: 900 }); await L2.waitForTimeout(300);
+    }
+  }
 
   // ---- a lead on the roster: their own section, its links, no changing it ----
   // Ev Helper is on Scouts and nothing else. Make them its lead, then look at

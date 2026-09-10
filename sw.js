@@ -1,5 +1,5 @@
 // 7th Clare Scouts service worker: offline shell + last-known content
-const VERSION = "v0_50";
+const VERSION = "v0_51";
 const SHELL = ["./", "./index.html", "./calendar.html", "./defaults.js", "./kit-defaults.js", "./logo.png", "./icon-192.png", "./icon-512.png", "./manifest.webmanifest", "./docs/Sionnach_Tips.pdf"];
 const SHELL_CACHE = "shell-" + VERSION, DATA_CACHE = "data-" + VERSION, FONT_CACHE = "fonts", PHOTO_CACHE = "photos-2";
 
@@ -18,9 +18,14 @@ self.addEventListener("fetch", e => {
       .catch(() => caches.match(e.request).then(r => r || new Response(JSON.stringify({empty:true}), {headers:{"Content-Type":"application/json"}}))));
     return;
   }
-  // Fonts: cache as they arrive
+  // Fonts: cache as they arrive. A miss that then fails on the network has
+  // nothing to fall back on, and answering with nothing at all is not the same
+  // as answering with a failure: respondWith resolved to undefined leaves the
+  // stylesheet pending for ever, and a pending stylesheet blocks every script
+  // after it, so the app never boots. Response.error() fails it properly and
+  // the page carries on in its fallback fonts.
   if (url.hostname.includes("fonts.g")) {
-    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => { const copy = res.clone(); caches.open(FONT_CACHE).then(c => c.put(e.request, copy)); return res; }).catch(() => r)));
+    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => { const copy = res.clone(); caches.open(FONT_CACHE).then(c => c.put(e.request, copy)); return res; }).catch(() => r || Response.error())));
     return;
   }
   // The rota function: leaders' data is never cached, so a lab page always
@@ -30,7 +35,7 @@ self.addEventListener("fetch", e => {
   if (url.pathname.includes("/.netlify/functions/rota")) {
     if (url.searchParams.get("a") !== "board") return;
     e.respondWith(fetch(e.request).then(r => { const copy = r.clone(); caches.open(DATA_CACHE).then(c => c.put(e.request, copy)); return r; })
-      .catch(() => caches.match(e.request)));
+      .catch(() => caches.match(e.request).then(r => r || Response.error())));
     return;
   }
   // Uploaded pictures: the name is the hash of the bytes, so a copy can be kept
@@ -55,7 +60,7 @@ self.addEventListener("fetch", e => {
   // Same-origin shell: stale-while-revalidate
   if (url.origin === location.origin) {
     e.respondWith(caches.match(e.request).then(cached => {
-      const net = fetch(e.request).then(res => { if (res.ok) { const copy = res.clone(); caches.open(SHELL_CACHE).then(c => c.put(e.request, copy)); } return res; }).catch(() => cached);
+      const net = fetch(e.request).then(res => { if (res.ok) { const copy = res.clone(); caches.open(SHELL_CACHE).then(c => c.put(e.request, copy)); } return res; }).catch(() => cached || Response.error());
       return cached || net;
     }));
   }

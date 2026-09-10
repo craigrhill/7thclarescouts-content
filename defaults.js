@@ -59,14 +59,12 @@ window.DEFAULT_CONTENT = {
   notices: [
     { title:"Welcome back for the new Scouting year", body:"Meetings resume this month. Check your section's night below and keep an eye here for changes." }
   ],
+  // No sample events. A seeded event looks exactly like a real one to
+  // every part of the app, and six of them sat on the live calendar for
+  // months beside the same events arriving properly from the county: the
+  // county inbox matches on countyId, which a seeded event has not, so it
+  // could neither recognise them nor tidy them away. Leaders add their own.
   events: [
-    { date:"2026-09-25", endDate:"2026-09-27", title:"Sionnach Adventure, Maamturks", section:"scouts", location:"Connemara (Lough Inagh side)", kitId:"sionnach", details:"Two nights under canvas in the Maamturks. Packing night is the meeting beforehand: bring your full rucksack." },
-    { date:"2026-10-02", endDate:"2026-10-03", title:"Chill Camp (County)", section:"scouts", location:"Ruan", details:"County camp." },
-    { date:"2027-01-24", title:"MasterChef (County)", section:"scouts", location:"Tulla", details:"County cooking competition." },
-    { date:"2027-03-07", title:"County Hike (County)", section:"scouts", location:"TBC", details:"Venue to be confirmed." },
-    { date:"2027-04-10", endDate:"2027-04-11", title:"Backwoods Skills (County)", section:"scouts", location:"Castleconnell", details:"Backwoods skills weekend." },
-    { date:"2027-05-14", endDate:"2027-05-16", title:"County Shield (County)", section:"scouts", location:"Ruan", details:"The annual County Shield camp and competition." },
-    { date:"2027-05-28", endDate:"2027-05-30", title:"Water Activities Weekend (County)", section:"scouts", location:"Kilrush", details:"Water activities weekend." }
   ],
   news: [
     { date:"2026-09-01", title:"New website launched", body:"Our new home online. Events, notices and news will appear here through the year." }

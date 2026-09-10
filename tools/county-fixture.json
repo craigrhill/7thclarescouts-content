@@ -1,0 +1,10 @@
+{
+  "events": [
+    { "id": "fx_planning", "name": "County Planning Meeting", "start": "2030-09-09", "end": "", "time": "7PM",
+      "category": "county", "sections": ["beavers", "cubs", "ventures", "rovers"],
+      "description": "Planning for the year.", "host": "County", "location": "Ennis Scout Hall", "link": "" },
+    { "id": "fx_hike", "name": "County Hike", "start": "2030-11-14", "end": "", "time": "",
+      "category": "county", "sections": ["scouts"],
+      "description": "", "host": "Ballyvaughan", "location": "TBD", "link": "" }
+  ]
+}

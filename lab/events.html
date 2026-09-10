@@ -305,9 +305,14 @@ function renderCounty(){
     const flags = [it.changed ? `<span class="rbadge">changed</span>` : "", it.gone ? `<span class="rbadge">withdrawn</span>` : ""].join("");
     const rows = it.rows.map(r => {
       const state = r.status === "approved" ? `<span class="status ok">We are going</span>` : r.status === "declined" ? `<span class="status off">Not going</span>` : `<span class="status gap">To decide</span>`;
+      // A button says what pressing it does. "We are going" was both the
+      // button and the pill it turns into, so a row still waiting on a
+      // decision read as one already made.
+      const busy = deciding === it.id + "/" + r.section;
+      const act = (d, label, cls) => `<button class="btn ${cls}" ${busy ? "disabled" : ""} onclick="countyDecide('${esc(it.id)}','${esc(r.section)}','${d}')">${busy ? "Saving…" : label}</button>`;
       const acts = r.status === "pending"
-        ? `<button class="btn primary" onclick="countyDecide('${esc(it.id)}','${esc(r.section)}','approve')">We are going</button><button class="btn quiet" onclick="countyDecide('${esc(it.id)}','${esc(r.section)}','decline')">Not for us</button>`
-        : `<button class="btn quiet" onclick="countyDecide('${esc(it.id)}','${esc(r.section)}','reset')">Undo</button>`;
+        ? act("approve", "Add to our calendar", "primary") + act("decline", "Not for us", "quiet")
+        : act("reset", "Undo", "quiet");
       return `<div class="crow"><span class="cname">${pill(C, r.section)}</span>${state}<span class="cacts">${acts}</span>${r.by ? `<span class="small muted">by ${esc(r.by)}</span>` : ""}</div>`;
     }).join("");
     return `<div class="cevent">
@@ -326,8 +331,18 @@ const countySync = () => guarded(async () => {
     await afterEvents();
   } finally { b.disabled = false; b.textContent = "Check the county"; }
 });
-// Approving writes the event onto the group calendar, so reload that too.
-const countyDecide = (id, section, decision) => guarded(async () => { await api("POST", "?a=county-decide", { id, section, decision }); await afterEvents(); });
+// Approving writes the event onto the group calendar, which is a commit to
+// content.json, so this takes a second or two. The row says it is working and
+// its buttons go dead, or a tap looks like nothing happened and gets repeated.
+let deciding = null;
+const countyDecide = (id, section, decision) => {
+  if (deciding) return;
+  deciding = id + "/" + section; renderCounty();
+  return guarded(async () => {
+    try { await api("POST", "?a=county-decide", { id, section, decision }); await afterEvents(); }
+    finally { deciding = null; renderCounty(); }
+  });
+};
 
 function editEvent(key){ editingEvent = editingEvent === key ? null : key; render(); }
 function pickSection(k){ try { localStorage.setItem(SK, k); } catch {} editingEvent = null; syncNote = ""; meetFor = null; render(); }

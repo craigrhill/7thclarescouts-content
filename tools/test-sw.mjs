@@ -34,7 +34,9 @@ function boot(w) {
   const src = readFileSync("sw.js", "utf8");
   const on = {};
   const self = { addEventListener: (k, fn) => { on[k] = fn; }, skipWaiting: async () => {}, clients: { claim: async () => {} } };
-  new Function("self", "caches", "fetch", "location", "URL", src)(self, w.caches, w.fetchStub, { origin: "https://7thclarescouts.ie" }, URL);
+  const Response = function (body, init) { return { body, ...(init || {}) }; };
+  Response.error = () => ({ type: "error", ok: false, status: 0 });
+  new Function("self", "caches", "fetch", "location", "URL", "Response", src)(self, w.caches, w.fetchStub, { origin: "https://7thclarescouts.ie" }, URL, Response);
   return on;
 }
 // Drive one fetch event and return what the worker answered, or null when it
@@ -83,6 +85,20 @@ const PHOTO = "https://7thclarescouts.ie/photo/" + "a".repeat(32) + ".jpg";
   ok("nor is a leaders' read of the rota function", await get(on, "https://7thclarescouts.ie/.netlify/functions/rota?sections=cubs", w), null);
   await get(on, "https://7thclarescouts.ie/.netlify/functions/rota?a=board&section=cubs", w);
   ok("but the public badge board is kept, so a section page works offline", [...w.stores.keys()].some(k => k.startsWith("data-")), true);
+}
+
+{ // Nothing must ever be answered with nothing. respondWith resolved to
+  // undefined leaves the request pending for ever rather than failing it, and
+  // a pending stylesheet blocks every script after it, so the app never boots.
+  const FONT = "https://fonts.googleapis.com/css2?family=Inter";
+  const w = world();
+  const on = boot(w);
+  ok("a font that is neither cached nor reachable is failed, not left hanging",
+    (await get(on, FONT, w)).type, "error");
+  ok("and the same for the badge board", (await get(on, "https://7thclarescouts.ie/.netlify/functions/rota?a=board&section=cubs", w)).type, "error");
+  ok("and for anything of ours that is not in the shell cache", (await get(on, "https://7thclarescouts.ie/photos/none.png", w)).type, "error");
+  const w2 = world({ cached: { "fonts": { [FONT]: { status: 200, body: "@font-face{}" } } } });
+  ok("a cached font is still served without asking the network", [(await get(boot(w2), FONT, w2)).body, w2.asked.length], ["@font-face{}", 0]);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
