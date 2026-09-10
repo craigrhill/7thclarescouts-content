@@ -261,6 +261,15 @@
       "section": "scouts",
       "location": "Kilrush",
       "details": "Water activities weekend."
+    },
+    {
+      "date": "2027-06-05",
+      "title": "JamÓige",
+      "endDate": "2027-06-07",
+      "section": "cubs",
+      "location": "Pallaskenery",
+      "countyId": "ev_qwgonny6",
+      "id": "cev_qwgonny6-cubs"
     }
   ],
   "news": [
@@ -1596,7 +1605,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T05:58:32.331Z",
+  "updatedAt": "2026-09-10T05:59:10.188Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
