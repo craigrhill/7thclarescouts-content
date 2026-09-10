@@ -216,15 +216,6 @@
       "details": "County camp."
     },
     {
-      "date": "2026-10-25",
-      "title": "Halloween Day",
-      "section": "beavers",
-      "location": "Clare Camp site Ruan",
-      "startTime": "16:00",
-      "countyId": "ev_hc0szskx",
-      "id": "cev_hc0szskx-beavers"
-    },
-    {
       "date": "2027-01-24",
       "title": "MasterChef",
       "section": "scouts",
@@ -1614,7 +1605,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T05:59:33.921Z",
+  "updatedAt": "2026-09-10T05:59:35.379Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
