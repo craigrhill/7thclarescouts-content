@@ -244,6 +244,16 @@
       "details": "County camp."
     },
     {
+      "date": "2026-10-04",
+      "title": "Cub Forum",
+      "section": "cubs",
+      "location": "Tulla scout Den",
+      "startTime": "17:30",
+      "details": "Hosted by ACPC",
+      "countyId": "ev_006nhpqv",
+      "id": "cev_006nhpqv-cubs"
+    },
+    {
       "date": "2027-01-24",
       "title": "MasterChef",
       "section": "scouts",
@@ -1633,7 +1643,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:00:30.658Z",
+  "updatedAt": "2026-09-10T06:00:51.155Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
