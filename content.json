@@ -361,6 +361,16 @@
     },
     {
       "date": "2027-05-28",
+      "title": "Water Activities Weekend",
+      "endDate": "2027-05-30",
+      "section": "scouts",
+      "location": "Kilrush",
+      "details": "Hosted by Ruan",
+      "countyId": "ev_oioy93s5",
+      "id": "cev_oioy93s5-scouts"
+    },
+    {
+      "date": "2027-05-28",
       "endDate": "2027-05-30",
       "title": "Water Activities Weekend (County)",
       "section": "scouts",
@@ -1710,7 +1720,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:01:31.880Z",
+  "updatedAt": "2026-09-10T06:01:36.557Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
