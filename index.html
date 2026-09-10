@@ -17,6 +17,7 @@
 <style>
 :root{
   --stone-50:#F4F1EA;--stone-100:#E8E4DA;--stone-200:#D3CFC4;--stone-400:#9A968C;--stone-600:#5E5C55;--stone-800:#2F3134;--ink:#1E2124;
+  --leaf-50:#E9F4E4;--leaf-200:#C6DEBB;
   --sea-700:#1B4A63;--sea-500:#2E6F8E;--sea-300:#8FB7C9;--sea-100:#DCEAF0;
   --orange:#F07800;--orange-dark:#C96300;--orange-soft:#FDE8D3;--cranesbill:#B0306A;--gentian:#2F55A8;--gorse:#E3A92B;--moss:#5C7A4A;
   --radius:16px;--shadow:0 8px 24px rgba(30,33,36,.08),0 1px 2px rgba(30,33,36,.06);
@@ -124,14 +125,23 @@ main{padding:1rem 0 calc(var(--tab-h) + 1.5rem);min-height:calc(100vh - var(--na
 .event h4{font-family:var(--sans);font-size:.98rem;margin:0 0 .15em;font-weight:600}
 .event .sub{font-size:.82rem;color:var(--stone-600);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .event.past{opacity:.6}
+.event.past:not(.night){background:#fff;border-color:var(--stone-200)}
+.event.past:not(.night) .date{border-color:var(--stone-200)}
 /* A meeting night, not an event: nothing to open, so it sits flatter and does
    not offer itself to a tap. One that is off is struck through, because "no
    meeting" read at a glance must not look like a meeting. */
+/* An event is green, so it reads as an event next to a term of plain white
+   Tuesdays: the camp is what people scroll for. A night stays white and flat. */
+.event:not(.night){background:var(--leaf-50);border-color:var(--leaf-200)}
+.event:not(.night) .date{background:#fff;border-color:var(--leaf-200)}
 .event.night{cursor:default;grid-template-columns:56px 1fr;box-shadow:none;background:#fff;border:1px solid var(--stone-200)}
 .event.night h4{font-weight:600}
 .event.off h4{text-decoration:line-through;text-decoration-thickness:1px;color:var(--stone-600)}
 .event.off .date{opacity:.55}
 .dchip.off{text-decoration:line-through;opacity:.75}
+/* In the month grid a night is hollow, so the filled chips are the events. */
+.dchip.night{background:#fff;color:var(--stone-600);box-shadow:inset 0 0 0 1px var(--stone-200)}
+@media (max-width:520px){ .dchip.night{background:var(--stone-200);box-shadow:none} }
 .empty{color:var(--stone-400);font-style:italic;padding:1rem 0;text-align:center}
 
 /* Sheet (detail) */
@@ -277,6 +287,10 @@ table.board td.st.has{color:var(--sea-700);font-weight:700;background:var(--sea-
 .seg{display:inline-flex;border:1px solid var(--stone-200);border-radius:999px;overflow:hidden;background:#fff}
 .seg button{font:inherit;font-size:.85rem;font-weight:600;border:0;background:none;color:var(--stone-600);padding:.42em 1.05em;cursor:pointer}
 .seg button.on{background:var(--sea-700);color:#fff}
+/* The one switch on the row: pressed means the weekly nights are on the list,
+   the same way a pressed section chip below means that section is. */
+.seg-toggle{font:inherit;font-size:.85rem;font-weight:600;border:1px solid var(--stone-200);border-radius:999px;background:#fff;color:var(--stone-600);padding:.42em 1.05em;cursor:pointer}
+.seg-toggle.on{background:var(--sea-700);border-color:var(--sea-700);color:#fff}
 .cal-tools .grow{flex:1}
 .cal-acts{display:flex;gap:.5rem}
 .cal-nav{display:flex;align-items:center;gap:.5rem;margin:.1rem 0 .7rem}
@@ -311,7 +325,8 @@ table.board td.st.has{color:var(--sea-700);font-weight:700;background:var(--sea-
   .print-head p{margin:.15rem 0 0;font-size:9pt;color:#555}
   .page-head{display:none}
   .month{margin:.7rem 0 .3rem;color:#000}
-  .event{box-shadow:none;border:0;border-bottom:1px solid #bbb;border-radius:0;padding:.35rem 0;margin:0;break-inside:avoid}
+  .event,.event:not(.night){box-shadow:none;border:0;border-bottom:1px solid #bbb;border-radius:0;padding:.35rem 0;margin:0;break-inside:avoid;background:#fff}
+  .event:not(.night) .date{background:#fff;border-color:#bbb}
   .event .chev{display:none}
   .grid7{break-inside:avoid;border-color:#999}
   .grid7 .day{min-height:64px}
@@ -517,6 +532,14 @@ function eventListHtml(list){
 let calView = "table", calCursor = null;
 try { if (localStorage.getItem("cal-view") === "calendar") calView = "calendar"; } catch {}
 function setCalView(v){ calView = v; try { localStorage.setItem("cal-view", v); } catch {} renderCalendar(); }
+// A term of weekly nights makes the calendar a long list, and somebody looking
+// for the camp does not want to scroll past every Tuesday to find it. So the
+// nights can be turned off here, and the phone remembers. Only here: the
+// section page is that section's own term and keeps its nights, and Home never
+// showed the ordinary ones anyway, only the cancelled.
+let showMeetings = true;
+try { if (localStorage.getItem("cal-meetings") === "off") showMeetings = false; } catch {}
+function setMeetings(on){ showMeetings = on; try { localStorage.setItem("cal-meetings", on ? "on" : "off"); } catch {} renderCalendar(); }
 function calMonth(){ return calCursor || (calCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1)); }
 function shiftMonth(n){ const d = calMonth(); calCursor = new Date(d.getFullYear(), d.getMonth() + n, 1); renderCalendar(); }
 function thisMonth(){ calCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1); renderCalendar(); }
@@ -537,7 +560,7 @@ function monthGridHtml(list){
     const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i), k = isoOf(d);
     const on = byDay[k] || [], out = d.getMonth() !== m;
     const chips = on.slice(0, 3).map(e => e._night
-      ? `<span class="dchip tag ${esc(e.section||"group")} ${e.off?"off":""}" title="${esc(e.title)}">${esc(e.title)}</span>`
+      ? `<span class="dchip tag night ${esc(e.section||"group")} ${e.off?"off":""}" title="${esc(e.title)}">${esc(e.title)}</span>`
       : `<button class="dchip tag ${esc(e.section||"group")}" onclick="location.hash='events/${e._i}'" title="${esc(e.title)}">${esc(e.title)}</button>`).join("");
     cells += `<div class="day ${out?"out":""} ${k===todayIso?"today":""}"><span class="n">${d.getDate()}</span>${chips}${on.length>3?`<div class="dmore">+${on.length-3} more</div>`:""}</div>`;
   }
@@ -564,13 +587,14 @@ async function copySub(){ const t = $("subUrl").textContent; try { await navigat
 
 function renderCalendar(){
   const secs = [["all","All"],["group","Group"],["beavers","Beavers"],["cubs","Cubs"],["scouts","Scouts"],["ventures","Ventures"]];
-  const all = calendarItems().filter(matches);
+  const all = calendarItems().filter(matches).filter(e => showMeetings || !e._night);
   const list = showPast ? all : all.filter(e => !isPast(e));
   const label = eventFilter === "all" ? "All sections" : eventFilter === "county" ? "County events" : sectionName(eventFilter);
   $("calBody").innerHTML = `
-    <div class="print-head"><h2>7th Clare Scouts: calendar</h2><p>${esc(label)} · printed ${esc(fmt(isoOf(new Date())))}</p></div>
+    <div class="print-head"><h2>7th Clare Scouts: calendar</h2><p>${esc(label)}${showMeetings ? "" : ", events only"} · printed ${esc(fmt(isoOf(new Date())))}</p></div>
     <div class="cal-tools">
-      <span class="seg"><button class="${calView==="calendar"?"on":""}" onclick="setCalView('calendar')">Calendar</button><button class="${calView==="table"?"on":""}" onclick="setCalView('table')">Table</button></span>
+      <span class="seg" role="group" aria-label="View"><button class="${calView==="calendar"?"on":""}" aria-pressed="${calView==="calendar"}" onclick="setCalView('calendar')">Calendar</button><button class="${calView==="table"?"on":""}" aria-pressed="${calView==="table"}" onclick="setCalView('table')">Table</button></span>
+      <button class="seg-toggle ${showMeetings?"on":""}" id="meetToggle" aria-pressed="${showMeetings}" title="${showMeetings?"Hide the weekly meetings":"Show the weekly meetings"}" onclick="setMeetings(!showMeetings)">Weekly meetings</button>
       <span class="grow"></span>
       <span class="cal-acts"><button class="btn" onclick="subscribeSheet()">Subscribe</button><button class="btn" onclick="window.print()">Print</button></span>
     </div>

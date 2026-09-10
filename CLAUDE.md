@@ -318,11 +318,45 @@ in the app and on the feed like any other entry. `nightTitle` decides that
 wording and lives in `index.html`, `calendar.html` and `content.mjs`.
 
 A night is not an event: nothing to open, no kit list, no details, so
-`eventCard` draws it flatter and without a chevron. Home is the exception in
-the other direction: it shows only the nights that are **off**, since four
-slots have no room for an ordinary Tuesday but a cancelled one is exactly
-what a parent needs to catch. A section that has never saved a list publishes
-nothing, and its page reads as it always did.
+`eventCard` draws it flatter and without a chevron, plain white where an
+event is green (`--leaf-50` and `--leaf-200` on `:root`, the one place the
+green lives), and in the month grid a night's chip is hollow (`.dchip.night`)
+so the filled chips are the events. Home is the exception in the other
+direction: it shows only the nights that are **off**, since four slots have
+no room for an ordinary Tuesday but a cancelled one is exactly what a parent
+needs to catch. A section that has never saved a list publishes nothing, and
+its page reads as it always did.
+
+**The nights can be turned off on the Calendar tab**, and only there: a term
+of Tuesdays makes a long list, and somebody scrolling for the camp does not
+want every one of them in the way. The "Weekly meetings" toggle sits beside
+Calendar|Table (one pressed button rather than a two-button segment, which
+pushed the tools onto a third row at 390px), `showMeetings` drives it, and
+the choice is kept in `localStorage` under `cal-meetings` (default on). Off
+hides every night, cancelled ones included, from the list and the month
+grid, and the print head says "events only" so a printed sheet does not pass
+for complete; the section page keeps its own nights regardless, because that
+page is the term for that section, and Home is unaffected. `calendar.html`
+has the same control as an "Events only | With meetings" segment
+(`state.meetings`, `ccs_meetings`): `visible()` gates the grid, the table,
+the day list and the download, `buildPrintout()` reads `state.events` itself
+so it carries the same test, and `jumpToFirstUpcoming()` reads `visible()`
+rather than `state.events`, or the page would open on the month of the next
+thing hidden from it and render empty. There a night carries `category:
+"meeting"`, which is in `CATEGORIES` so `catName` and the detail sheet's
+Type tag read "Meeting". **`normalise()` on that page whitelists categories**
+and used to coerce anything else to `county`, which is why our own events
+were typed "County" there for as long as the page existed; `group` and
+`meeting` are on the list now, with a `.tag.group` style to match.
+
+The green must survive the print reset: `.event:not(.night)` is specificity
+(0,2,0), so the `@media print` rule that puts the paper back to white names
+the same selector, or it loses. A past event goes back to white too: green
+says the thing is still to come, and `.event.past{opacity:.6}` over the
+green cost the title the contrast it had on white.
+
+Both browser suites take `E2E_PORT`, so two of them, or one of them and
+anything else driving a browser at the preview, cannot collide on 8910.
 
 **The ticks hang off the entry's id, not its date and name.** `m:<entryId>`,
 so moving or renaming a night keeps everyone already down for it. Events got

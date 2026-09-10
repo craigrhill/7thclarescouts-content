@@ -15,7 +15,7 @@ import { join } from "node:path";
 import { deflateSync } from "node:zlib";
 import { chromium } from "playwright-core";
 
-const PORT = 8916, ROOT = `http://127.0.0.1:${PORT}`;
+const PORT = Number(process.env.E2E_PORT) || 8916, ROOT = `http://127.0.0.1:${PORT}`;
 const CHROME = process.env.CHROME_PATH || ["/opt/pw-browsers/chromium-1194/chrome-linux/chrome"].find(existsSync) || (() => { try { return chromium.executablePath(); } catch { return undefined; } })();
 mkdirSync(".e2e", { recursive: true });
 

@@ -159,6 +159,8 @@ header.top .wrap{display:flex;align-items:center;gap:14px;padding-top:16px;paddi
 .tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;white-space:nowrap}
 .tag.training{color:var(--training);background:var(--training-tint)}
 .tag.county{color:var(--county);background:var(--county-tint)}
+.tag.meeting{color:var(--text-soft);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+.tag.group{color:var(--group);background:var(--group-tint)}
 .tag.national{color:var(--national);background:var(--national-tint)}
 .secdots{display:inline-flex;gap:3px;flex-wrap:wrap;align-items:center}
 .secdot{width:8px;height:8px;border-radius:50%}
@@ -652,6 +654,10 @@ footer.site{text-align:center;color:var(--text-faint);font-size:12.5px;padding:2
         <button id="viewCal" aria-pressed="true">Calendar</button>
         <button id="viewTbl" aria-pressed="false">Table</button>
       </div>
+      <div class="seg" role="group" aria-label="Weekly meetings">
+        <button id="meetOff" aria-pressed="false">Events only</button>
+        <button id="meetOn" aria-pressed="true">With meetings</button>
+      </div>
     </div>
   </section>
 
@@ -778,8 +784,9 @@ var SEC_BY_ID = {}; SECTIONS.forEach(function(s){ SEC_BY_ID[s.id]=s; });
 var ALL_SECTION_IDS = SECTIONS.map(function(s){return s.id;});
 
 var CATEGORIES = [
-  {id:'group',  name:'Ours',   swatch:'var(--group-edge)'},
-  {id:'county', name:'County', swatch:'var(--county-edge)'}
+  {id:'group',   name:'Ours',    swatch:'var(--group-edge)'},
+  {id:'county',  name:'County',  swatch:'var(--county-edge)'},
+  {id:'meeting', name:'Meeting', swatch:'var(--line)'}
 ];
 
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -795,8 +802,17 @@ var state = {
   stale: false,
   selDay: null,
   range: 'upcoming',
+  // The weekly nights make a long list; they can be turned off, and the
+  // choice is kept on the device.
+  meetings: (function(){ try { return localStorage.getItem('ccs_meetings') !== 'off'; } catch(e){ return true; } })(),
   cursor: startOfMonth(new Date())
 };
+function setMeetings(on){
+  state.meetings = !!on;
+  try { localStorage.setItem('ccs_meetings', on ? 'on' : 'off'); } catch(e){}
+  jumpToFirstUpcoming();
+  render();
+}
 
 /* ---------------------------------------------------------------- utils */
 function $(id){ return document.getElementById(id); }
@@ -858,6 +874,7 @@ function sectionLabel(ev){
 /* ---------------------------------------------------------------- filtering */
 function visible(){
   return state.events.filter(function(ev){
+    if(!state.meetings && ev.category==='meeting') return false;
     if(state.section!=='all'){
       var secs = (ev.sections && ev.sections.length) ? ev.sections : ALL_SECTION_IDS;
       if(secs.indexOf(state.section)===-1) return false;
@@ -905,6 +922,8 @@ function buildControls(){
 function render(){
   $('viewCal').setAttribute('aria-pressed', String(state.view==='cal'));
   $('viewTbl').setAttribute('aria-pressed', String(state.view==='tbl'));
+  $('meetOn').setAttribute('aria-pressed', String(!!state.meetings));
+  $('meetOff').setAttribute('aria-pressed', String(!state.meetings));
   $('calView').hidden = state.view!=='cal';
   $('tblView').hidden = state.view!=='tbl';
   $('navRow').style.display = state.view==='cal' ? '' : 'none';
@@ -2249,6 +2268,7 @@ function buildPrintout(){
 
   printSheets().forEach(function(who){
     var list = state.events.filter(function(ev){
+      if(!state.meetings && ev.category==='meeting') return false;
       if(who !== 'all'){
         var secs = secsOf(ev);
         if(secs.indexOf(who) === -1) return false;
@@ -3550,7 +3570,12 @@ function normalise(raw){
     id: raw.id || ('ev_'+Math.random().toString(36).slice(2,10)),
     name: raw.name||'', start: raw.start||todayISO(), end: raw.end||'',
     time: raw.time||'',
-    category: ['training','county','national'].indexOf(raw.category)>-1 ? raw.category : 'county',
+    /* The county's own categories, plus ours: a group event and a meeting
+       night. Anything unknown is treated as the county's, as it always was.
+       'group' was missing here, so every event of ours was typed "County" on
+       this page; and a night has to keep its category or it cannot be turned
+       off. */
+    category: ['training','county','national','group','meeting'].indexOf(raw.category)>-1 ? raw.category : 'county',
     sections: Array.isArray(raw.sections)&&raw.sections.length ? raw.sections.filter(function(s){return SEC_BY_ID[s];}) : ALL_SECTION_IDS.slice(),
     description: raw.description||'', host: raw.host||'', location: raw.location||'',
     link: raw.link||'',
@@ -3752,6 +3777,8 @@ $('next').onclick=function(){ state.cursor=new Date(state.cursor.getFullYear(), 
 $('today').onclick=function(){ state.cursor=startOfMonth(new Date()); render(); };
 $('viewCal').onclick=function(){ state.view='cal'; render(); };
 $('viewTbl').onclick=function(){ state.view='tbl'; render(); };
+$('meetOn').onclick = function(){ setMeetings(true); };
+$('meetOff').onclick = function(){ setMeetings(false); };
 $('rangeUpcoming').onclick=function(){ state.range='upcoming'; render(); };
 $('rangeAll').onclick=function(){ state.range='all'; render(); };
 $('btnPrint').onclick=openPrint;
@@ -3766,14 +3793,17 @@ $('btnIcsAll').onclick=openSubscribe;
 /* ---------------------------------------------------------------- boot */
 // If this month has nothing on, open on the next month that does.
 function jumpToFirstUpcoming(){
-  var cur=state.cursor, t=todayISO();
-  var thisMonth = state.events.some(function(ev){
+  // What is on, as this device is set to see it. Reading state.events here
+  // instead would open on a month whose only entries the filters then drop:
+  // with the weekly nights turned off, on the month of the next night, empty.
+  var shown = visible(), cur=state.cursor, t=todayISO();
+  var thisMonth = shown.some(function(ev){
     return daysBetween(ev.start, ev.end).some(function(d){
       var p=parseISO(d); return p.getMonth()===cur.getMonth() && p.getFullYear()===cur.getFullYear();
     });
   });
   if(thisMonth) return;
-  var next = state.events.filter(function(ev){ return (ev.end||ev.start) >= t; }).sort(sortByDate)[0];
+  var next = shown.filter(function(ev){ return (ev.end||ev.start) >= t; }).sort(sortByDate)[0];
   if(next) state.cursor = startOfMonth(parseISO(next.start));
 }
 
@@ -3821,7 +3851,7 @@ function fromMeeting(m, i, names){
     time: eventWhen(m),
     startTime: m.startTime || '',
     endTime: m.endTime || '',
-    category: 'group',
+    category: 'meeting',
     sections: m.section ? [m.section] : ALL_SECTION_IDS.slice(),
     description: '',
     host: '',

@@ -10,7 +10,9 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
 import { chromium } from "playwright-core";
 
-const PORT = 8910, H = `http://127.0.0.1:${PORT}/lab/`, H_URL = H, APP_ROOT = `http://127.0.0.1:${PORT}/`;
+// E2E_PORT moves the preview off 8910, so two suites, or a suite and anything
+// else driving a browser at the preview, cannot collide on the one port.
+const PORT = Number(process.env.E2E_PORT) || 8910, H = `http://127.0.0.1:${PORT}/lab/`, H_URL = H, APP_ROOT = `http://127.0.0.1:${PORT}/`;
 const CHROME = process.env.CHROME_PATH || ["/opt/pw-browsers/chromium-1194/chrome-linux/chrome"].find(existsSync) || (() => { try { return chromium.executablePath(); } catch { return undefined; } })();
 mkdirSync(".e2e", { recursive: true });
 
@@ -320,7 +322,75 @@ try {
   ok("the calendar tab has them too, beside the events",
     await settled(APP, () => document.querySelectorAll("#calBody .event.night").length, (n) => n >= 8) >= 8, true);
   await APP.screenshot({ path: ".e2e/app-calendar-nights-390.png", fullPage: true });
+  // Events read as events: green, where a night is plain white.
+  const tints = await APP.evaluate(() => {
+    const bg = (el) => el && getComputedStyle(el).backgroundColor;
+    return { event: bg(document.querySelector("#calBody .event:not(.night)")), night: bg(document.querySelector("#calBody .event.night")) };
+  });
+  ok("an event card is green and a night's is white", [tints.event, tints.night], ["rgb(233, 244, 228)", "rgb(255, 255, 255)"]);
+  // And the nights can be turned off, for whoever is scrolling for the camp.
+  ok("the switch fits the tools row on a phone rather than pushing it to a third line",
+    await APP.evaluate(() => document.querySelector("#calBody .cal-tools").getBoundingClientRect().height < 100), true);
+  await APP.locator("#meetToggle").click(); await APP.waitForTimeout(400);
+  ok("turning the weekly meetings off takes every night off the list, cancelled ones included", [await APP.locator("#calBody .event.night").count(), await APP.locator("#calBody .event").count() > 0, await APP.getAttribute("#meetToggle", "aria-pressed")], [0, true, "false"]);
+  // After a reload the app draws from defaults.js first, which has no nights,
+  // so wait for the real content before counting: only then does zero prove
+  // anything.
+  await APP.reload({ waitUntil: "load" });
+  const afterReload = await settled(APP, () => (typeof C !== "undefined" && Array.isArray(C.meetings) && C.meetings.length) ? document.querySelectorAll("#calBody .event.night").length : -1, (n) => n >= 0);
+  ok("and the phone remembers", [afterReload, await APP.getAttribute("#meetToggle", "aria-pressed")], [0, "false"]);
+  await APP.screenshot({ path: ".e2e/app-calendar-events-only-390.png", fullPage: true });
+  await APP.setViewportSize({ width: 1280, height: 900 }); await APP.waitForTimeout(300);
+  await APP.screenshot({ path: ".e2e/app-calendar-events-only-1280.png" });
+  await APP.setViewportSize({ width: 390, height: 844 }); await APP.waitForTimeout(300);
+  // With the calendar tab set to events only, the section page still shows
+  // its term: that page is the term for that section.
+  await APP.goto(APP_ROOT + "#sections/scouts", { waitUntil: "load" });
+  ok("the section page keeps its own nights while the calendar tab is set to events only",
+    await settled(APP, () => document.querySelectorAll("#secDetail .event.night").length, (n) => n >= 8) >= 8, true);
+  await APP.goto(APP_ROOT + "#calendar", { waitUntil: "load" });
+  await settled(APP, () => (typeof C !== "undefined" && Array.isArray(C.meetings) && C.meetings.length) ? 1 : 0, (n) => n === 1);
+  await APP.locator("#meetToggle").click(); await APP.waitForTimeout(400);
+  ok("pressing it again brings them back", [await APP.locator("#calBody .event.night").count() >= 8, await APP.getAttribute("#meetToggle", "aria-pressed")], [true, "true"]);
+  // The full calendar page has the same switch.
+  await APP.goto(APP_ROOT + "calendar.html", { waitUntil: "load" });
+  await APP.locator("#viewTbl").click();
+  ok("the full calendar lists the nights too", await settled(APP, () => { const t = document.querySelector("#tblView").innerText; return t.includes("Scouts meeting") && t.includes("No meeting"); }, (x) => x === true), true);
+  await APP.screenshot({ path: ".e2e/fullcal-390.png", fullPage: true });
+  await APP.locator("#meetOff").click(); await APP.waitForTimeout(400);
+  ok("and Events only takes them off there as well, leaving the events", await APP.evaluate(() => { const t = document.querySelector("#tblView").innerText; return [t.includes("Scouts meeting"), t.includes("First Meeting")]; }), [false, true]);
+  // Back on the table after the reload, and wait for an event that only the
+  // content function has, or the check would pass on an empty table.
+  await APP.reload({ waitUntil: "load" }); await APP.locator("#viewTbl").click();
+  ok("which that page remembers on its own", [await APP.getAttribute("#meetOff", "aria-pressed"),
+    await settled(APP, () => { const t = document.querySelector("#tblView").innerText; return t.includes("First Meeting") ? t.includes("Scouts meeting") : null; }, (x) => x !== null)], ["true", false]);
+  // Our own events used to be typed "County" on this page, because its
+  // normaliser only knew the county's categories. Open one and read the type.
+  await APP.locator("#tblWrap button.mev", { hasText: "First Meeting" }).first().click(); await APP.waitForTimeout(400);
+  ok("and our own events are typed as ours there, not the county's", (await APP.locator("#evBody .tag").first().innerText()).trim().toUpperCase(), "OURS");
+  await APP.keyboard.press("Escape"); await APP.waitForTimeout(200);
+  await APP.setViewportSize({ width: 1280, height: 900 }); await APP.waitForTimeout(400);
+  await APP.screenshot({ path: ".e2e/fullcal-1280.png" });
   await APP.close();
+
+  // The month the full calendar opens on has to be a month with something on
+  // it, as this device is set to see it. Given nights in November and events
+  // only from January, with the nights turned off it must open on January:
+  // reading the unfiltered list would open on an empty November.
+  step = "the month it opens on";
+  const JC = await page(1280, 900);
+  await JC.route((u) => /fonts\.g/.test(u.hostname), (r) => r.abort());
+  await JC.route("**/.netlify/functions/content**", async (r) => {
+    const d = await (await r.fetch()).json();
+    d.events = [{ date: "2027-01-20", title: "Winter walk", section: "scouts" }];
+    d.meetings = [0, 1, 2].map((i) => ({ id: "j" + i, section: "scouts", date: "2026-11-0" + (5 + i) }));
+    await r.fulfill({ json: d });
+  });
+  await JC.addInitScript(() => { try { localStorage.setItem("ccs_meetings", "off"); } catch {} });
+  await JC.goto(APP_ROOT + "calendar.html", { waitUntil: "load" });
+  const opened = await settled(JC, () => (document.querySelector("#monthLabel") || document.querySelector(".month-nav h2, .month-nav h3, #navRow h2, #navRow h3") || {}).textContent || "", (t) => /\w/.test(t));
+  ok("with the nights off it opens on the month that has an event, not the empty one", [/January\s*2027/.test(opened), /November\s*2026/.test(opened)], [true, false]);
+  await JC.close();
 
   step = "first come, first served";
   // Lead Test is the secretary by now, and L2 is the context signed in as them.
