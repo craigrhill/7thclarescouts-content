@@ -162,10 +162,32 @@
     {
       "date": "2026-09-09",
       "title": "County Planning Meeting",
+      "section": "beavers",
       "location": "Ennis Scout Hall",
+      "startTime": "19:00",
       "details": "NOTE:  Scout Section is having their planning meeting Thursday 3rd Sept 7pm.",
       "countyId": "ev_mjzrmo5a",
-      "startTime": "19:00"
+      "id": "cev_mjzrmo5a-beavers"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "County Planning Meeting",
+      "section": "cubs",
+      "location": "Ennis Scout Hall",
+      "startTime": "19:00",
+      "details": "NOTE:  Scout Section is having their planning meeting Thursday 3rd Sept 7pm.",
+      "countyId": "ev_mjzrmo5a",
+      "id": "cev_mjzrmo5a-cubs"
+    },
+    {
+      "date": "2026-09-09",
+      "title": "County Planning Meeting",
+      "section": "ventures",
+      "location": "Ennis Scout Hall",
+      "startTime": "19:00",
+      "details": "NOTE:  Scout Section is having their planning meeting Thursday 3rd Sept 7pm.",
+      "countyId": "ev_mjzrmo5a",
+      "id": "cev_mjzrmo5a-ventures"
     },
     {
       "date": "2026-09-17",
@@ -1565,7 +1587,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-09T22:11:28.364Z",
+  "updatedAt": "2026-09-10T05:56:10.495Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
