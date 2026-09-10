@@ -210,6 +210,14 @@
     },
     {
       "date": "2026-09-25",
+      "title": "Sionnach - Mamturk",
+      "endDate": "2026-09-27",
+      "section": "scouts",
+      "countyId": "ev_uxdsdndd",
+      "id": "cev_uxdsdndd-scouts"
+    },
+    {
+      "date": "2026-09-25",
       "endDate": "2026-09-27",
       "title": "Sionnach Adventure, Maamturks",
       "section": "scouts",
@@ -1615,7 +1623,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:00:14.214Z",
+  "updatedAt": "2026-09-10T06:00:20.556Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
