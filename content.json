@@ -254,6 +254,16 @@
       "id": "cev_006nhpqv-cubs"
     },
     {
+      "date": "2026-10-16",
+      "title": "Provincial sixer training",
+      "endDate": "2026-10-18",
+      "section": "cubs",
+      "location": "Flannans",
+      "details": "Hosted by Western Province Team",
+      "countyId": "ev_crjjvfzp",
+      "id": "cev_crjjvfzp-cubs"
+    },
+    {
       "date": "2026-11-12",
       "title": "Cub Challenge Info Night",
       "section": "cubs",
@@ -1720,7 +1730,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:01:36.557Z",
+  "updatedAt": "2026-09-10T06:01:56.224Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
