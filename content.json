@@ -264,6 +264,15 @@
       "id": "cev_crjjvfzp-cubs"
     },
     {
+      "date": "2026-10-25",
+      "title": "Halloween Day",
+      "section": "beavers",
+      "location": "Clare Camp site Ruan",
+      "startTime": "16:00",
+      "countyId": "ev_hc0szskx",
+      "id": "cev_hc0szskx-beavers"
+    },
+    {
       "date": "2026-11-12",
       "title": "Cub Challenge Info Night",
       "section": "cubs",
@@ -1789,7 +1798,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:03:00.891Z",
+  "updatedAt": "2026-09-10T06:03:07.104Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
