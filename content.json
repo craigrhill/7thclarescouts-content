@@ -217,6 +217,15 @@
     },
     {
       "date": "2027-01-24",
+      "title": "MasterChef",
+      "section": "scouts",
+      "location": "Tulla",
+      "details": "Hosted by Tulla",
+      "countyId": "ev_h4lzodhc",
+      "id": "cev_h4lzodhc-scouts"
+    },
+    {
+      "date": "2027-01-24",
       "title": "MasterChef (County)",
       "section": "scouts",
       "location": "Tulla",
@@ -1587,7 +1596,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T05:56:10.495Z",
+  "updatedAt": "2026-09-10T05:58:32.331Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
