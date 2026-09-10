@@ -408,6 +408,16 @@
     },
     {
       "date": "2027-06-05",
+      "title": "Jamóige",
+      "endDate": "2027-06-07",
+      "section": "beavers",
+      "location": "Pallaskenery",
+      "details": "Hosted by National event",
+      "countyId": "ev_8zbua3bs",
+      "id": "cev_8zbua3bs-beavers"
+    },
+    {
+      "date": "2027-06-05",
       "title": "JamÓige",
       "endDate": "2027-06-07",
       "section": "cubs",
@@ -1749,7 +1759,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:02:28.644Z",
+  "updatedAt": "2026-09-10T06:02:32.537Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
