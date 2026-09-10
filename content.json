@@ -389,6 +389,16 @@
       "id": "cev_f9huxysg-cubs"
     },
     {
+      "date": "2027-05-22",
+      "title": "Cub County Camp",
+      "endDate": "2027-05-23",
+      "section": "cubs",
+      "location": "County Campsite Ruan",
+      "time": "Over night",
+      "countyId": "ev_6vi9gq2o",
+      "id": "cev_6vi9gq2o-cubs"
+    },
+    {
       "date": "2027-05-28",
       "title": "Water Activities Weekend",
       "endDate": "2027-05-30",
@@ -1759,7 +1769,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:02:32.537Z",
+  "updatedAt": "2026-09-10T06:02:36.818Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
