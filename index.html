@@ -58,6 +58,8 @@ button{font:inherit}
 .meet{display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center}
 .meet .when{font-family:var(--serif);font-weight:700;font-size:1.25rem;line-height:1.2}
 .meet .where{color:var(--stone-600);font-size:.92rem;margin-top:.15rem}
+.next{margin-top:.6rem;font-size:.92rem;font-weight:600;color:var(--sea-500)}
+.next.off{color:var(--orange-dark)}
 .picker{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:.8rem 0}
 .pick{border:2px solid var(--stone-200);border-radius:14px;padding:.8rem .9rem;background:#fff;cursor:pointer;text-align:left;font:inherit}
 .pick strong{display:block;font-family:var(--serif);font-size:1.05rem}
@@ -437,6 +439,7 @@ const paras = s => String(s||"").split(/\n\s*\n/).map(p=>`<p>${ph(p)}</p>`).join
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MONTHS_L = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const DAYS_L = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const D = s => new Date(s+"T00:00:00");
 const fmt = s => { const d = D(s); return isNaN(d) ? esc(s) : `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
 const fmtShort = s => { const d = D(s); return `${d.getDate()} ${MONTHS[d.getMonth()]}`; };
@@ -502,6 +505,31 @@ function nightsSorted(){ return (C.meetings||[]).map(m => ({...m, title: nightTi
 // Home shows four things, so an ordinary Tuesday does not belong on it. A
 // cancelled one does: that is the week somebody turns up to a locked hall.
 const nightsOff = () => nightsSorted().filter(m => m.off);
+// The nights a section has still to come, in order, off ones included.
+const nightsFor = key => (C.meetings||[]).filter(m => m && m.section === key && !isPast(m)).sort(byDate);
+// "Tuesday, 15 Sep", or "today", "tomorrow" or "this Tuesday" when the day
+// name is the useful part.
+function nightWhen(m){
+  const d = D(m.date), days = Math.round((d - today()) / 86400000);
+  if (days <= 0) return "today";
+  if (days === 1) return "tomorrow";
+  return (days < 7 ? "this " : "") + DAYS_L[d.getDay()] + ", " + fmtShort(m.date);
+}
+// "Beavers meets Tuesday" is the standing pattern, which is not the same
+// question as whether there is a meeting this week, and the week somebody
+// turns up to a locked hall is the one that matters. So the card carries the
+// next night off the list the section's lead published: when it is on, when it
+// is off and why, and the next one that is on after it. A section that has
+// published no list says nothing at all, and its card reads as it always did.
+function meetNextLine(key){
+  const list = nightsFor(key);
+  if (!list.length) return "";
+  const first = list[0];
+  if (!first.off) return `<div class="next">Next meeting ${esc(nightWhen(first))}</div>`;
+  const why = String(first.title||"").replace(/^no meeting[,:]?\s*/i, "").trim();
+  const on = list.find(m => !m.off);
+  return `<div class="next off">No meeting ${esc(nightWhen(first))}${why ? ", " + esc(why) : ""}${on ? `. Next is ${esc(nightWhen(on))}` : ""}</div>`;
+}
 const byDate = (a,b) => a.date.localeCompare(b.date) || String(a.title).localeCompare(String(b.title));
 // Everything a parent could want on a date: the events and the nights.
 function calendarItems(){ return [...eventsSorted(), ...nightsSorted()].sort(byDate); }
@@ -685,7 +713,7 @@ function renderHome(){
   html += noticesHtml();
   // meeting cards
   shown.forEach(k => { const x = (C.settings.sections||[]).find(z=>z.key===k); if (!x) return; const v = (C.settings.venues||[]).find(v=>v.name===x.venue); const dir = v ? (v.link || `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(v.query)}`) : "";
-    html += `<div class="card section-card ${esc(k)}"><div class="meet"><div><div class="eyebrow">${esc(x.name)} meets</div><div class="when">${ph(x.day)}, ${ph(x.time)}</div><div class="where">${ph(x.venue||"")}</div></div><div style="display:grid;gap:.4rem">${dir?`<a class="btn primary" href="${esc(dir)}" target="_blank" rel="noopener">Directions</a>`:""}<a class="btn" href="#sections/${esc(k)}">Section</a></div></div></div>`; });
+    html += `<div class="card section-card ${esc(k)}"><div class="meet"><div><div class="eyebrow">${esc(x.name)} meets</div><div class="when">${ph(x.day)}, ${ph(x.time)}</div><div class="where">${ph(x.venue||"")}</div></div><div style="display:grid;gap:.4rem">${dir?`<a class="btn primary" href="${esc(dir)}" target="_blank" rel="noopener">Directions</a>`:""}<a class="btn" href="#sections/${esc(k)}">Section</a></div></div>${meetNextLine(k)}</div>`; });
   if (!keys.length) html += `<div class="card"><p class="muted" style="margin:0">No sections chosen. <a href="#" onclick="startPick();return false">Pick your sections</a> to personalise Home.</p></div>`;
   // events
   const list = [...eventsSorted(), ...nightsOff()].sort(byDate)
@@ -716,6 +744,7 @@ function showSection(key){
     <div class="card section-card ${esc(x.key)}"><div class="age">${esc(x.ages)}</div><h1 style="margin:.1em 0 .3em">${esc(x.name)}</h1>
     <p class="muted" style="font-size:.95rem">${esc(x.blurb)}</p>
     <div class="kv" style="margin-bottom:0">${ICON.cal}<span>${ph(x.day)}</span>${ICON.clock}<span>${ph(x.time)}</span>${x.venue?`${ICON.pin}<span>${ph(x.venue)}</span>`:""}</div>
+    ${meetNextLine(key)}
     ${breakLine(key)}
     <div class="btn-row"><button class="btn ${(getMy()||[]).includes(key)?"":"orange"}" onclick="toggleMySection('${esc(key)}')">${(getMy()||[]).includes(key)?"✓ On my Home · remove":"Add to my Home"}</button></div></div>
     ${leaders.length?`<div class="sec-head"><h2>Leaders</h2><a href="#more/team">Whole team</a></div><div class="card">${leaders.map(personHtml).join("")}</div>`:""}

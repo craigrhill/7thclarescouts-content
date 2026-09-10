@@ -345,6 +345,21 @@ no room for an ordinary Tuesday but a cancelled one is exactly what a parent
 needs to catch. A section that has never saved a list publishes nothing, and
 its page reads as it always did.
 
+**"Beavers meets Tuesday" is the standing pattern, not an answer.** It comes
+off `settings.sections` and reads the same whether or not there is a meeting
+this week, and the week somebody turns up to a locked hall is the one that
+matters. So the meets card on Home and the section page's own card both carry
+a line under them, `meetNextLine()` in `index.html`, read off the published
+nights: "Next meeting this Tuesday, 15 Sep" when the next one is on, and "No
+meeting this Tuesday, 15 Sep, hall booked. Next is Tuesday, 22 Sep" when it is
+off, the reason being whatever the lead typed with "No meeting" stripped off
+the front of it. `nightWhen()` says "today", "tomorrow" or "this Tuesday" while
+the day name is the useful part and falls back to the date after a week. A
+section with no published list says nothing at all and its card reads as it
+always did, so this turns itself on section by section as each lead saves their
+nights. The line sits below the whole meets row rather than beside the
+Directions button, which squeezed it to four lines at 390px.
+
 **The nights can be turned off on the Calendar tab**, and only there: a term
 of Tuesdays makes a long list, and somebody scrolling for the camp does not
 want every one of them in the way. The "Weekly meetings" toggle sits beside

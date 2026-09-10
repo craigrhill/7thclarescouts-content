@@ -336,6 +336,11 @@ try {
   ok("the section page lists the nights under its calendar", secPage.nights >= 8, true);
   ok("a week that is off is struck through and says so", [secPage.off >= 1, secPage.offText.includes("No meeting")], [true, true]);
   ok("and a night is not something to open, so it offers no chevron", secPage.chevs, 0);
+  // "Beavers meets Tuesday" is the standing pattern, not an answer to whether
+  // there is a meeting this week. The card carries the next night itself.
+  const nextLine = (await APP.locator("#secDetail .next").first().innerText()).trim();
+  ok("the card says when the next night actually is, not just which weekday the section meets",
+    [/^(Next meeting|No meeting)\b/.test(nextLine), nextLine.length > 14], [true, true]);
   await APP.screenshot({ path: ".e2e/app-section-nights-390.png", fullPage: true });
   await APP.goto(APP_ROOT + "#calendar", { waitUntil: "load" });
   ok("the calendar tab has them too, beside the events",
@@ -409,6 +414,23 @@ try {
   const opened = await settled(JC, () => (document.querySelector("#monthLabel") || document.querySelector(".month-nav h2, .month-nav h3, #navRow h2, #navRow h3") || {}).textContent || "", (t) => /\w/.test(t));
   ok("with the nights off it opens on the month that has an event, not the empty one", [/January\s*2027/.test(opened), /November\s*2026/.test(opened)], [true, false]);
   await JC.close();
+
+  // A week that is off is the one a parent has to catch, so the card says so
+  // and points at the next night that is on.
+  step = "the week that is off";
+  const OFF = await page(390, 844);
+  await OFF.route("**/.netlify/functions/content**", async (r) => {
+    const d = await (await r.fetch()).json();
+    d.meetings = [{ id: "o1", section: "scouts", date: "2030-01-08", off: true, title: "No meeting, hall booked" },
+                  { id: "o2", section: "scouts", date: "2030-01-15" }];
+    await r.fulfill({ json: d });
+  });
+  await OFF.goto(APP_ROOT + "#sections/scouts", { waitUntil: "load" });
+  ok("a week that is off says so on the section card, and names the next one that is on",
+    await settled(OFF, () => ((document.querySelector("#secDetail .next") || {}).innerText || "").trim(), (t) => t.includes("No meeting")),
+    "No meeting Tuesday, 8 Jan, hall booked. Next is Tuesday, 15 Jan");
+  await OFF.screenshot({ path: ".e2e/app-section-off-390.png", fullPage: true });
+  await OFF.close();
 
   step = "first come, first served";
   // Lead Test is the secretary by now, and L2 is the context signed in as them.
