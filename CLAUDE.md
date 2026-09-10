@@ -692,6 +692,16 @@ link in the footer.
   in the album you are. A photo with no `section` is group-wide
   and shows in the gallery only. So leaders add a photo once, in the Photos tab
   in admin, and tag it rather than filing it twice.
+* **A campaign can be written before it is announced.** `hidden` on a campaign
+  keeps it out of the app: `campaignsShown()` in `index.html` is the one list
+  both surfaces read, the Fundraising page under More and the card on Home, so
+  a draft cannot leak onto one while the other holds it back. Admin has the
+  tick box on the campaign, and a **new campaign starts hidden**, because a
+  save is public within the minute and a half typed campaign would otherwise
+  be on the site before its goal was filled in. **Hidden is not private.**
+  `content.json` is public and the content function serves the whole document,
+  so the words, the goal and the link are readable by anyone who goes looking.
+  It keeps a draft off the page, it does not keep it secret.
 * **Social links are a list, not fields.** `settings.social` is
   `[{name, url}]`, so a new account is a row in admin rather than a code
   change. `name` picks the icon (facebook, instagram, tiktok, youtube,
@@ -736,7 +746,8 @@ link in the footer.
       badges: { intro, stages, placement: [{area, items[]}], note,
                 imageUrl?, imageCaption? },
       fundraising: { intro, donateTitle, donateText, donateUrl, donateLabel,
-                     campaigns: [{title, blurb, goal, raised, link, linkLabel}],
+                     campaigns: [{title, blurb, goal, raised, link, linkLabel,
+                                  hidden?}],
                      help, sponsors: [{name, url, logoUrl}] },
       notices: [{title, body}],
       events: [{id?, date, endDate?, title, section, location?,

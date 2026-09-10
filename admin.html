@@ -19,6 +19,10 @@ main{padding:1.5rem 0 4rem}
 .card{background:#fff;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.06);padding:1.3rem;margin-bottom:1.3rem;border-top:5px solid var(--sea-500)}
 label{display:block;font-size:.8rem;font-weight:600;color:var(--stone-600);margin:.7rem 0 .25rem;letter-spacing:.04em;text-transform:uppercase}
 input,textarea,select{width:100%;padding:.6em .75em;border:1px solid var(--stone-200);border-radius:8px;font:inherit;background:#fff}
+/* A tick box is not a text field: it took the full width of the card and the
+   label above it, which is why the school break section boxes stretched. */
+input[type=checkbox]{width:auto;padding:0;margin:0;flex:none}
+label.tick{display:flex;align-items:center;gap:.5rem;text-transform:none;letter-spacing:0;font-size:.85rem;margin:.7rem 0 .1rem}
 textarea{min-height:90px;resize:vertical}
 .row{display:grid;gap:.8rem;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
 .btn{display:inline-flex;align-items:center;gap:.4em;padding:.6em 1.1em;border-radius:999px;border:0;font:inherit;font-weight:600;cursor:pointer;background:var(--sea-700);color:#fff}
@@ -27,6 +31,9 @@ textarea{min-height:90px;resize:vertical}
 .upl{cursor:pointer}
 .btn.save{background:var(--cranesbill);font-size:1.05rem;padding:.8em 1.5em}
 .item{border:1px solid var(--stone-200);border-radius:10px;padding:1rem;margin:.8rem 0;background:var(--stone-50)}
+/* A campaign that is not on the site yet, so a list of them can be read at a
+   glance rather than by opening each tick box. */
+.item.draft{border-style:dashed;background:#fff}
 .item .actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.6rem}
 .tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin:1rem 0}
 .tabs button{border:1px solid var(--stone-200);background:#fff;padding:.5em 1em;border-radius:999px;font:inherit;cursor:pointer}
@@ -489,8 +496,10 @@ function renderFund(){
   C.fundraising = C.fundraising || {campaigns:[],sponsors:[]};
   FUND_KEYS.forEach(k => { const el = $("f_"+k); el.value = C.fundraising[k] || ""; el.oninput = () => C.fundraising[k] = el.value; });
   C.fundraising.campaigns = C.fundraising.campaigns || [];
-  $("campList").innerHTML = C.fundraising.campaigns.map((c,i) => `<div class="item">
+  $("campList").innerHTML = C.fundraising.campaigns.map((c,i) => `<div class="item${c.hidden ? " draft" : ""}">
     <label>Title</label><input value="${esc(c.title)}" oninput="C.fundraising.campaigns[${i}].title=this.value">
+    <label class="tick"><input type="checkbox" ${c.hidden ? "checked" : ""} onchange="setCampHidden(${i}, this.checked)"> Hidden, not shown on the site</label>
+    <p class="hint" style="margin:0 0 .3rem">${c.hidden ? "Hidden. Write it up here, then untick this when it is ready to announce." : "Showing on the Fundraising page, and on Home while it is short of its goal."}</p>
     <label>Blurb</label><textarea oninput="C.fundraising.campaigns[${i}].blurb=this.value">${esc(c.blurb||"")}</textarea>
     <div class="row"><div><label>Goal (€)</label><input type="number" value="${esc(c.goal||"")}" oninput="C.fundraising.campaigns[${i}].goal=+this.value"></div><div><label>Raised so far (€)</label><input type="number" value="${esc(c.raised||"")}" oninput="C.fundraising.campaigns[${i}].raised=+this.value"></div></div>
     <div class="row"><div><label>Link (optional)</label><input value="${esc(c.link||"")}" oninput="C.fundraising.campaigns[${i}].link=this.value"></div><div><label>Link label</label><input value="${esc(c.linkLabel||"")}" oninput="C.fundraising.campaigns[${i}].linkLabel=this.value" placeholder="Get involved"></div></div>
@@ -504,7 +513,12 @@ function renderFund(){
     ${x.logoUrl?`<img src="${esc(x.logoUrl)}" alt="" style="max-height:70px;width:auto;border-radius:8px;margin-top:.5rem">`:""}
     <div class="actions"><button class="btn danger" onclick="C.fundraising.sponsors.splice(${i},1);renderFund()">Delete</button></div></div>`).join("");
 }
-function addCampaign(){ C.fundraising.campaigns.push({title:"",blurb:"",goal:0,raised:0,link:"",linkLabel:""}); renderFund(); }
+// A new one starts hidden. Saving publishes within the minute, so a campaign
+// half typed would otherwise be on the site before its goal was filled in.
+function addCampaign(){ C.fundraising.campaigns.push({title:"",blurb:"",goal:0,raised:0,link:"",linkLabel:"",hidden:true}); renderFund(); }
+// Rerendered so the line under the box says which way it is now. The rest of
+// the card is typed into, so only touch the list when the tick changes.
+function setCampHidden(i, on){ C.fundraising.campaigns[i].hidden = on; renderFund(); }
 function addSponsor(){ C.fundraising.sponsors.push({name:"",url:"",logoUrl:""}); renderFund(); }
 
 // ---- Kit lists ----
@@ -631,7 +645,7 @@ function renderBreaks(){
       <div><label>Last day</label><input type="date" value="${esc(b.end || "")}" onchange="C.settings.breaks[${i}].end=this.value;renderBreaks()"></div>
     </div>
     <label>Sections (leave all unticked for the whole group)</label>
-    <div class="row">${secs.map(x => `<label class="small"><input type="checkbox" ${(b.sections || []).includes(x.key) ? "checked" : ""} onchange="setBreakSection(${i},'${esc(x.key)}',this.checked)"> ${esc(x.name)}</label>`).join("")}</div>
+    <div class="row">${secs.map(x => `<label class="tick"><input type="checkbox" ${(b.sections || []).includes(x.key) ? "checked" : ""} onchange="setBreakSection(${i},'${esc(x.key)}',this.checked)"> ${esc(x.name)}</label>`).join("")}</div>
     <p class="hint">${esc(breakHits(b))}</p>
     <div class="actions"><button class="btn danger" onclick="C.settings.breaks.splice(${i},1);renderBreaks()">Delete</button></div></div>`).join("")
     || `<p class="hint">No breaks yet. Add the ones off this year's school calendar.</p>`;

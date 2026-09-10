@@ -697,7 +697,7 @@ function contextCard(keys){
   const ev = eventsSorted().find(e => !isPast(e) && e.kitId && KITS.find(k=>k.id===e.kitId) && D(e.date) <= soon && (keys==="all" || keys.includes(e.section||"group") || (e.section||"group")==="group"));
   if (ev) { const k = KITS.find(x=>x.id===ev.kitId), all = k.groups.flatMap(g=>g.items), t = loadTicks(k.id), done = all.filter(it=>t[itemKey(k,it)]).length;
     return `<div class="card tap" onclick="location.hash='kit/${esc(k.id)}'" style="border-left:5px solid var(--orange)"><div class="card-row"><div class="grow"><div class="eyebrow">Packing for ${esc(ev.title)} · ${fmtShort(ev.date)}</div><h2 style="margin:0 0 .2em">${esc(k.title)} kit list</h2><div class="small" style="color:var(--orange-dark);font-weight:600">${done} of ${all.length} packed</div></div><span class="chev">${ICON.chev}</span></div></div>`; }
-  const f = C.fundraising||{}; const c = (f.campaigns||[]).find(c => c.title && (+c.goal||0) > (+c.raised||0));
+  const c = campaignsShown().find(c => (+c.goal||0) > (+c.raised||0));
   if (c) { const g = +c.goal||0, r = +c.raised||0, pct = g?Math.min(100,Math.round(r/g*100)):0;
     return `<div class="card tap" onclick="location.hash='more/fundraising'"><div class="card-row"><div class="grow"><div class="eyebrow">Fundraising</div><h2 style="margin:0 0 .3em">${ph(c.title)}</h2><div class="bar" style="margin:.3rem 0 .2rem"><i style="width:${pct}%"></i></div><div class="goal"><span><b>€${r.toLocaleString()}</b> raised</span><span>Goal €${g.toLocaleString()}</span></div></div><span class="chev">${ICON.chev}</span></div></div>`; }
   return "";
@@ -992,11 +992,17 @@ function renderContact(){
 }
 
 /* ---------- fundraising ---------- */
+// A campaign can be written up before it is announced: `hidden` keeps it out
+// of the app while it is being drafted. Both surfaces read the same list, so a
+// hidden one cannot leak onto Home while the fundraising page keeps it back.
+// It is hidden, not private: content.json is public, so the words are readable
+// by anyone who goes looking for them.
+const campaignsShown = () => ((C.fundraising||{}).campaigns||[]).filter(c => c && c.title && !c.hidden);
 function renderFundraising(){
   const f = C.fundraising || {};
   $("fundIntro").innerHTML = ph(f.intro||"");
   $("fundDonate").innerHTML = f.donateUrl ? `<div class="card hero-card"><h2>${esc(f.donateTitle||"Support 7th Clare")}</h2><p>${ph(f.donateText||"")}</p><div class="btn-row"><a class="btn orange" href="${esc(f.donateUrl)}" target="_blank" rel="noopener">${esc(f.donateLabel||"Donate")}</a></div></div>` : "";
-  const camps = (f.campaigns||[]).filter(c => c.title);
+  const camps = campaignsShown();
   $("fundCampaigns").innerHTML = camps.length ? camps.map(c => { const g = +c.goal||0, r = +c.raised||0, pct = g ? Math.min(100, Math.round(r/g*100)) : 0;
     return `<div class="card"><h2>${ph(c.title)}</h2><p class="muted" style="margin:0">${ph(c.blurb||"")}</p>
       ${g?`<div class="bar" style="margin:.8rem 0 .2rem"><i style="width:${pct}%"></i></div><div class="goal"><span><b>€${r.toLocaleString()}</b> raised</span><span>Goal €${g.toLocaleString()} · ${pct}%</span></div>`:""}

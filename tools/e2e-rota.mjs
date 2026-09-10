@@ -50,9 +50,25 @@ const openTab = async (p, name) => { await p.locator("#tabs button", { hasText: 
 // The public app renders from defaults.js first and again when the content
 // function answers, so poll for what should end up on the page rather than
 // asking once and catching the wrong render.
+// The app registers a service worker, and the first load of a fresh context is
+// reloaded once, the moment that worker takes control. An evaluate caught by
+// that reload throws "Execution context was destroyed" rather than returning,
+// so every read of the app goes through here.
+const evalIn = async (p, fn) => {
+  for (let i = 0; ; i++) {
+    try { return await p.evaluate(fn); }
+    catch (e) { if (i > 20 || !/xecution context/.test(String(e && e.message))) throw e; await p.waitForTimeout(300); }
+  }
+};
+// Standing in for the content function has to be done on the context, not the
+// page: once the service worker takes control it fetches on the page's behalf,
+// and a page route does not reach a worker's own requests.
+const serveContent = (p, patch) => p.context().route("**/.netlify/functions/content**", async (r) => {
+  const d = await (await r.fetch()).json(); patch(d); await r.fulfill({ json: d });
+});
 const settled = async (p, fn, ok2, ms = 15000) => {
   const until = Date.now() + ms; let last;
-  for (;;) { last = await p.evaluate(fn); if (ok2(last) || Date.now() > until) return last; await p.waitForTimeout(250); }
+  for (;;) { last = await evalIn(p, fn); if (ok2(last) || Date.now() > until) return last; await p.waitForTimeout(250); }
 };
 const pickSec = async (p, n) => { await p.getByRole("button", { name: n, exact: true }).first().click(); await p.waitForTimeout(150); };
 const names = async (p) => (await p.locator("#people .person .nm").allInnerTexts()).map((t) => t.split("\n")[0].replace(/\s*\(you\)\s*$/, "").trim());
@@ -347,14 +363,14 @@ try {
     await settled(APP, () => document.querySelectorAll("#calBody .event.night").length, (n) => n >= 8) >= 8, true);
   await APP.screenshot({ path: ".e2e/app-calendar-nights-390.png", fullPage: true });
   // Events read as events: green, where a night is plain white.
-  const tints = await APP.evaluate(() => {
+  const tints = await evalIn(APP, () => {
     const bg = (el) => el && getComputedStyle(el).backgroundColor;
     return { event: bg(document.querySelector("#calBody .event:not(.night)")), night: bg(document.querySelector("#calBody .event.night")) };
   });
   ok("an event card is green and a night's is white", [tints.event, tints.night], ["rgb(233, 244, 228)", "rgb(255, 255, 255)"]);
   // And the nights can be turned off, for whoever is scrolling for the camp.
   ok("the switch fits the tools row on a phone rather than pushing it to a third line",
-    await APP.evaluate(() => document.querySelector("#calBody .cal-tools").getBoundingClientRect().height < 100), true);
+    await evalIn(APP, () => document.querySelector("#calBody .cal-tools").getBoundingClientRect().height < 100), true);
   await APP.locator("#meetToggle").click(); await APP.waitForTimeout(400);
   ok("turning the weekly meetings off takes every night off the list, cancelled ones included", [await APP.locator("#calBody .event.night").count(), await APP.locator("#calBody .event").count() > 0, await APP.getAttribute("#meetToggle", "aria-pressed")], [0, true, "false"]);
   // After a reload the app draws from defaults.js first, which has no nights,
@@ -382,7 +398,7 @@ try {
   ok("the full calendar lists the nights too", await settled(APP, () => { const t = document.querySelector("#tblView").innerText; return t.includes("Scouts meeting") && t.includes("No meeting"); }, (x) => x === true), true);
   await APP.screenshot({ path: ".e2e/fullcal-390.png", fullPage: true });
   await APP.locator("#meetOff").click(); await APP.waitForTimeout(400);
-  ok("and Events only takes them off there as well, leaving the events", await APP.evaluate(() => { const t = document.querySelector("#tblView").innerText; return [t.includes("Scouts meeting"), t.includes("First Meeting")]; }), [false, true]);
+  ok("and Events only takes them off there as well, leaving the events", await evalIn(APP, () => { const t = document.querySelector("#tblView").innerText; return [t.includes("Scouts meeting"), t.includes("First Meeting")]; }), [false, true]);
   // Back on the table after the reload, and wait for an event that only the
   // content function has, or the check would pass on an empty table.
   await APP.reload({ waitUntil: "load" }); await APP.locator("#viewTbl").click();
@@ -403,11 +419,9 @@ try {
   // reading the unfiltered list would open on an empty November.
   step = "the month it opens on";
   const JC = await page(1280, 900);
-  await JC.route("**/.netlify/functions/content**", async (r) => {
-    const d = await (await r.fetch()).json();
+  await serveContent(JC, (d) => {
     d.events = [{ date: "2027-01-20", title: "Winter walk", section: "scouts" }];
     d.meetings = [0, 1, 2].map((i) => ({ id: "j" + i, section: "scouts", date: "2026-11-0" + (5 + i) }));
-    await r.fulfill({ json: d });
   });
   await JC.addInitScript(() => { try { localStorage.setItem("ccs_meetings", "off"); } catch {} });
   await JC.goto(APP_ROOT + "calendar.html", { waitUntil: "load" });
@@ -419,11 +433,9 @@ try {
   // and points at the next night that is on.
   step = "the week that is off";
   const OFF = await page(390, 844);
-  await OFF.route("**/.netlify/functions/content**", async (r) => {
-    const d = await (await r.fetch()).json();
+  await serveContent(OFF, (d) => {
     d.meetings = [{ id: "o1", section: "scouts", date: "2030-01-08", off: true, title: "No meeting, hall booked" },
                   { id: "o2", section: "scouts", date: "2030-01-15" }];
-    await r.fulfill({ json: d });
   });
   await OFF.goto(APP_ROOT + "#sections/scouts", { waitUntil: "load" });
   ok("a week that is off says so on the section card, and names the next one that is on",
@@ -431,6 +443,32 @@ try {
     "No meeting Tuesday, 8 Jan, hall booked. Next is Tuesday, 15 Jan");
   await OFF.screenshot({ path: ".e2e/app-section-off-390.png", fullPage: true });
   await OFF.close();
+
+  // A campaign can be written up before it is announced. Hidden keeps it off
+  // both surfaces, the fundraising page and the card on Home.
+  step = "a campaign not announced yet";
+  const FUND = await page(390, 844);
+  await serveContent(FUND, (d) => {
+    // Home offers one card, and a kit list for an event inside three weeks
+    // beats a campaign to it. Clear the events so the campaign card is what
+    // this is reading.
+    d.events = [];
+    d.fundraising = d.fundraising || {};
+    d.fundraising.campaigns = [{ title: "Not announced", blurb: "Draft", goal: 8000, raised: 450, hidden: true },
+                               { title: "Minibus fund", blurb: "On the site", goal: 5000, raised: 1200 }];
+  });
+  await FUND.addInitScript(() => { try { localStorage.setItem("my-sections", JSON.stringify(["scouts"])); } catch {} });
+  await FUND.goto(APP_ROOT + "#more/fundraising", { waitUntil: "load" });
+  ok("a hidden campaign is kept off the fundraising page and a showing one is not",
+    await settled(FUND, () => [...document.querySelectorAll("#fundCampaigns h2")].map((x) => x.innerText.trim()),
+      (v) => v.includes("Minibus fund") || v.includes("Not announced")),
+    ["Minibus fund"]);
+  await FUND.goto(APP_ROOT + "#home", { waitUntil: "load" });
+  ok("and off the card on Home, which takes the first campaign short of its goal",
+    await settled(FUND, () => { const t = (document.querySelector("#homeBody") || {}).innerText || "";
+      return [/Not announced/.test(t), /Minibus fund/.test(t)]; }, (v) => v[0] || v[1]),
+    [false, true]);
+  await FUND.close();
 
   step = "first come, first served";
   // Lead Test is the secretary by now, and L2 is the context signed in as them.
