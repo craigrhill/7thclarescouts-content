@@ -335,6 +335,16 @@
     },
     {
       "date": "2027-04-10",
+      "title": "Backwoods Skills",
+      "endDate": "2027-04-11",
+      "section": "scouts",
+      "location": "Castle Connell",
+      "details": "Hosted by Killaloe",
+      "countyId": "ev_qbw902n4",
+      "id": "cev_qbw902n4-scouts"
+    },
+    {
+      "date": "2027-04-10",
       "endDate": "2027-04-11",
       "title": "Backwoods Skills (County)",
       "section": "scouts",
@@ -1769,7 +1779,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:02:36.818Z",
+  "updatedAt": "2026-09-10T06:02:40.914Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
