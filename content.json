@@ -291,6 +291,15 @@
     },
     {
       "date": "2027-03-07",
+      "title": "County Hike",
+      "section": "scouts",
+      "location": "TBD",
+      "details": "Hosted by Ballyvaughan",
+      "countyId": "ev_3irp615d",
+      "id": "cev_3irp615d-scouts"
+    },
+    {
+      "date": "2027-03-07",
       "title": "County Hike (County)",
       "section": "scouts",
       "location": "TBC",
@@ -1663,7 +1672,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:01:10.227Z",
+  "updatedAt": "2026-09-10T06:01:18.330Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
