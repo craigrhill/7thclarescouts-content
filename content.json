@@ -323,6 +323,16 @@
       "details": "Backwoods skills weekend."
     },
     {
+      "date": "2027-04-17",
+      "title": "County Cub Challenge",
+      "endDate": "2027-04-18",
+      "section": "cubs",
+      "location": "County Campsite Ruan",
+      "details": "Hosted by ACPC/ County Team",
+      "countyId": "ev_mj9fy738",
+      "id": "cev_mj9fy738-cubs"
+    },
+    {
       "date": "2027-05-14",
       "endDate": "2027-05-16",
       "title": "County Shield (County)",
@@ -1681,7 +1691,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:01:21.520Z",
+  "updatedAt": "2026-09-10T06:01:25.229Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
