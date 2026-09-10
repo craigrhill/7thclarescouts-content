@@ -290,6 +290,15 @@
       "id": "cev_rmdcujm5-cubs"
     },
     {
+      "date": "2027-02-07",
+      "title": "County Hike",
+      "section": "cubs",
+      "time": "TBC",
+      "details": "Hosted by SixmileBridge",
+      "countyId": "ev_n4fe3gp3",
+      "id": "cev_n4fe3gp3-cubs"
+    },
+    {
       "date": "2027-03-07",
       "title": "County Hike",
       "section": "scouts",
@@ -1672,7 +1681,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:01:18.330Z",
+  "updatedAt": "2026-09-10T06:01:21.520Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
