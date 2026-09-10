@@ -351,6 +351,15 @@
       "details": "The annual County Shield camp and competition."
     },
     {
+      "date": "2027-05-15",
+      "title": "Laoch Coille- Provincial",
+      "endDate": "2027-05-16",
+      "section": "cubs",
+      "location": "Lough Keel",
+      "countyId": "ev_f9huxysg",
+      "id": "cev_f9huxysg-cubs"
+    },
+    {
       "date": "2027-05-28",
       "endDate": "2027-05-30",
       "title": "Water Activities Weekend (County)",
@@ -1701,7 +1710,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:01:30.000Z",
+  "updatedAt": "2026-09-10T06:01:31.880Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
