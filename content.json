@@ -254,6 +254,16 @@
       "id": "cev_006nhpqv-cubs"
     },
     {
+      "date": "2026-11-12",
+      "title": "Cub Challenge Info Night",
+      "section": "cubs",
+      "location": "TBC",
+      "startTime": "20:00",
+      "details": "Hosted by ACPC/ County Team",
+      "countyId": "ev_v9bq1g28",
+      "id": "cev_v9bq1g28-cubs"
+    },
+    {
       "date": "2027-01-24",
       "title": "MasterChef",
       "section": "scouts",
@@ -1643,7 +1653,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:00:52.738Z",
+  "updatedAt": "2026-09-10T06:00:59.449Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
