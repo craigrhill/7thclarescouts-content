@@ -325,6 +325,15 @@
       "details": "Venue to be confirmed."
     },
     {
+      "date": "2027-03-21",
+      "title": "County Hike",
+      "section": "beavers",
+      "location": "Cratloe",
+      "details": "Hosted by Cratloe",
+      "countyId": "ev_efxcodkc",
+      "id": "cev_efxcodkc-beavers"
+    },
+    {
       "date": "2027-04-10",
       "endDate": "2027-04-11",
       "title": "Backwoods Skills (County)",
@@ -1730,7 +1739,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T06:01:56.224Z",
+  "updatedAt": "2026-09-10T06:02:18.334Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
