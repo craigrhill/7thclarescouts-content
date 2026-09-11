@@ -286,6 +286,16 @@
       "id": "cev_higv73en-cubs"
     },
     {
+      "date": "2026-12-13",
+      "title": "Secret Santa Week",
+      "endDate": "2026-12-20",
+      "section": "cubs",
+      "location": "Local community’s",
+      "time": "All week",
+      "countyId": "ev_psvsartg",
+      "id": "cev_psvsartg-cubs"
+    },
+    {
       "date": "2027-01-24",
       "title": "MasterChef",
       "section": "scouts",
@@ -1753,7 +1763,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-11T00:00:29.116Z",
+  "updatedAt": "2026-09-11T00:13:22.274Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
@@ -1806,7 +1816,7 @@
     "sionnach",
     "mpc"
   ],
-  "updatedBy": "admin",
+  "updatedBy": "secretary",
   "gallery": [
     {
       "url": "/photo/418bc94a11694cc0da5466007c46b65f.jpg",
