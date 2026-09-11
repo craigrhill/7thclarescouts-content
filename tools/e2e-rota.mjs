@@ -199,7 +199,10 @@ try {
   step = "events as secretary";
   const evRows = async (p) => (await p.locator("#events tr.person td.nm").allInnerTexts()).map((t) => t.trim());
   await go(S, "events.html"); await S.waitForTimeout(700);
-  ok("the secretary sees a chip per section, plus the whole group and the county inbox", (await S.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()).slice(-2).map((t) => t.replace(/ \(\d+\)$/, "")), ["Whole group", "County"]);
+  ok("the secretary sees a chip per section, then the whole group, and the county is the other list rather than a chip",
+    [(await S.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()).slice(-1),
+     (await S.locator("#srcTabs button").allInnerTexts()).map((t) => t.trim().replace(/\s*\d+$/, ""))],
+    [["Whole group"], ["Our events", "From the county"]]);
   await pickSec(S, "Scouts");
   const before = (await evRows(S)).length;
   await S.fill("#evDate", "2030-03-14"); await S.fill("#evTitle", "Spring camp");
@@ -231,7 +234,8 @@ try {
   await L2.screenshot({ path: ".e2e/rota-with-events-1280.png" });
   step = "events as a lead";
   await go(L2, "events.html"); await L2.waitForTimeout(700);
-  ok("a lead gets their own section, the whole group and the county inbox", (await L2.locator("#chips .chip").allInnerTexts()).map((t) => t.trim().replace(/ \(\d+\)$/, "")), ["Scouts", "Whole group", "County"]);
+  ok("a lead gets their own section and the whole group, with the county as the other list", 
+    [(await L2.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()), await L2.locator("#srcTabs button").count()], [["Scouts", "Whole group"], 2]);
   await pickSec(L2, "Scouts");
   await L2.fill("#evDate", "2030-05-10"); await L2.fill("#evTitle", "Scouts hike");
   await L2.locator("#addCard").getByRole("button", { name: "Add", exact: true }).click(); await L2.waitForTimeout(1200);
@@ -245,7 +249,8 @@ try {
   const evHelperCode = await S.evaluate(async () => { const h = { "Content-Type": "application/json", "x-rota-token": localStorage.getItem("rota-token") };
     return (await (await fetch("/.netlify/functions/rota?a=person", { method: "POST", headers: h, body: JSON.stringify({ name: "Ev Helper", sections: ["scouts"], lead: false }) })).json()).code; });
   const Hv = await page(390, 844); await go(Hv, "events.html"); await Hv.fill("#code", evHelperCode); await signInBtn(Hv).click(); await Hv.waitForTimeout(1000);
-  ok("a helper is signed in on their own section and the whole group, with no county inbox", (await Hv.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()), ["Scouts", "Whole group"]);
+  ok("a helper is signed in on their own section and the whole group, and is not offered the county at all",
+    [(await Hv.locator("#chips .chip").allInnerTexts()).map((t) => t.trim()), await Hv.locator("#srcTabs").isHidden()], [["Scouts", "Whole group"], true]);
   ok("a helper sees their section's events read-only", [await Hv.locator("#addCard").isVisible(), await Hv.locator("#events button").count(), (await evRows(Hv)).length >= 2], [false, 0, true]);
   await Hv.screenshot({ path: ".e2e/events-390.png", fullPage: true });
   await Hv.close();
@@ -616,7 +621,8 @@ try {
   // group calendar is a commit, so the row has to say it is working.
   step = "the county inbox";
   await go(L2, "events.html"); await L2.waitForTimeout(800);
-  await L2.locator("#chips .chip", { hasText: "County" }).first().click(); await L2.waitForTimeout(400);
+  await L2.locator("#chips .chip", { hasText: "Whole group" }).first().click(); await L2.waitForTimeout(300);
+  await L2.locator("#srcTabs button", { hasText: "From the county" }).click(); await L2.waitForTimeout(400);
   await L2.getByRole("button", { name: "Check the county" }).click(); await L2.waitForTimeout(2500);
   const inbox = L2.locator("#countyList");
   // The fixture offers the planning meeting to Beavers, Cubs and Ventures (its
@@ -652,6 +658,27 @@ try {
       await L2.setViewportSize({ width: 1280, height: 900 }); await L2.waitForTimeout(300);
     }
   }
+  // The point of taking the county out of the chip row: the section narrows it,
+  // so a lead can work through one section at a time instead of the whole lot.
+  await L2.locator("#chips .chip", { hasText: "Beavers" }).first().click(); await L2.waitForTimeout(500);
+  ok("a section narrows the county inbox to that section's own offers",
+    [await inbox.locator(".cevent").count(), await inbox.locator(".crow").count(),
+     (await inbox.locator(".cname-main").first().innerText()).trim()], [1, 1, "County Planning Meeting"]);
+  await L2.locator("#chips .chip", { hasText: "Scouts" }).first().click(); await L2.waitForTimeout(500);
+  ok("and another section sees its own, not the first one's",
+    [await inbox.locator(".crow").count(), (await inbox.locator(".cname-main").first().innerText()).trim()], [1, "County Hike"]);
+  await L2.locator("#chips .chip", { hasText: "Cubs" }).first().click(); await L2.waitForTimeout(500);
+  await L2.locator("#srcTabs button", { hasText: "Our events" }).click(); await L2.waitForTimeout(500);
+  ok("the section stays picked across the switch, which is what makes the two lists one page",
+    (await L2.locator("#listTitle").innerText()).trim().startsWith("Cubs"), true);
+  ok("and the nights, which are ours, are not left on screen under the county inbox",
+    [await L2.locator("#meetCard").isHidden(), await L2.locator("#listCard").isHidden()], [false, false]);
+  await L2.locator("#srcTabs button", { hasText: "From the county" }).click(); await L2.waitForTimeout(500);
+  ok("flipping back keeps the section and hides the nights again",
+    [await L2.locator("#meetCard").isHidden(), await L2.locator("#chips .chip.on").innerText()], [true, "Cubs"]);
+  await L2.screenshot({ path: ".e2e/county-by-section-1280.png", fullPage: true });
+  await L2.locator("#chips .chip", { hasText: "Whole group" }).first().click(); await L2.waitForTimeout(500);
+  ok("and Whole group is still the sweep-the-lot view", await inbox.locator(".crow").count(), 4);
 
   // ---- a lead on the roster: their own section, its links, no changing it ----
   // Ev Helper is on Scouts and nothing else. Make them its lead, then look at
@@ -688,7 +715,11 @@ try {
   // Saving the term's nights and then reading "nothing coming up" underneath
   // looks like the save failed. The nights are not events; the line says so.
   step = "nights are not events";
-  await go(L2, "events.html"); await L2.waitForTimeout(900); await pickSec(L2, "Ventures"); await L2.waitForTimeout(400);
+  await go(L2, "events.html"); await L2.waitForTimeout(900);
+  // The page remembers which of the two lists you were on, and the block above
+  // left it on the county's, so say which list this step is about.
+  await L2.locator("#srcTabs button", { hasText: "Our events" }).click(); await L2.waitForTimeout(400);
+  await pickSec(L2, "Ventures"); await L2.waitForTimeout(400);
   const empty = async () => (await L2.locator("#events .empty").innerText()).replace(/\s+/g, " ");
   await L2.setViewportSize({ width: 390, height: 844 }); await L2.waitForTimeout(300);
   await L2.locator("#events").scrollIntoViewIfNeeded();

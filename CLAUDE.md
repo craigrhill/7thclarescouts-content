@@ -163,7 +163,8 @@ Roles are flags on a person, and the function enforces them, not the pages:
   secretaries only, never to leads or helpers. Adding is a name (or
   several, comma separated), section chips and Add; the code shows in the
   row.
-* **county events** are a chip of their own on `events.html`: "Check the
+* **county events** are one of the two lists on `events.html`, picked with the
+  **Our events | From the county** switch above the section chips: "Check the
   county" pulls the feed, and the decision is **per section**. The county
   naming several sections is an offer to each of them, not one group event
   for us: Craig's rule is that a county-wide event is not automatically a
@@ -187,6 +188,19 @@ Roles are flags on a person, and the function enforces them, not the pages:
   edited from a section list; it is marked "county" there and run from the
   County chip. This was on the public `/calendar` page behind a County
   button until it moved here, so the whole event workflow sits in one place.
+  **The section chip applies within the county list**, which is what the switch
+  is for. County used to be a chip in the section row, so picking it replaced
+  the section you were on and the secretary got one flat inbox of every offer
+  to every section: fine at two items, unworkable at twenty. It is the second
+  axis now, the section stays picked across the switch, and Beavers plus the
+  county is the county's offers to Beavers with only the Beavers row to decide.
+  Whole group is every offer to every section, which is what the old chip did.
+  Two states rather than three, unlike a public calendar filter, because these
+  are two jobs and not two views of one list: ours is an editor with an add
+  form and the meeting nights, the county's is a decision inbox. A helper is
+  never sent county items, so is not offered the switch at all. The waiting
+  count moved from the chip onto the tab, and counts the whole inbox rather
+  than the section on screen, because it is a to-do for the group.
   Two things about a row: a button says what pressing it does, **"Add to our
   calendar"**, because "We are going" was both the button and the pill it
   turns into and a row still waiting on a decision read as one already made;

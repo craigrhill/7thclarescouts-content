@@ -40,6 +40,7 @@
 
     <h1>Events</h1>
     <p class="muted intro" id="intro"></p>
+    <div class="tabs" id="srcTabs" role="tablist" hidden></div>
     <div class="chips" id="chips"></div>
 
     <div id="countyCard" class="card" hidden>
@@ -90,6 +91,10 @@
 <script src="rota-lib.js"></script>
 <script>
 const SK = "events-section";
+// Which of the two lists is on screen. They are two jobs rather than two views
+// of one list: ours is an editor, the county's is a decision inbox. The
+// section chip stays picked across the switch, which is the whole point of it.
+const SRC = "events-source";
 let C = null, D = null, editingEvent = null, showPast = false, syncNote = "";
 // The section's meeting nights, held here while they are being edited and
 // written in one go. A short list, and one write keeps the etag guard
@@ -202,7 +207,7 @@ const setRequired = (field, v) => guarded(async () => {
 });
 function showErr(m){ $("err").textContent = m; $("err").hidden = !m; }
 function allKeys(){ return C.settings.sections.map(x => x.key); }
-function sectionName(k){ return k === "all" ? "Whole group" : k === "county" ? "County" + (countyNews() ? " (" + countyNews() + ")" : "") : ((C.settings.sections.find(x => x.key === k) || {}).name || k); }
+function sectionName(k){ return k === "all" ? "Whole group" : ((C.settings.sections.find(x => x.key === k) || {}).name || k); }
 // While the roster has no secretary at all, a lead holds her powers so nobody
 // is locked out. The function says whether there is one, because a lead is
 // only sent their own sections' people and could not tell from those alone.
@@ -212,14 +217,17 @@ const canManage = () => !!D.me.secretary
 // the whole-group events everyone can see. Who may change what is decided by
 // the function; the page only mirrors it.
 const mine = () => canManage() ? allKeys() : allKeys().filter(k => (D.me.sections || []).includes(k));
-// The county inbox is a chip of its own. The function only returns county
-// items to people who may decide on them, so helpers never see the chip.
+// The county inbox is the second of the two lists. The function only returns
+// county items to people who may decide on them, so a helper is not offered
+// the switch at all and only ever sees our own events.
 const canCounty = () => canManage() || !!D.me.lead;
 // One county event can be waiting on several of our sections, so the badge
 // counts decisions still to make, plus anything the county has altered.
 const countyNews = () => (D.county || []).reduce((n, x) => n + x.rows.filter(r => r.status === "pending").length + (x.changed || x.gone ? 1 : 0), 0);
-const chipKeys = () => [...mine(), "all", ...(canCounty() ? ["county"] : [])];
-const canEdit = k => k === "all" ? canManage() : k === "county" ? false : (canManage() || (!!D.me.lead && (D.me.sections || []).includes(k)));
+const chipKeys = () => [...mine(), "all"];
+// Which list, remembered per phone. A helper has only the one.
+function source(){ if (!canCounty()) return "ours"; let v = null; try { v = localStorage.getItem(SRC); } catch {} return v === "county" ? "county" : "ours"; }
+const canEdit = k => k === "all" ? canManage() : (canManage() || (!!D.me.lead && (D.me.sections || []).includes(k)));
 function sec(){ let k = null; try { k = localStorage.getItem(SK); } catch {} const v = chipKeys(); return v.includes(k) ? k : v[0]; }
 const allEvents = () => [
   ...((C.events || []).map(e => ({ ...e, priv: false }))),
@@ -231,21 +239,31 @@ const forChip = k => allEvents().filter(e => k === "all" ? !e.section : e.sectio
 function render(){
   const me = D.me;
   $("leaderNav").innerHTML = leaderNav(me); $("meName").textContent = me.name; const role = roleText(me); $("meRole").textContent = role ? ", " + role : "";
-  const k = sec(), can = canEdit(k), v = chipKeys();
+  const k = sec(), s = source(), can = canEdit(k), v = chipKeys();
+  // The switch first, because it says which job this is, then the section,
+  // which narrows it. A helper never sees the county, so never sees the switch.
+  $("srcTabs").hidden = !canCounty();
+  $("srcTabs").innerHTML = !canCounty() ? "" : [["ours", "Our events", ""], ["county", "From the county", countyNews() || ""]]
+    .map(([id, label, n]) => `<button role="tab" aria-selected="${s === id}" class="${s === id ? "on" : ""}" onclick="pickSource('${id}')">${esc(label)}<span class="tally">${esc(String(n))}</span></button>`).join("");
   $("chips").innerHTML = v.map(x => `<button class="chip ${x === k ? "on" : ""}" onclick="pickSection('${esc(x)}')">${esc(sectionName(x))}</button>`).join("");
   $("intro").textContent = canManage() ? "Add and change events for any section, and the whole group's."
     : me.lead && mine().length ? "Add and change events for your section. Whole-group events are the secretary's."
     : "What is coming up for your section. Only a section lead can add or change events.";
-  if (k === "county") {
-    $("intro").textContent = "County events that touch your sections. Decide whether we are going; approved ones join the section's list and the parents' calendar.";
+  if (s === "county") {
+    $("intro").textContent = k === "all"
+      ? "County events that touch your sections. Decide whether we are going; approved ones join the section's list and the parents' calendar."
+      : "What the county is offering " + sectionName(k) + ". Approving puts it on their list and on the parents' calendar.";
     $("countyCard").hidden = false; $("addCard").hidden = true; $("listCard").hidden = true;
+    // The nights are ours, so they belong to the other list. Without this they
+    // stayed on screen under the county inbox after picking a section first.
+    $("meetCard").hidden = true;
     renderCounty(); return;
   }
   $("countyCard").hidden = true; $("listCard").hidden = false;
   $("addCard").hidden = !can;
   // The nights themselves, for a real section: not for the whole group, which
   // has no meeting night of its own.
-  const showMeet = can && k !== "all" && k !== "county";
+  const showMeet = can && k !== "all";
   $("meetCard").hidden = !showMeet;
   if (showMeet) { if (meetFor !== k) loadNights(k); renderMeetings(k); }
   $("addTitle").textContent = k === "all" ? "Add a whole-group event" : "Add a " + sectionName(k) + " event";
@@ -291,7 +309,13 @@ const emptyLine = (k, showMeet) => k === "all"
 // A lead decides for their own sections, the secretary for anything; the
 // function enforces that, so this only draws what it sent back.
 function renderCounty(){
-  const items = D.county || [];
+  // The section chip narrows the inbox: on a section, only that section's own
+  // row is offered, so a lead can work through one section at a time. Whole
+  // group is every offer to every section, which is the sweep-the-lot view.
+  const k = sec();
+  const items = (D.county || [])
+    .map((it) => k === "all" ? it : { ...it, rows: (it.rows || []).filter((r) => r.section === k) })
+    .filter((it) => (it.rows || []).length);
   $("countySynced").textContent = syncNote || (D.countySyncedAt ? "Last checked " + fmt(D.countySyncedAt.slice(0, 10)) : "Not checked yet");
   // Sort by what still needs a decision, then by date.
   const waiting = it => it.rows.some(r => r.status === "pending") || it.changed || it.gone;
@@ -321,7 +345,9 @@ function renderCounty(){
       <div class="small muted">${esc([e.location, e.time].filter(Boolean).join(" · "))}</div>
       <div class="small muted">${it.targets && it.targets.length > 1 ? `The county offers this to ${esc(offered)}. Each decides for itself.` : `For ${esc(offered || "the group")}.`}</div>
       ${rows}</div>`;
-  }).join("") : `<div class="empty">Nothing from the county for your sections. Tap "Check the county" to look for new events.</div>`;
+  }).join("") : `<div class="empty">${k === "all"
+    ? `Nothing from the county for your sections. Tap "Check the county" to look for new events.`
+    : `Nothing from the county for ${esc(sectionName(k))}. Another section's offers are on its own chip, and Whole group shows them all.`}</div>`;
 }
 const countySync = () => guarded(async () => {
   const b = $("countySyncBtn"); b.disabled = true; b.textContent = "Checking…";
@@ -346,6 +372,7 @@ const countyDecide = (id, section, decision) => {
 
 function editEvent(key){ editingEvent = editingEvent === key ? null : key; render(); }
 function pickSection(k){ try { localStorage.setItem(SK, k); } catch {} editingEvent = null; syncNote = ""; meetFor = null; render(); }
+function pickSource(v){ try { localStorage.setItem(SRC, v); } catch {} editingEvent = null; syncNote = ""; render(); }
 async function load(){ showErr(""); D = await api("GET", "?sections=" + allKeys().join(",")); $("gate").hidden = true; $("app").hidden = false; render(); }
 async function guarded(fn){ try { await fn(); } catch (e) { showErr(e.message); } }
 // A public event changes the group content, so reload that as well as the rota data.
