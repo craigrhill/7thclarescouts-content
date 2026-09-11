@@ -146,7 +146,8 @@
         "goal": 8000,
         "raised": 450,
         "link": "",
-        "linkLabel": ""
+        "linkLabel": "",
+        "hidden": true
       }
     ],
     "help": "Bag-packing days, the annual quiz night and the Christmas raffle all need helpers and prizes. If you can give a few hours, donate a prize, or know a business that might sponsor a tent, email the group.\n\nIf you shop online, ask us about fundraising schemes that give a percentage back to the group at no cost to you.",
@@ -1752,7 +1753,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-10T17:30:00.000Z",
+  "updatedAt": "2026-09-11T00:00:29.116Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
@@ -1805,7 +1806,7 @@
     "sionnach",
     "mpc"
   ],
-  "updatedBy": "claude",
+  "updatedBy": "admin",
   "gallery": [
     {
       "url": "/photo/418bc94a11694cc0da5466007c46b65f.jpg",
