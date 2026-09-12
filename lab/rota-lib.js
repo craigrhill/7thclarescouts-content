@@ -14,11 +14,21 @@ const linkCode = new URLSearchParams(location.search).get("c");
 function dropCodeFromUrl(){
   try { const u = new URL(location.href); if (u.searchParams.has("c")) { u.searchParams.delete("c"); history.replaceState(null, "", u.pathname + u.search + u.hash); } } catch {}
 }
+// A link somebody else will open names the group's own address, not whichever
+// host this page happens to be served from. The Netlify address still answers,
+// so a leader who opened that one would otherwise pass it on for ever, and it
+// is the address that goes stale if the site ever moves. Anywhere that is not
+// the live site, a deploy preview or the local preview, a link has to keep
+// pointing at the host it came from, or a test would send somebody to the real
+// site.
+const SITE = "https://7thclarescouts.ie";
+const LIVE_HOSTS = ["7thclarescouts.ie", "www.7thclarescouts.ie", "7thclarescouts.netlify.app"];
+function siteOrigin(){ return LIVE_HOSTS.indexOf(location.hostname) > -1 ? SITE : location.origin; }
 // A link to a page beside this one, whether Netlify is serving these pretty
 // (/lab/rota) or as files (/lab/rota.html).
 function pageLink(page, query){
   const path = location.pathname.replace(/(rota|roster|events|badges|attendance|needed)(\.html)?$/, (m, name, ext) => page + (ext || ""));
-  return location.origin + (path === location.pathname ? "/lab/" + page + ".html" : path) + (query || "");
+  return siteOrigin() + (path === location.pathname ? "/lab/" + page + ".html" : path) + (query || "");
 }
 // The link to send someone. The same code, nothing for them to remember.
 const codeLink = code => pageLink("rota") + "?c=" + encodeURIComponent(code);

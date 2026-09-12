@@ -1,7 +1,10 @@
 # 7th Clare Scouts app
 
 A single-file PWA for parents and Scouts of 7th Clare Scout Group, Ballyvaughan,
-Co. Clare (Scouting Ireland). Live at https://7thclarescouts.netlify.app.
+Co. Clare (Scouting Ireland). Live at https://7thclarescouts.ie. The Netlify
+address, `7thclarescouts.netlify.app`, still answers and is not redirected, so
+anyone who opened that one stays on it; `siteOrigin()` is what stops that
+address being passed on (see the gotcha below).
 
 Owner: Craig Hill (craigrhill). Group email: 7thclarescouts@gmail.com.
 
@@ -88,6 +91,8 @@ warning fires correctly for leaders.
     tools/test-ics.mjs              the subscription feed's iCalendar output
     tools/test-kits.mjs             drift guard: mergeBuiltInKits in both files
     tools/test-times.mjs            drift guard: eventWhen in the three pages
+    tools/test-site.mjs             drift guard: siteOrigin in the three pages,
+                                    the address that goes into a link
     tools/test-sw.mjs               the service worker's caching rules
     tools/test-merge.mjs            drift guard: mergeContent in both files
     tools/e2e-rota.mjs              browser suite for the leaders' area
@@ -580,6 +585,21 @@ link in the footer.
   font route goes on the **context**, not the page, because once the worker
   takes control it fetches the stylesheet itself and a page route does not
   reach a worker's own requests.
+* **A link handed to somebody names the group's address, not this host.**
+  `siteOrigin()` in `index.html`, `calendar.html` and `lab/rota-lib.js` returns
+  `https://7thclarescouts.ie` on any of the live hosts and `location.origin`
+  anywhere else, and every URL a person is given goes through it: a helper's
+  personal rota link and the chasing link (`pageLink()`, so `codeLink()` and
+  the message template too), the subscription feed on both calendars, a shared
+  event, and the print URL the iOS home screen app offers. Reading the host
+  meant a leader who happened to open `7thclarescouts.netlify.app`, which still
+  answers and is not redirected, passed that address on for ever. The local
+  preview and a deploy preview keep `location.origin`, or the browser suite
+  would sign itself in against the live site. `www.7thclarescouts.ie` is in the
+  live list but is **not** the address used: Netlify has the apex as the
+  primary domain and 301s www onto it, so naming www would put a redirect in
+  front of every link. If the primary is ever flipped in Netlify, change `SITE`
+  to match. Three copies, held together by `tools/test-site.mjs`.
 * **The shell cache is cache-first.** `sw.js` does `return cached || net`, so a
   broken `index.html` that gets cached is served once more before a fix lands.
   Bumping `VERSION` purges old caches on activate.
