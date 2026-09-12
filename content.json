@@ -1763,7 +1763,7 @@
       ]
     }
   ],
-  "updatedAt": "2026-09-11T13:20:00.000Z",
+  "updatedAt": "2026-09-12T02:01:59.778Z",
   "badges": {
     "imageUrl": "photos/uniform-badge-placement.jpg",
     "imageCaption": "On the full uniform shirt",
@@ -1816,7 +1816,7 @@
     "sionnach",
     "mpc"
   ],
-  "updatedBy": "claude",
+  "updatedBy": "secretary",
   "gallery": [
     {
       "url": "/photo/418bc94a11694cc0da5466007c46b65f.jpg",
@@ -1853,9 +1853,24 @@
       "date": "2026-09-22"
     },
     {
+      "id": "2026-09-24",
+      "section": "scouts",
+      "date": "2026-09-24"
+    },
+    {
       "id": "2026-09-29",
       "section": "beavers",
       "date": "2026-09-29"
+    },
+    {
+      "id": "2026-10-01",
+      "section": "scouts",
+      "date": "2026-10-01"
+    },
+    {
+      "id": "2026-10-08",
+      "section": "scouts",
+      "date": "2026-10-08"
     },
     {
       "id": "2026-10-13",
@@ -1863,9 +1878,26 @@
       "date": "2026-10-13"
     },
     {
+      "id": "2026-10-15",
+      "section": "scouts",
+      "date": "2026-10-15"
+    },
+    {
       "id": "2026-10-20",
       "section": "beavers",
       "date": "2026-10-20"
+    },
+    {
+      "id": "2026-10-22",
+      "section": "scouts",
+      "date": "2026-10-22"
+    },
+    {
+      "id": "2026-10-29",
+      "section": "scouts",
+      "date": "2026-10-29",
+      "title": "October midterm",
+      "off": true
     },
     {
       "id": "2026-11-03",
@@ -1873,9 +1905,19 @@
       "date": "2026-11-03"
     },
     {
+      "id": "2026-11-05",
+      "section": "scouts",
+      "date": "2026-11-05"
+    },
+    {
       "id": "2026-11-10",
       "section": "beavers",
       "date": "2026-11-10"
+    },
+    {
+      "id": "2026-11-12",
+      "section": "scouts",
+      "date": "2026-11-12"
     },
     {
       "id": "2026-11-17",
@@ -1883,9 +1925,19 @@
       "date": "2026-11-17"
     },
     {
+      "id": "2026-11-19",
+      "section": "scouts",
+      "date": "2026-11-19"
+    },
+    {
       "id": "2026-11-24",
       "section": "beavers",
       "date": "2026-11-24"
+    },
+    {
+      "id": "2026-11-26",
+      "section": "scouts",
+      "date": "2026-11-26"
     },
     {
       "id": "2026-12-01",
